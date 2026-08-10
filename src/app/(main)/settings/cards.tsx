@@ -37,7 +37,7 @@ export default function CardsScreen() {
         )}
       </View>
 
-      <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-blue-600 p-4">
+      <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
         <Text className="font-semibold text-white">+ 카드 추가</Text>
       </Pressable>
 

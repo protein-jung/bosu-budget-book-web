@@ -32,13 +32,13 @@ export default function HouseholdScreen() {
 
       <View className="gap-2 rounded-xl bg-white p-4 dark:bg-slate-900">
         <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">초대 코드</Text>
-        <Text className="text-3xl font-bold tracking-widest text-blue-600 dark:text-blue-400">
+        <Text className="text-3xl font-bold tracking-widest text-primary dark:text-secondary">
           {household.inviteCode}
         </Text>
         <Text className="text-sm text-slate-500 dark:text-slate-400">
           이 코드를 배우자에게 공유하면 같은 가계부에 함께 참여할 수 있어요.
         </Text>
-        <Pressable onPress={handleCopy} className="items-center rounded-xl bg-blue-600 p-3">
+        <Pressable onPress={handleCopy} className="items-center rounded-xl bg-primary p-3">
           <Text className="font-semibold text-white">{copied ? '복사됨!' : '코드 복사하기'}</Text>
         </Pressable>
       </View>

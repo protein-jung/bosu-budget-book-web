@@ -1,0 +1,392 @@
+import { Link, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+
+import { BarChart } from '@/components/charts/BarChart';
+import { DonutChart, type DonutDatum } from '@/components/charts/DonutChart';
+import { GroupedBarChart } from '@/components/charts/GroupedBarChart';
+import { Screen } from '@/components/Screen';
+import { BudgetTargetModal } from '@/features/statistics/BudgetTargetModal';
+import { useMonthlyStatistics, useRangeStatistics } from '@/features/statistics/api';
+import { addMonths, formatMonthLabel } from '@/lib/calendar';
+import { formatCompactKrw, formatKrw } from '@/lib/format';
+import type { CategoryBudget, CategoryStat } from '@/lib/types';
+
+const OTHER_COLOR = '#94a3b8';
+const CARD_COLOR = '#E07A5F';
+const INCOME_COLOR = '#2f9e44';
+const EXPENSE_COLOR = '#e03131';
+const DONUT_SLICE_LIMIT = 6;
+const TREND_MONTHS = 6;
+
+type LegendDatum = DonutDatum & { label: string; amount: number; categoryId: number };
+
+function buildLegend(categories: CategoryStat[]): LegendDatum[] {
+  const sorted = [...categories].sort((a, b) => b.amount - a.amount);
+  if (sorted.length <= DONUT_SLICE_LIMIT + 1) {
+    return sorted.map((c) => ({
+      key: String(c.categoryId),
+      categoryId: c.categoryId,
+      label: c.categoryName,
+      amount: c.amount,
+      value: c.amount,
+      color: c.color ?? '#1F6F5C',
+    }));
+  }
+  const top = sorted.slice(0, DONUT_SLICE_LIMIT);
+  const restAmount = sorted.slice(DONUT_SLICE_LIMIT).reduce((sum, c) => sum + c.amount, 0);
+  return [
+    ...top.map((c) => ({
+      key: String(c.categoryId),
+      categoryId: c.categoryId,
+      label: c.categoryName,
+      amount: c.amount,
+      value: c.amount,
+      color: c.color ?? '#1F6F5C',
+    })),
+    { key: 'other', categoryId: -1, label: '기타', amount: restAmount, value: restAmount, color: OTHER_COLOR },
+  ];
+}
+
+export default function StatisticsMonthScreen() {
+  const params = useLocalSearchParams<{ year?: string; month?: string }>();
+  const today = useMemo(() => new Date(), []);
+  const [year, setYear] = useState(() => (params.year ? Number(params.year) : today.getFullYear()));
+  const [month, setMonth] = useState(() => (params.month ? Number(params.month) : today.getMonth() + 1));
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const [editingBudget, setEditingBudget] = useState<CategoryBudget | null>(null);
+
+  const { data: summary, isLoading } = useMonthlyStatistics(year, month);
+  const { data: range, isLoading: rangeLoading } = useRangeStatistics(year, month, TREND_MONTHS);
+
+  const changeMonth = (delta: number) => {
+    const next = addMonths(year, month, delta);
+    setYear(next.year);
+    setMonth(next.month);
+    setSelectedParentId(null);
+  };
+
+  const expenseParents = useMemo(
+    () => summary?.byParentCategory.filter((c) => c.type === 'EXPENSE') ?? [],
+    [summary],
+  );
+  const expenseLeaves = useMemo(
+    () => summary?.byCategory.filter((c) => c.type === 'EXPENSE') ?? [],
+    [summary],
+  );
+  const incomeParents = useMemo(
+    () => summary?.byParentCategory.filter((c) => c.type === 'INCOME') ?? [],
+    [summary],
+  );
+
+  const selectedParent = useMemo(
+    () => expenseParents.find((c) => c.categoryId === selectedParentId) ?? null,
+    [expenseParents, selectedParentId],
+  );
+
+  const drillLeaves = useMemo(() => {
+    if (selectedParentId == null) return [];
+    return expenseLeaves.filter((c) => c.parentId === selectedParentId);
+  }, [expenseLeaves, selectedParentId]);
+
+  const donutSource = selectedParentId == null ? expenseParents : drillLeaves;
+  const categoryLegend = useMemo(() => buildLegend(donutSource), [donutSource]);
+  const expenseTotal = useMemo(
+    () => donutSource.reduce((sum, c) => sum + c.amount, 0),
+    [donutSource],
+  );
+
+  const cardData = useMemo(
+    () =>
+      (summary?.byCard ?? []).map((c) => ({
+        key: String(c.cardId),
+        label: c.cardName,
+        value: c.amount,
+        color: CARD_COLOR,
+      })),
+    [summary],
+  );
+
+  const memberMax = useMemo(
+    () => Math.max(1, ...(summary?.byMember ?? []).flatMap((m) => [m.income, m.expense])),
+    [summary],
+  );
+
+  const trendGroups = useMemo(
+    () =>
+      (range?.months ?? []).map((point) => ({
+        key: `${point.year}-${point.month}`,
+        label: `${point.month}월`,
+        values: {
+          income: point.totalIncome,
+          expense: point.totalExpense,
+        },
+      })),
+    [range],
+  );
+
+  const parentTrendSeries = useMemo(() => {
+    const names = new Map<number, { name: string; color: string }>();
+    for (const point of range?.months ?? []) {
+      for (const cat of point.byParentCategory.filter((c) => c.type === 'EXPENSE')) {
+        if (!names.has(cat.categoryId)) {
+          names.set(cat.categoryId, { name: cat.categoryName, color: cat.color ?? '#1F6F5C' });
+        }
+      }
+    }
+    // 최근 월 기준 상위 4개 대분류만 표시
+    const latest = range?.months[range.months.length - 1];
+    const topIds = [...(latest?.byParentCategory.filter((c) => c.type === 'EXPENSE') ?? [])]
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 4)
+      .map((c) => c.categoryId);
+    return topIds
+      .filter((id) => names.has(id))
+      .map((id) => ({
+        key: String(id),
+        label: names.get(id)!.name,
+        color: names.get(id)!.color,
+      }));
+  }, [range]);
+
+  const parentTrendGroups = useMemo(
+    () =>
+      (range?.months ?? []).map((point) => {
+        const values: Record<string, number> = {};
+        for (const s of parentTrendSeries) {
+          const found = point.byParentCategory.find(
+            (c) => c.type === 'EXPENSE' && String(c.categoryId) === s.key,
+          );
+          values[s.key] = found?.amount ?? 0;
+        }
+        return {
+          key: `${point.year}-${point.month}`,
+          label: `${point.month}월`,
+          values,
+        };
+      }),
+    [range, parentTrendSeries],
+  );
+
+  return (
+    <Screen>
+      <View className="flex-row items-center justify-between">
+        <Pressable onPress={() => changeMonth(-1)} className="px-3 py-2">
+          <Text className="text-xl text-slate-600 dark:text-slate-300">‹</Text>
+        </Pressable>
+        <Text className="text-lg font-bold text-slate-900 dark:text-white">{formatMonthLabel(year, month)}</Text>
+        <Pressable onPress={() => changeMonth(1)} className="px-3 py-2">
+          <Text className="text-xl text-slate-600 dark:text-slate-300">›</Text>
+        </Pressable>
+      </View>
+
+      <Link href="/statistics" className="self-start text-sm font-medium text-primary dark:text-secondary">
+        ‹ 월별 표로
+      </Link>
+
+      {isLoading || !summary ? (
+        <ActivityIndicator />
+      ) : (
+        <>
+          <View className="flex-row gap-3">
+            <View className="flex-1 gap-1 rounded-xl bg-white p-4 dark:bg-slate-900">
+              <Text className="text-sm text-slate-500 dark:text-slate-400">수입</Text>
+              <Text className="text-lg font-bold text-emerald-600">{formatKrw(summary.totalIncome)}</Text>
+            </View>
+            <View className="flex-1 gap-1 rounded-xl bg-white p-4 dark:bg-slate-900">
+              <Text className="text-sm text-slate-500 dark:text-slate-400">지출</Text>
+              <Text className="text-lg font-bold text-red-500">{formatKrw(summary.totalExpense)}</Text>
+            </View>
+          </View>
+
+          <View className="gap-1 rounded-xl bg-white p-4 dark:bg-slate-900">
+            <Text className="text-sm text-slate-500 dark:text-slate-400">수입 − 지출</Text>
+            <Text
+              className={`text-lg font-bold ${summary.netAmount >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+              {formatKrw(summary.netAmount)}
+            </Text>
+          </View>
+
+          {summary.budgets.length > 0 ? (
+            <View className="gap-3 rounded-xl bg-white p-4 dark:bg-slate-900">
+              <Text className="text-base font-semibold text-slate-900 dark:text-white">예산</Text>
+              {summary.budgets.map((b) => {
+                const pct = b.targetAmount > 0 ? Math.min(100, Math.round((b.spentAmount / b.targetAmount) * 100)) : 0;
+                const over = b.spentAmount > b.targetAmount;
+                const barColor = over ? '#e03131' : pct >= 80 ? '#f08c00' : '#2f9e44';
+                return (
+                  <Pressable key={b.categoryId} onPress={() => setEditingBudget(b)} className="gap-1.5">
+                    <View className="flex-row items-center justify-between gap-2">
+                      <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200" numberOfLines={1}>
+                        {b.icon ? `${b.icon} ` : ''}
+                        {b.categoryName}
+                        {b.monthOverride ? ' · 이번 달 조정' : ''}
+                      </Text>
+                      <Text className={`text-sm font-medium ${over ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
+                        {formatKrw(b.spentAmount)} / {formatKrw(b.targetAmount)}
+                      </Text>
+                    </View>
+                    <View className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                      <View
+                        className="h-full rounded-full"
+                        style={{ width: `${Math.max(pct, b.spentAmount > 0 ? 3 : 0)}%`, backgroundColor: barColor }}
+                      />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          <View className="gap-4 rounded-xl bg-white p-4 dark:bg-slate-900">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-base font-semibold text-slate-900 dark:text-white">
+                {selectedParent ? `${selectedParent.categoryName} 세부` : '대분류별 지출'}
+              </Text>
+              {selectedParent ? (
+                <Pressable onPress={() => setSelectedParentId(null)} className="px-2 py-1">
+                  <Text className="text-sm font-medium text-primary">← 전체</Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {donutSource.length === 0 ? (
+              <Text className="text-sm text-slate-400">이번 달 지출 내역이 없어요.</Text>
+            ) : (
+              <>
+                <View className="items-center">
+                  <DonutChart data={categoryLegend}>
+                    <Text className="text-xs text-slate-500 dark:text-slate-400">
+                      {selectedParent ? selectedParent.categoryName : '총지출'}
+                    </Text>
+                    <Text className="text-xl font-bold text-slate-900 dark:text-white">
+                      {formatCompactKrw(expenseTotal)}원
+                    </Text>
+                  </DonutChart>
+                </View>
+                <View className="gap-2.5">
+                  {categoryLegend.map((item) => {
+                    const canDrill =
+                      selectedParentId == null &&
+                      item.categoryId > 0 &&
+                      expenseLeaves.some((c) => c.parentId === item.categoryId);
+                    return (
+                      <Pressable
+                        key={item.key}
+                        disabled={!canDrill}
+                        onPress={() => setSelectedParentId(item.categoryId)}
+                        className="flex-row items-center gap-2.5">
+                        <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                        <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200" numberOfLines={1}>
+                          {item.label}
+                          {canDrill ? ' ›' : ''}
+                        </Text>
+                        <Text className="text-sm text-slate-400">
+                          {expenseTotal > 0 ? Math.round((item.amount / expenseTotal) * 100) : 0}%
+                        </Text>
+                        <Text className="w-24 text-right text-sm font-medium text-slate-900 dark:text-white">
+                          {formatKrw(item.amount)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
+            {incomeParents.length > 0 ? (
+              <View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">수입 카테고리</Text>
+                {incomeParents.map((item) => (
+                  <View key={item.categoryId} className="flex-row items-center gap-2.5">
+                    <View
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: item.color ?? '#1F6F5C' }}
+                    />
+                    <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200" numberOfLines={1}>
+                      {item.categoryName}
+                    </Text>
+                    <Text className="text-sm font-medium text-slate-900 dark:text-white">
+                      {formatKrw(item.amount)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+
+          <View className="gap-3 rounded-xl bg-white p-4 dark:bg-slate-900">
+            <Text className="text-base font-semibold text-slate-900 dark:text-white">
+              최근 {TREND_MONTHS}개월 수입·지출
+            </Text>
+            {rangeLoading || !range ? (
+              <ActivityIndicator />
+            ) : (
+              <GroupedBarChart
+                groups={trendGroups}
+                series={[
+                  { key: 'income', label: '수입', color: INCOME_COLOR },
+                  { key: 'expense', label: '지출', color: EXPENSE_COLOR },
+                ]}
+                formatValue={formatCompactKrw}
+              />
+            )}
+          </View>
+
+          <View className="gap-3 rounded-xl bg-white p-4 dark:bg-slate-900">
+            <Text className="text-base font-semibold text-slate-900 dark:text-white">대분류 월별 추이</Text>
+            {rangeLoading || !range ? (
+              <ActivityIndicator />
+            ) : parentTrendSeries.length === 0 ? (
+              <Text className="text-sm text-slate-400">표시할 대분류 지출이 없어요.</Text>
+            ) : (
+              <GroupedBarChart
+                groups={parentTrendGroups}
+                series={parentTrendSeries}
+                formatValue={formatCompactKrw}
+              />
+            )}
+          </View>
+
+          <View className="gap-3 rounded-xl bg-white p-4 dark:bg-slate-900">
+            <Text className="text-base font-semibold text-slate-900 dark:text-white">카드별</Text>
+            {cardData.length === 0 ? (
+              <Text className="text-sm text-slate-400">카드 사용 내역이 없어요.</Text>
+            ) : (
+              <BarChart data={cardData} formatValue={formatKrw} />
+            )}
+          </View>
+
+          <View className="gap-3">
+            <Text className="text-base font-semibold text-slate-900 dark:text-white">멤버별</Text>
+            {summary.byMember.length === 0 ? (
+              <Text className="text-sm text-slate-400">내역이 없어요.</Text>
+            ) : (
+              summary.byMember.map((item) => (
+                <View key={item.userId} className="gap-3 rounded-xl bg-white p-4 dark:bg-slate-900">
+                  <Text className="font-medium text-slate-900 dark:text-white">{item.userName}</Text>
+                  <BarChart
+                    maxValue={memberMax}
+                    formatValue={formatKrw}
+                    data={[
+                      { key: 'income', label: '수입', value: item.income, color: INCOME_COLOR },
+                      { key: 'expense', label: '지출', value: item.expense, color: EXPENSE_COLOR },
+                    ]}
+                  />
+                </View>
+              ))
+            )}
+          </View>
+        </>
+      )}
+
+      <BudgetTargetModal
+        visible={editingBudget !== null}
+        onClose={() => setEditingBudget(null)}
+        budget={editingBudget}
+        year={year}
+        month={month}
+      />
+    </Screen>
+  );
+}

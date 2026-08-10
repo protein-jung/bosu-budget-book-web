@@ -19,7 +19,12 @@ export default function LoginScreen() {
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: async (data) => {
-      await setSession(data.accessToken, { id: data.userId, email: data.email, name: data.name });
+      await setSession(data.accessToken, {
+        id: data.userId,
+        email: data.email,
+        name: data.name,
+        birthDate: data.birthDate,
+      });
       router.replace('/calendar');
     },
     onError: (err) => setError(getErrorMessage(err, '로그인에 실패했습니다.')),
@@ -37,7 +42,7 @@ export default function LoginScreen() {
   return (
     <Screen>
       <View className="mt-16 gap-1">
-        <Text className="text-3xl font-bold text-slate-900 dark:text-white">보수가계부</Text>
+        <Text className="text-3xl font-bold text-primary dark:text-secondary">보수가계부</Text>
         <Text className="text-base text-slate-500 dark:text-slate-400">보수부부의 월급날 정산 프로그램</Text>
       </View>
 
@@ -63,7 +68,7 @@ export default function LoginScreen() {
 
       <View className="flex-row justify-center gap-1">
         <Text className="text-slate-500 dark:text-slate-400">계정이 없으신가요?</Text>
-        <Link href="/signup" className="font-semibold text-blue-600 dark:text-blue-400">
+        <Link href="/signup" className="font-semibold text-primary dark:text-secondary">
           회원가입
         </Link>
       </View>

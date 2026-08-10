@@ -44,12 +44,12 @@ export function CalendarGrid({ year, month, summaries, selectedDateKey, onSelect
                 key={dayIndex}
                 onPress={() => onSelectDate(dateKey)}
                 className={`aspect-square flex-1 items-center gap-0.5 rounded-lg p-1 pt-1.5 ${
-                  isSelected ? 'bg-blue-100 dark:bg-blue-900' : isToday ? 'bg-blue-50 dark:bg-blue-950/50' : ''
+                  isSelected ? 'bg-primary-light dark:bg-primary-dark' : isToday ? 'bg-primary-light/50 dark:bg-primary-dark/40' : ''
                 }`}>
                 <Text
                   className={`text-sm ${
                     isToday
-                      ? 'font-bold text-blue-600 dark:text-blue-400'
+                      ? 'font-bold text-primary dark:text-secondary'
                       : 'text-slate-700 dark:text-slate-200'
                   }`}>
                   {date.getDate()}

@@ -16,3 +16,9 @@ export function formatCompactKrw(amount: number): string {
   }
   return KRW_FORMATTER.format(amount);
 }
+
+/** 숫자만 있는 입력값(예: "45000")을 입력창에 보여줄 콤마 형식("45,000")으로 바꾼다. */
+export function formatAmountInput(digits: string): string {
+  if (!digits) return '';
+  return KRW_FORMATTER.format(Number(digits));
+}

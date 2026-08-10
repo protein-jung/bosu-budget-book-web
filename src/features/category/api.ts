@@ -3,7 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
 import type { Category, TransactionType } from '@/lib/types';
 
-export type CategoryInput = { name: string; type: TransactionType; color: string };
+export type CategoryInput = {
+  name: string;
+  type: TransactionType;
+  color: string;
+  icon?: string | null;
+  parentId?: number | null;
+  targetAmount?: number | null;
+};
 
 const categoryApi = {
   getAll: () => apiClient.get<Category[]>('/api/categories').then((res) => res.data),
@@ -11,6 +18,11 @@ const categoryApi = {
   update: (id: number, data: CategoryInput) =>
     apiClient.put<Category>(`/api/categories/${id}`, data).then((res) => res.data),
   remove: (id: number) => apiClient.delete(`/api/categories/${id}`),
+  reorder: (categoryIds: number[]) => apiClient.put('/api/categories/reorder', { categoryIds }),
+  setMonthlyTarget: (id: number, year: number, month: number, amount: number) =>
+    apiClient.put(`/api/categories/${id}/monthly-target/${year}/${month}`, { amount }),
+  clearMonthlyTarget: (id: number, year: number, month: number) =>
+    apiClient.delete(`/api/categories/${id}/monthly-target/${year}/${month}`),
 };
 
 export const CATEGORY_QUERY_KEY = ['categories'];
@@ -40,5 +52,45 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: (id: number) => categoryApi.remove(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEY }),
+  });
+}
+
+export function useSetMonthlyTarget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, year, month, amount }: { id: number; year: number; month: number; amount: number }) =>
+      categoryApi.setMonthlyTarget(id, year, month, amount),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['statistics'] }),
+  });
+}
+
+export function useClearMonthlyTarget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, year, month }: { id: number; year: number; month: number }) =>
+      categoryApi.clearMonthlyTarget(id, year, month),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['statistics'] }),
+  });
+}
+
+export function useReorderCategories() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (categoryIds: number[]) => categoryApi.reorder(categoryIds),
+    onMutate: async (categoryIds) => {
+      await queryClient.cancelQueries({ queryKey: CATEGORY_QUERY_KEY });
+      const previous = queryClient.getQueryData<Category[]>(CATEGORY_QUERY_KEY);
+      const orderById = new Map(categoryIds.map((id, index) => [id, index]));
+      queryClient.setQueryData<Category[]>(CATEGORY_QUERY_KEY, (old) =>
+        (old ?? []).map((c) => (orderById.has(c.id) ? { ...c, sortOrder: orderById.get(c.id)! } : c)),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(CATEGORY_QUERY_KEY, context.previous);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEY }),
   });
 }

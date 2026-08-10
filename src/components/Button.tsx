@@ -9,7 +9,7 @@ type ButtonProps = {
 };
 
 const VARIANT_CLASSES: Record<NonNullable<ButtonProps['variant']>, string> = {
-  primary: 'bg-blue-600 active:bg-blue-700',
+  primary: 'bg-primary active:bg-primary-dark',
   secondary: 'bg-slate-200 active:bg-slate-300 dark:bg-slate-700 dark:active:bg-slate-600',
   danger: 'bg-red-600 active:bg-red-700',
 };

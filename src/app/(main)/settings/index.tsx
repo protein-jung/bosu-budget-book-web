@@ -5,10 +5,16 @@ import { Screen } from '@/components/Screen';
 import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/store/authStore';
 
-const MENU: { href: '/settings/categories' | '/settings/cards' | '/settings/household'; label: string; description: string }[] = [
+const MENU: {
+  href: '/settings/profile' | '/settings/categories' | '/settings/cards' | '/settings/household' | '/settings/import';
+  label: string;
+  description: string;
+}[] = [
+  { href: '/settings/profile', label: '마이페이지', description: '생년월일 등 내 정보를 수정해요' },
   { href: '/settings/categories', label: '카테고리 관리', description: '수입/지출 카테고리를 추가하고 관리해요' },
   { href: '/settings/cards', label: '카드 관리', description: '사용하는 카드/계좌를 등록해요' },
   { href: '/settings/household', label: '가계부 정보', description: '초대 코드와 구성원을 확인해요' },
+  { href: '/settings/import', label: '명세서 가져오기', description: '카드사 엑셀 명세서로 거래를 한 번에 등록해요' },
 ];
 
 export default function SettingsScreen() {
@@ -23,10 +29,11 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <View className="gap-1">
-        <Text className="text-2xl font-bold text-slate-900 dark:text-white">설정</Text>
-        {user ? <Text className="text-slate-500 dark:text-slate-400">{user.name} ({user.email})</Text> : null}
-      </View>
+      {user ? (
+        <Text className="text-slate-500 dark:text-slate-400">
+          {user.name} ({user.email})
+        </Text>
+      ) : null}
 
       <View className="gap-3">
         {MENU.map((item) => (

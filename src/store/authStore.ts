@@ -6,6 +6,7 @@ export type AuthUser = {
   id: number;
   email: string;
   name: string;
+  birthDate: string | null;
 };
 
 type AuthState = {
@@ -14,6 +15,7 @@ type AuthState = {
   hydrated: boolean;
   hydrate: () => Promise<void>;
   setSession: (accessToken: string, user: AuthUser) => Promise<void>;
+  updateUser: (user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -35,6 +37,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSession: async (accessToken, user) => {
     await Promise.all([storage.setItem(TOKEN_KEY, accessToken), storage.setItem(USER_KEY, JSON.stringify(user))]);
     set({ accessToken, user });
+  },
+  updateUser: async (user) => {
+    await storage.setItem(USER_KEY, JSON.stringify(user));
+    set({ user });
   },
   logout: async () => {
     await Promise.all([storage.removeItem(TOKEN_KEY), storage.removeItem(USER_KEY)]);

@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Modal, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { TextField } from '@/components/TextField';
 import { useCards } from '@/features/card/api';
 import { useCategories } from '@/features/category/api';
+import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { getErrorMessage } from '@/lib/apiClient';
-import type { Transaction, TransactionType } from '@/lib/types';
+import { formatAmountInput } from '@/lib/format';
+import type { Category, Transaction, TransactionType } from '@/lib/types';
 
 import { useCreateTransaction, useDeleteTransaction, useUpdateTransaction } from './api';
 
@@ -16,9 +18,16 @@ type TransactionFormModalProps = {
   onClose: () => void;
   dateKey: string;
   transaction?: Transaction | null;
+  initialType?: TransactionType;
 };
 
-export function TransactionFormModal({ visible, onClose, dateKey, transaction }: TransactionFormModalProps) {
+export function TransactionFormModal({
+  visible,
+  onClose,
+  dateKey,
+  transaction,
+  initialType,
+}: TransactionFormModalProps) {
   const isEdit = !!transaction;
   const { data: categories = [] } = useCategories();
   const { data: cards = [] } = useCards();
@@ -29,6 +38,7 @@ export function TransactionFormModal({ visible, onClose, dateKey, transaction }:
   const [cardId, setCardId] = useState<number | null>(null);
   const [memo, setMemo] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [addingCategory, setAddingCategory] = useState(false);
 
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
@@ -44,15 +54,25 @@ export function TransactionFormModal({ visible, onClose, dateKey, transaction }:
       setCardId(transaction.cardId);
       setMemo(transaction.memo ?? '');
     } else {
-      setType('EXPENSE');
+      setType(initialType ?? 'EXPENSE');
       setAmount('');
       setCategoryId(null);
       setCardId(null);
       setMemo('');
     }
-  }, [visible, transaction]);
+  }, [visible, transaction, initialType]);
 
-  const filteredCategories = categories.filter((category) => category.type === type);
+  const filteredCategories = useMemo(
+    () => selectableCategories(categories, type, categoryId),
+    [categories, type, categoryId],
+  );
+  const parentNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const c of categories) {
+      if (c.parentId == null) map.set(c.id, c.name);
+    }
+    return map;
+  }, [categories]);
   const isPending = createTransaction.isPending || updateTransaction.isPending || deleteTransaction.isPending;
 
   const handleSubmit = () => {
@@ -98,8 +118,10 @@ export function TransactionFormModal({ visible, onClose, dateKey, transaction }:
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
-        <View className="max-h-[85%] rounded-t-3xl bg-white p-5 dark:bg-slate-900">
+      <Pressable onPress={onClose} className="flex-1 justify-end bg-black/40">
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          className="max-h-[85%] rounded-t-3xl bg-white p-5 dark:bg-slate-900">
           <ScrollView contentContainerClassName="gap-4" showsVerticalScrollIndicator={false}>
             <Text className="text-xl font-bold text-slate-900 dark:text-white">
               {dateKey} {isEdit ? '내역 수정' : '내역 추가'}
@@ -112,7 +134,7 @@ export function TransactionFormModal({ visible, onClose, dateKey, transaction }:
 
             <TextField
               label="금액"
-              value={amount}
+              value={formatAmountInput(amount)}
               onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
               keyboardType="numeric"
               placeholder="0"
@@ -121,19 +143,25 @@ export function TransactionFormModal({ visible, onClose, dateKey, transaction }:
             <View className="gap-2">
               <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">카테고리</Text>
               <View className="flex-row flex-wrap gap-2">
-                {filteredCategories.length === 0 ? (
-                  <Text className="text-sm text-slate-400">설정에서 카테고리를 먼저 추가해주세요.</Text>
-                ) : (
-                  filteredCategories.map((category) => (
+                {filteredCategories.map((category) => {
+                  const parentName = category.parentId != null ? parentNameById.get(category.parentId) : null;
+                  const label = parentName ? `${parentName} · ${category.name}` : category.name;
+                  return (
                     <Chip
                       key={category.id}
-                      label={category.name}
+                      label={label}
                       color={category.color}
+                      icon={category.icon}
                       selected={categoryId === category.id}
                       onPress={() => setCategoryId(category.id)}
                     />
-                  ))
-                )}
+                  );
+                })}
+                <Pressable
+                  onPress={() => setAddingCategory(true)}
+                  className="flex-row items-center gap-1.5 rounded-full border border-dashed border-primary px-3.5 py-2">
+                  <Text className="text-sm font-medium text-primary">+ 카테고리 추가</Text>
+                </Pressable>
               </View>
             </View>
 
@@ -159,8 +187,29 @@ export function TransactionFormModal({ visible, onClose, dateKey, transaction }:
               <Button title="취소" variant="secondary" onPress={onClose} disabled={isPending} />
             </View>
           </ScrollView>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
+
+      <CategoryFormModal
+        visible={addingCategory}
+        onClose={() => setAddingCategory(false)}
+        category={null}
+        initialType={type}
+        onCreated={(created) => setCategoryId(created.id)}
+      />
     </Modal>
   );
+}
+
+/** 하위가 있는 대분류는 숨기고 소분류만 선택. 이미 선택된 대분류는 편집 호환을 위해 유지. */
+function selectableCategories(
+  categories: Category[],
+  type: TransactionType,
+  selectedId: number | null,
+): Category[] {
+  const ofType = categories.filter((c) => c.type === type);
+  const parentIdsWithChildren = new Set(
+    ofType.filter((c) => c.parentId != null).map((c) => c.parentId as number),
+  );
+  return ofType.filter((c) => !parentIdsWithChildren.has(c.id) || c.id === selectedId);
 }
