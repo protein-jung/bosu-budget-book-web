@@ -1,6 +1,7 @@
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { formatKrw } from '@/lib/format';
+import type { TransactionType } from '@/lib/types';
 
 import { useMonthlyStatistics } from './api';
 
@@ -12,7 +13,31 @@ function Bar({ amount, max, color }: { amount: number; max: number; color: strin
   );
 }
 
-export function MonthSummaryPanel({ year, month }: { year: number; month: number }) {
+export type ParentCategoryFilter = { id: number; name: string; icon: string | null };
+
+export function MonthSummaryPanel({
+  year,
+  month,
+  selectedType,
+  onSelectType,
+  selectedParentCategoryId,
+  onSelectParentCategory,
+  selectedMemberUserId,
+  onSelectMember,
+  selectedCardId,
+  onSelectCard,
+}: {
+  year: number;
+  month: number;
+  selectedType?: TransactionType | null;
+  onSelectType?: (type: TransactionType) => void;
+  selectedParentCategoryId?: number | null;
+  onSelectParentCategory?: (group: ParentCategoryFilter) => void;
+  selectedMemberUserId?: number | null;
+  onSelectMember?: (userId: number) => void;
+  selectedCardId?: number | null;
+  onSelectCard?: (cardId: number) => void;
+}) {
   const { data: summary, isLoading } = useMonthlyStatistics(year, month);
 
   if (isLoading || !summary) {
@@ -32,14 +57,22 @@ export function MonthSummaryPanel({ year, month }: { year: number; month: number
       <View className="gap-2">
         <Text className="text-sm font-semibold text-slate-500">전체</Text>
         <View className="flex-row gap-2">
-          <View className="flex-1 gap-0.5 rounded-xl bg-cream p-3">
+          <Pressable
+            onPress={() => onSelectType?.('INCOME')}
+            className={`flex-1 gap-0.5 rounded-xl p-3 ${
+              selectedType === 'INCOME' ? 'bg-emerald-100' : 'bg-cream'
+            }`}>
             <Text className="text-xs text-slate-500">수입</Text>
             <Text className="text-base font-bold text-emerald-600">{formatKrw(summary.totalIncome)}</Text>
-          </View>
-          <View className="flex-1 gap-0.5 rounded-xl bg-cream p-3">
+          </Pressable>
+          <Pressable
+            onPress={() => onSelectType?.('EXPENSE')}
+            className={`flex-1 gap-0.5 rounded-xl p-3 ${
+              selectedType === 'EXPENSE' ? 'bg-red-100' : 'bg-cream'
+            }`}>
             <Text className="text-xs text-slate-500">지출</Text>
             <Text className="text-base font-bold text-red-500">{formatKrw(summary.totalExpense)}</Text>
-          </View>
+          </Pressable>
         </View>
       </View>
 
@@ -49,7 +82,14 @@ export function MonthSummaryPanel({ year, month }: { year: number; month: number
           <Text className="text-xs text-slate-400">내역이 없어요.</Text>
         ) : (
           parentExpenses.slice(0, 6).map((item) => (
-            <View key={item.categoryId} className="gap-1">
+            <Pressable
+              key={item.categoryId}
+              onPress={() =>
+                onSelectParentCategory?.({ id: item.categoryId, name: item.categoryName, icon: item.icon })
+              }
+              className={`gap-1 rounded-lg p-1.5 ${
+                selectedParentCategoryId === item.categoryId ? 'bg-primary-light' : ''
+              }`}>
               <View className="flex-row justify-between">
                 <Text className="text-xs text-slate-700" numberOfLines={1}>
                   {item.icon ? `${item.icon} ` : ''}
@@ -58,7 +98,7 @@ export function MonthSummaryPanel({ year, month }: { year: number; month: number
                 <Text className="text-xs font-medium text-slate-900">{formatKrw(item.amount)}</Text>
               </View>
               <Bar amount={item.amount} max={maxCategory} color={item.color ?? '#1F6F5C'} />
-            </View>
+            </Pressable>
           ))
         )}
       </View>
@@ -69,13 +109,18 @@ export function MonthSummaryPanel({ year, month }: { year: number; month: number
           <Text className="text-xs text-slate-400">내역이 없어요.</Text>
         ) : (
           summary.byMember.map((item) => (
-            <View key={item.userId} className="flex-row items-center justify-between rounded-xl bg-cream px-3 py-2">
+            <Pressable
+              key={item.userId}
+              onPress={() => onSelectMember?.(item.userId)}
+              className={`flex-row items-center justify-between rounded-xl px-3 py-2 ${
+                selectedMemberUserId === item.userId ? 'bg-primary-light' : 'bg-cream'
+              }`}>
               <Text className="text-xs font-medium text-slate-900">{item.userName}</Text>
               <View className="items-end">
                 <Text className="text-xs text-emerald-600">+{formatKrw(item.income)}</Text>
                 <Text className="text-xs text-red-500">-{formatKrw(item.expense)}</Text>
               </View>
-            </View>
+            </Pressable>
           ))
         )}
       </View>
@@ -86,7 +131,10 @@ export function MonthSummaryPanel({ year, month }: { year: number; month: number
           <Text className="text-xs text-slate-400">내역이 없어요.</Text>
         ) : (
           summary.byCard.slice(0, 6).map((item) => (
-            <View key={item.cardId} className="gap-1">
+            <Pressable
+              key={item.cardId}
+              onPress={() => onSelectCard?.(item.cardId)}
+              className={`gap-1 rounded-lg p-1.5 ${selectedCardId === item.cardId ? 'bg-primary-light' : ''}`}>
               <View className="flex-row justify-between">
                 <Text className="text-xs text-slate-700" numberOfLines={1}>
                   {item.cardName}
@@ -94,7 +142,7 @@ export function MonthSummaryPanel({ year, month }: { year: number; month: number
                 <Text className="text-xs font-medium text-slate-900">{formatKrw(item.amount)}</Text>
               </View>
               <Bar amount={item.amount} max={maxCard} color="#E07A5F" />
-            </View>
+            </Pressable>
           ))
         )}
       </View>

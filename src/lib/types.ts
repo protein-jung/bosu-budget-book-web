@@ -146,6 +146,9 @@ export type Asset = {
   address: string | null;
   dong: string | null;
   ho: string | null;
+  lawdCd: string | null;
+  complexName: string | null;
+  regionDongName: string | null;
 };
 
 export type AssetTypeBreakdown = { type: AssetType; amount: number };

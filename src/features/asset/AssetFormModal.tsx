@@ -8,6 +8,7 @@ import { TextField } from '@/components/TextField';
 import { AddressAutocomplete } from '@/features/realEstate/AddressAutocomplete';
 import { RealEstateTradeLookup } from '@/features/realEstate/RealEstateTradeLookup';
 import { getErrorMessage } from '@/lib/apiClient';
+import { formatDecimalAmountInput } from '@/lib/format';
 import { ASSET_TYPE_META } from '@/lib/palette';
 import type { Asset, AssetType } from '@/lib/types';
 import { VEHICLE_BRANDS } from '@/lib/vehicleBrands';
@@ -26,6 +27,10 @@ function splitVehicleName(fullName: string): { brand: string; model: string } {
   const brand = VEHICLE_BRANDS.find((b) => fullName.startsWith(`${b} `));
   return brand ? { brand, model: fullName.slice(brand.length + 1) } : { brand: '', model: fullName };
 }
+
+type StockRow = { symbol: string; name: string; quantity: string; averagePrice: string };
+
+const EMPTY_STOCK_ROW: StockRow = { symbol: '', name: '', quantity: '', averagePrice: '' };
 
 export function AssetFormModal({
   visible,
@@ -57,6 +62,7 @@ export function AssetFormModal({
   const [complexName, setComplexName] = useState<string | null>(null);
   const [dealDate, setDealDate] = useState<string | null>(null);
   const [showDayPicker, setShowDayPicker] = useState(false);
+  const [stockRows, setStockRows] = useState<StockRow[]>([EMPTY_STOCK_ROW]);
   const [error, setError] = useState<string | null>(null);
 
   const createAsset = useCreateAsset();
@@ -79,6 +85,9 @@ export function AssetFormModal({
       setAddress(asset.address ?? '');
       setDong(asset.dong ?? '');
       setHo(asset.ho ?? '');
+      setLawdCd(asset.lawdCd);
+      setDongName(asset.regionDongName);
+      setComplexName(asset.complexName);
       if (asset.type === 'VEHICLE') {
         const { brand, model } = splitVehicleName(asset.name);
         setVehicleBrand(brand);
@@ -104,19 +113,66 @@ export function AssetFormModal({
       setVehicleBrand('');
       setVehicleModel('');
       setCustomModel(false);
+      setLawdCd(null);
+      setDongName(null);
+      setComplexName(null);
     }
     setCustomBrand(false);
-    setLawdCd(null);
-    setDongName(null);
-    setComplexName(null);
     setDealDate(null);
     setShowDayPicker(false);
+    setStockRows([EMPTY_STOCK_ROW]);
   }, [visible, asset]);
 
-  const livePriced = isLivePriced(type);
+  const updateStockRow = (index: number, patch: Partial<StockRow>) => {
+    setStockRows((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
+  const addStockRow = () => setStockRows((rows) => [...rows, EMPTY_STOCK_ROW]);
+  const removeStockRow = (index: number) => setStockRows((rows) => rows.filter((_, i) => i !== index));
 
-  const handleSubmit = () => {
+  const livePriced = isLivePriced(type);
+  const bulkStockEntry = !isEdit && livePriced;
+
+  const handleSubmit = async () => {
     setError(null);
+
+    if (bulkStockEntry) {
+      const validRows = stockRows.filter((row) => row.symbol.trim());
+      if (validRows.length === 0) {
+        setError('최소 1개 종목을 입력해주세요.');
+        return;
+      }
+      for (const row of validRows) {
+        const quantityNumber = Number(row.quantity);
+        if (!row.quantity || Number.isNaN(quantityNumber) || quantityNumber <= 0) {
+          setError(`${row.symbol.trim()} 종목의 보유 수량을 올바르게 입력해주세요.`);
+          return;
+        }
+      }
+      const payloads = validRows.map((row) => ({
+        type,
+        name: (type === 'STOCK' ? row.name || row.symbol : row.symbol).trim(),
+        custodian: custodian.trim() || null,
+        symbol: row.symbol.trim().toUpperCase(),
+        quantity: Number(row.quantity),
+        averagePrice: row.averagePrice.trim() ? Number(row.averagePrice) : null,
+        manualValue: null,
+        memo: memo.trim() || null,
+        address: null,
+        dong: null,
+        ho: null,
+        lawdCd: null,
+        complexName: null,
+        regionDongName: null,
+      }));
+      try {
+        await Promise.all(payloads.map((payload) => createAsset.mutateAsync(payload)));
+        onClose();
+      } catch (err) {
+        setError(getErrorMessage(err, '추가에 실패했습니다.'));
+      }
+      return;
+    }
+
     let finalName = name.trim();
     if (type === 'VEHICLE') {
       if (!vehicleBrand.trim()) {
@@ -162,6 +218,9 @@ export function AssetFormModal({
       address: address.trim() || null,
       dong: dong.trim() || null,
       ho: ho.trim() || null,
+      lawdCd: type === 'REAL_ESTATE' ? lawdCd : null,
+      complexName: type === 'REAL_ESTATE' ? complexName : null,
+      regionDongName: type === 'REAL_ESTATE' ? dongName : null,
     };
 
     if (isEdit && asset) {
@@ -187,8 +246,10 @@ export function AssetFormModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
-        <View className="max-h-[85%] gap-4 rounded-t-3xl bg-white p-5 dark:bg-slate-900">
+      <Pressable onPress={onClose} className="flex-1 justify-end bg-black/40">
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          className="max-h-[85%] gap-4 rounded-t-3xl bg-white p-5 dark:bg-slate-900">
           <Text className="text-xl font-bold text-slate-900 dark:text-white">
             {isEdit ? '자산 수정' : '자산 추가'}
           </Text>
@@ -286,7 +347,7 @@ export function AssetFormModal({
                     />
                   )}
                 </View>
-              ) : (
+              ) : bulkStockEntry ? null : (
                 <TextField
                   label="이름"
                   value={name}
@@ -320,6 +381,15 @@ export function AssetFormModal({
                       setComplexName(candidate.buildingName);
                     }}
                   />
+                  {lawdCd && complexName ? (
+                    <Text className="text-xs text-slate-400">
+                      &quot;{complexName}&quot; 단지의 국토부 실거래가로 시세를 자동 갱신해요.
+                    </Text>
+                  ) : lawdCd ? (
+                    <Text className="text-xs text-slate-400">
+                      단지명이 없는 주소는 실거래가를 자동으로 조회할 수 없어요. 평가금액을 직접 입력해주세요.
+                    </Text>
+                  ) : null}
                   <View className="flex-row gap-2">
                     <View className="flex-1">
                       <TextField
@@ -378,7 +448,73 @@ export function AssetFormModal({
                 </>
               ) : null}
 
-              {livePriced ? (
+              {bulkStockEntry ? (
+                <View className="gap-2">
+                  <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {custodian.trim() ? `${custodian.trim()}에 보유한 종목` : '보유 종목'}
+                  </Text>
+                  {stockRows.map((row, index) => (
+                    <View key={index} className="gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                      {type === 'STOCK' ? (
+                        <StockSymbolAutocomplete
+                          value={row.symbol}
+                          onChangeText={(text) => updateStockRow(index, { symbol: text })}
+                          onSelect={(candidate) =>
+                            updateStockRow(index, { symbol: candidate.symbol, name: candidate.name })
+                          }
+                        />
+                      ) : (
+                        <TextField
+                          label="심볼(티커)"
+                          value={row.symbol}
+                          onChangeText={(text) => updateStockRow(index, { symbol: text.toUpperCase() })}
+                          autoCapitalize="characters"
+                          placeholder="BTC, ETH..."
+                        />
+                      )}
+                      <View className="flex-row gap-2">
+                        <View className="flex-1">
+                          <TextField
+                            label="보유 수량"
+                            value={row.quantity}
+                            onChangeText={(text) => updateStockRow(index, { quantity: text })}
+                            keyboardType="decimal-pad"
+                            placeholder="0"
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <TextField
+                            label="평단가 (선택)"
+                            value={formatDecimalAmountInput(row.averagePrice)}
+                            onChangeText={(text) => {
+                              const cleaned = text.replace(/[^0-9.]/g, '');
+                              const [intPart, ...rest] = cleaned.split('.');
+                              updateStockRow(index, {
+                                averagePrice: rest.length > 0 ? `${intPart}.${rest.join('')}` : intPart,
+                              });
+                            }}
+                            keyboardType="decimal-pad"
+                            placeholder="매수 평균 단가"
+                          />
+                        </View>
+                      </View>
+                      {stockRows.length > 1 ? (
+                        <Pressable onPress={() => removeStockRow(index)} className="self-end">
+                          <Text className="text-xs font-medium text-red-500">삭제</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  ))}
+                  <Pressable
+                    onPress={addStockRow}
+                    className="items-center rounded-xl border border-dashed border-primary py-2.5">
+                    <Text className="text-sm font-medium text-primary">+ 종목 추가</Text>
+                  </Pressable>
+                  <Text className="text-xs text-slate-400">
+                    현재가는 저장 후 "새로고침"을 누르면 실시간으로 조회돼요.
+                  </Text>
+                </View>
+              ) : livePriced ? (
                 <>
                   {type === 'STOCK' ? (
                     <StockSymbolAutocomplete
@@ -407,8 +543,12 @@ export function AssetFormModal({
                   />
                   <TextField
                     label="평단가 (선택)"
-                    value={averagePrice}
-                    onChangeText={setAveragePrice}
+                    value={formatDecimalAmountInput(averagePrice)}
+                    onChangeText={(text) => {
+                      const cleaned = text.replace(/[^0-9.]/g, '');
+                      const [intPart, ...rest] = cleaned.split('.');
+                      setAveragePrice(rest.length > 0 ? `${intPart}.${rest.join('')}` : intPart);
+                    }}
                     keyboardType="decimal-pad"
                     placeholder="매수 평균 단가"
                   />
@@ -437,8 +577,8 @@ export function AssetFormModal({
             {isEdit ? <Button title="삭제하기" variant="danger" onPress={handleDelete} loading={isPending} /> : null}
             <Button title="취소" variant="secondary" onPress={onClose} disabled={isPending} />
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

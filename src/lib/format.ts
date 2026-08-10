@@ -22,3 +22,11 @@ export function formatAmountInput(digits: string): string {
   if (!digits) return '';
   return KRW_FORMATTER.format(Number(digits));
 }
+
+/** 소수점을 허용하는 입력값(예: "45000.5")의 정수부에만 콤마를 붙인다("45,000.5"). */
+export function formatDecimalAmountInput(text: string): string {
+  if (!text) return '';
+  const [intPart, decPart] = text.split('.');
+  const formattedInt = intPart ? KRW_FORMATTER.format(Number(intPart)) : '0';
+  return decPart !== undefined ? `${formattedInt}.${decPart}` : formattedInt;
+}

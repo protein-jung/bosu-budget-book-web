@@ -7,7 +7,7 @@ import { Screen } from '@/components/Screen';
 import { useCategories } from '@/features/category/api';
 import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { useMonthlyTransactions, useUpdateTransaction } from '@/features/transaction/api';
-import { MonthSummaryPanel } from '@/features/statistics/MonthSummaryPanel';
+import { MonthSummaryPanel, type ParentCategoryFilter } from '@/features/statistics/MonthSummaryPanel';
 import { TransactionFormModal } from '@/features/transaction/TransactionFormModal';
 import { addMonths, formatMonthLabel, toDateKey } from '@/lib/calendar';
 import { formatSignedKrw } from '@/lib/format';
@@ -22,6 +22,10 @@ export default function CalendarScreen() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [selectedDateKey, setSelectedDateKey] = useState(toDateKey(today));
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedType, setSelectedType] = useState<TransactionType | null>(null);
+  const [selectedParentCategory, setSelectedParentCategory] = useState<ParentCategoryFilter | null>(null);
+  const [selectedMemberUserId, setSelectedMemberUserId] = useState<number | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [createType, setCreateType] = useState<TransactionType>('EXPENSE');
@@ -71,7 +75,104 @@ export default function CalendarScreen() {
             .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate)),
     [transactions, selectedCategoryId],
   );
-  const listTransactions = selectedCategoryId === null ? dayTransactions : categoryTransactions;
+  const typeTransactions = useMemo(
+    () =>
+      selectedType === null
+        ? []
+        : transactions
+            .filter((t) => t.type === selectedType)
+            .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate)),
+    [transactions, selectedType],
+  );
+  const parentCategoryTransactions = useMemo(() => {
+    if (selectedParentCategory === null) return [];
+    const groupId = selectedParentCategory.id;
+    const memberCategoryIds = new Set(
+      allCategories.filter((c) => c.id === groupId || c.parentId === groupId).map((c) => c.id),
+    );
+    return transactions
+      .filter((t) => memberCategoryIds.has(t.categoryId))
+      .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
+  }, [transactions, selectedParentCategory, allCategories]);
+  const memberTransactions = useMemo(
+    () =>
+      selectedMemberUserId === null
+        ? []
+        : transactions
+            .filter((t) => t.userId === selectedMemberUserId)
+            .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate)),
+    [transactions, selectedMemberUserId],
+  );
+  const cardTransactions = useMemo(
+    () =>
+      selectedCardId === null
+        ? []
+        : transactions
+            .filter((t) => t.cardId === selectedCardId)
+            .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate)),
+    [transactions, selectedCardId],
+  );
+  const listTransactions =
+    selectedMemberUserId !== null
+      ? memberTransactions
+      : selectedCardId !== null
+        ? cardTransactions
+        : selectedParentCategory !== null
+          ? parentCategoryTransactions
+          : selectedType !== null
+            ? typeTransactions
+            : selectedCategoryId === null
+              ? dayTransactions
+              : categoryTransactions;
+
+  const selectDate = (dateKey: string) => {
+    setSelectedDateKey(dateKey);
+    setSelectedCategoryId(null);
+    setSelectedType(null);
+    setSelectedParentCategory(null);
+    setSelectedMemberUserId(null);
+    setSelectedCardId(null);
+  };
+
+  const selectCategory = (categoryId: number | null) => {
+    setSelectedCategoryId(categoryId);
+    setSelectedType(null);
+    setSelectedParentCategory(null);
+    setSelectedMemberUserId(null);
+    setSelectedCardId(null);
+  };
+
+  const selectType = (type: TransactionType) => {
+    setSelectedCategoryId(null);
+    setSelectedParentCategory(null);
+    setSelectedMemberUserId(null);
+    setSelectedCardId(null);
+    setSelectedType((current) => (current === type ? null : type));
+  };
+
+  const selectParentCategory = (group: ParentCategoryFilter) => {
+    setSelectedCategoryId(null);
+    setSelectedType(null);
+    setSelectedMemberUserId(null);
+    setSelectedCardId(null);
+    setSelectedParentCategory((current) => (current?.id === group.id ? null : group));
+  };
+
+  const selectMember = (userId: number) => {
+    setSelectedCategoryId(null);
+    setSelectedType(null);
+    setSelectedParentCategory(null);
+    setSelectedCardId(null);
+    setSelectedMemberUserId((current) => (current === userId ? null : userId));
+  };
+
+  const selectCard = (cardId: number) => {
+    setSelectedCategoryId(null);
+    setSelectedType(null);
+    setSelectedParentCategory(null);
+    setSelectedMemberUserId(null);
+    setSelectedCardId((current) => (current === cardId ? null : cardId));
+  };
 
   const changeMonth = (delta: number) => {
     const next = addMonths(year, month, delta);
@@ -124,16 +225,13 @@ export default function CalendarScreen() {
           month={month}
           summaries={summaries}
           selectedDateKey={selectedDateKey}
-          onSelectDate={(dateKey) => {
-            setSelectedDateKey(dateKey);
-            setSelectedCategoryId(null);
-          }}
+          onSelectDate={selectDate}
         />
       )}
 
       {monthCategories.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 pr-1">
-          <Chip label="전체" selected={selectedCategoryId === null} onPress={() => setSelectedCategoryId(null)} />
+          <Chip label="전체" selected={selectedCategoryId === null && selectedType === null} onPress={() => selectCategory(null)} />
           {monthCategories.map((category) => (
             <Chip
               key={category.id}
@@ -141,7 +239,7 @@ export default function CalendarScreen() {
               color={category.color}
               icon={category.icon}
               selected={selectedCategoryId === category.id}
-              onPress={() => setSelectedCategoryId(category.id)}
+              onPress={() => selectCategory(category.id)}
             />
           ))}
         </ScrollView>
@@ -149,9 +247,17 @@ export default function CalendarScreen() {
 
       <View className="flex-row items-center justify-between gap-2 border-t border-slate-200 pt-4">
         <Text className="flex-1 text-base font-semibold text-slate-900" numberOfLines={1}>
-          {selectedCategory
-            ? `${selectedCategory.icon ? `${selectedCategory.icon} ` : ''}${selectedCategory.name} · ${listTransactions.length}건`
-            : selectedDateKey}
+          {selectedMemberUserId !== null
+            ? `${memberTransactions[0]?.userName ?? ''} · ${listTransactions.length}건`
+            : selectedCardId !== null
+              ? `${cardTransactions[0]?.cardName ?? ''} · ${listTransactions.length}건`
+              : selectedParentCategory
+                ? `${selectedParentCategory.icon ? `${selectedParentCategory.icon} ` : ''}${selectedParentCategory.name} · ${listTransactions.length}건`
+                : selectedType
+                  ? `${selectedType === 'INCOME' ? '수입' : '지출'} 전체 · ${listTransactions.length}건`
+                  : selectedCategory
+                    ? `${selectedCategory.icon ? `${selectedCategory.icon} ` : ''}${selectedCategory.name} · ${listTransactions.length}건`
+                    : selectedDateKey}
         </Text>
         <View className="flex-row gap-1.5">
           <Pressable onPress={() => openCreate('INCOME')} className="rounded-full bg-income px-3.5 py-2">
@@ -188,6 +294,9 @@ export default function CalendarScreen() {
                         : `${transaction.categoryIcon ? `${transaction.categoryIcon} ` : ''}${transaction.categoryName}`}
                     </Text>
                     <Text className="text-xs text-slate-400">
+                      {selectedType || selectedParentCategory || selectedMemberUserId !== null || selectedCardId !== null
+                        ? `${transaction.transactionDate} · `
+                        : ''}
                       {transaction.userName}
                       {transaction.cardName ? ` · ${transaction.cardName}` : ''}
                       {transaction.memo ? ` · ${transaction.memo}` : ''}
@@ -235,7 +344,18 @@ export default function CalendarScreen() {
       {isDesktop ? (
         <View className="flex-row items-start justify-center gap-6">
           <View className="w-[480px]">{calendarColumn}</View>
-          <MonthSummaryPanel year={year} month={month} />
+          <MonthSummaryPanel
+            year={year}
+            month={month}
+            selectedType={selectedType}
+            onSelectType={selectType}
+            selectedParentCategoryId={selectedParentCategory?.id ?? null}
+            onSelectParentCategory={selectParentCategory}
+            selectedMemberUserId={selectedMemberUserId}
+            onSelectMember={selectMember}
+            selectedCardId={selectedCardId}
+            onSelectCard={selectCard}
+          />
         </View>
       ) : (
         calendarColumn

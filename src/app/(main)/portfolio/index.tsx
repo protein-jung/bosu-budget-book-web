@@ -129,6 +129,9 @@ export default function AssetsScreen() {
                               asset.currentPrice ? ` · ${formatKrw(asset.currentPrice)}` : ''
                             }`
                           : ''}
+                        {asset.type === 'REAL_ESTATE' && asset.currentPrice != null
+                          ? ` · 실거래가 ${formatKrw(asset.currentPrice)}`
+                          : ''}
                       </Text>
                     </View>
                     <View className="items-end gap-0.5">

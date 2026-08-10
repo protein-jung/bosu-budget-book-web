@@ -15,6 +15,9 @@ export type AssetInput = {
   address: string | null;
   dong: string | null;
   ho: string | null;
+  lawdCd: string | null;
+  complexName: string | null;
+  regionDongName: string | null;
 };
 
 const assetApi = {
