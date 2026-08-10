@@ -18,6 +18,15 @@ function minutesAgoLabel(date: Date | null) {
   return `${minutes}분 전 갱신`;
 }
 
+function computeGain(asset: Asset): { gain: number; rate: number } | null {
+  if (asset.averagePrice == null || asset.currentPrice == null || asset.quantity == null) return null;
+  const costBasis = asset.averagePrice * asset.quantity;
+  if (costBasis === 0) return null;
+  const currentValue = asset.currentPrice * asset.quantity;
+  const gain = currentValue - costBasis;
+  return { gain, rate: (gain / costBasis) * 100 };
+}
+
 export default function AssetsScreen() {
   const { data: assets = [], isLoading } = useAssets();
   const { data: summary } = useAssetSummary();
@@ -104,27 +113,42 @@ export default function AssetsScreen() {
               <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                 {ASSET_TYPE_META[group.type].icon} {ASSET_TYPE_META[group.type].label}
               </Text>
-              {group.items.map((asset) => (
-                <Pressable
-                  key={asset.id}
-                  onPress={() => setEditing(asset)}
-                  className="flex-row items-center justify-between rounded-xl bg-white p-4 dark:bg-slate-900">
-                  <View className="flex-1 gap-0.5">
-                    <Text className="font-medium text-slate-900 dark:text-white">{asset.name}</Text>
-                    <Text className="text-xs text-slate-400">
-                      {asset.custodian ? asset.custodian : '보관처 미지정'}
-                      {asset.symbol
-                        ? ` · ${asset.symbol} · ${asset.quantity}개${
-                            asset.currentPrice ? ` · ${formatKrw(asset.currentPrice)}` : ''
-                          }`
-                        : ''}
-                    </Text>
-                  </View>
-                  <Text className="font-semibold text-slate-900 dark:text-white">
-                    {asset.currentValue != null ? formatKrw(asset.currentValue) : '시세 대기중'}
-                  </Text>
-                </Pressable>
-              ))}
+              {group.items.map((asset) => {
+                const gainInfo = computeGain(asset);
+                return (
+                  <Pressable
+                    key={asset.id}
+                    onPress={() => setEditing(asset)}
+                    className="flex-row items-center justify-between rounded-xl bg-white p-4 dark:bg-slate-900">
+                    <View className="flex-1 gap-0.5">
+                      <Text className="font-medium text-slate-900 dark:text-white">{asset.name}</Text>
+                      <Text className="text-xs text-slate-400">
+                        {asset.custodian ? asset.custodian : '보관처 미지정'}
+                        {asset.symbol
+                          ? ` · ${asset.symbol} · ${asset.quantity}개${
+                              asset.currentPrice ? ` · ${formatKrw(asset.currentPrice)}` : ''
+                            }`
+                          : ''}
+                      </Text>
+                    </View>
+                    <View className="items-end gap-0.5">
+                      <Text className="font-semibold text-slate-900 dark:text-white">
+                        {asset.currentValue != null ? formatKrw(asset.currentValue) : '시세 대기중'}
+                      </Text>
+                      {gainInfo ? (
+                        <Text
+                          className={`text-xs font-medium ${
+                            gainInfo.gain >= 0 ? 'text-emerald-600' : 'text-red-500'
+                          }`}>
+                          {gainInfo.gain >= 0 ? '+' : ''}
+                          {formatKrw(Math.round(gainInfo.gain))} ({gainInfo.rate >= 0 ? '+' : ''}
+                          {gainInfo.rate.toFixed(1)}%)
+                        </Text>
+                      ) : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           ))}
         </View>

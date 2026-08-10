@@ -11,8 +11,10 @@ import { getErrorMessage } from '@/lib/apiClient';
 import { ASSET_TYPE_META } from '@/lib/palette';
 import type { Asset, AssetType } from '@/lib/types';
 import { VEHICLE_BRANDS } from '@/lib/vehicleBrands';
+import { VEHICLE_MODELS } from '@/lib/vehicleModels';
 
 import { useCreateAsset, useDeleteAsset, useUpdateAsset } from './api';
+import { StockSymbolAutocomplete } from './StockSymbolAutocomplete';
 
 const ASSET_TYPES = Object.keys(ASSET_TYPE_META) as AssetType[];
 
@@ -40,6 +42,7 @@ export function AssetFormModal({
   const [custodian, setCustodian] = useState('');
   const [symbol, setSymbol] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [averagePrice, setAveragePrice] = useState('');
   const [manualValue, setManualValue] = useState('');
   const [memo, setMemo] = useState('');
   const [address, setAddress] = useState('');
@@ -48,6 +51,7 @@ export function AssetFormModal({
   const [vehicleBrand, setVehicleBrand] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
   const [customBrand, setCustomBrand] = useState(false);
+  const [customModel, setCustomModel] = useState(false);
   const [lawdCd, setLawdCd] = useState<string | null>(null);
   const [dongName, setDongName] = useState<string | null>(null);
   const [complexName, setComplexName] = useState<string | null>(null);
@@ -69,6 +73,7 @@ export function AssetFormModal({
       setCustodian(asset.custodian ?? '');
       setSymbol(asset.symbol ?? '');
       setQuantity(asset.quantity != null ? String(asset.quantity) : '');
+      setAveragePrice(asset.averagePrice != null ? String(asset.averagePrice) : '');
       setManualValue(asset.manualValue != null ? String(asset.manualValue) : '');
       setMemo(asset.memo ?? '');
       setAddress(asset.address ?? '');
@@ -78,9 +83,11 @@ export function AssetFormModal({
         const { brand, model } = splitVehicleName(asset.name);
         setVehicleBrand(brand);
         setVehicleModel(model);
+        setCustomModel(!VEHICLE_MODELS[brand]?.includes(model));
       } else {
         setVehicleBrand('');
         setVehicleModel('');
+        setCustomModel(false);
       }
     } else {
       setType('REAL_ESTATE');
@@ -88,6 +95,7 @@ export function AssetFormModal({
       setCustodian('');
       setSymbol('');
       setQuantity('');
+      setAveragePrice('');
       setManualValue('');
       setMemo('');
       setAddress('');
@@ -95,6 +103,7 @@ export function AssetFormModal({
       setHo('');
       setVehicleBrand('');
       setVehicleModel('');
+      setCustomModel(false);
     }
     setCustomBrand(false);
     setLawdCd(null);
@@ -147,6 +156,7 @@ export function AssetFormModal({
       custodian: custodian.trim() || null,
       symbol: livePriced ? symbol.trim().toUpperCase() : null,
       quantity: livePriced ? Number(quantity) : null,
+      averagePrice: livePriced && averagePrice.trim() ? Number(averagePrice) : null,
       manualValue: livePriced ? null : Number(manualValue),
       memo: memo.trim() || null,
       address: address.trim() || null,
@@ -209,6 +219,8 @@ export function AssetFormModal({
                         onPress={() => {
                           setVehicleBrand(brand);
                           setCustomBrand(false);
+                          setVehicleModel('');
+                          setCustomModel(false);
                         }}
                       />
                     ))}
@@ -218,6 +230,8 @@ export function AssetFormModal({
                       onPress={() => {
                         setCustomBrand(true);
                         setVehicleBrand('');
+                        setVehicleModel('');
+                        setCustomModel(false);
                       }}
                     />
                   </View>
@@ -229,12 +243,48 @@ export function AssetFormModal({
                       placeholder="브랜드명을 입력하세요"
                     />
                   ) : null}
-                  <TextField
-                    label="모델명"
-                    value={vehicleModel}
-                    onChangeText={setVehicleModel}
-                    placeholder="예) 아반떼, 그랜저"
-                  />
+
+                  {!customBrand && VEHICLE_MODELS[vehicleBrand] ? (
+                    <View className="gap-1.5">
+                      <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">모델명</Text>
+                      <View className="flex-row flex-wrap gap-2">
+                        {VEHICLE_MODELS[vehicleBrand].map((model) => (
+                          <Chip
+                            key={model}
+                            label={model}
+                            selected={!customModel && vehicleModel === model}
+                            onPress={() => {
+                              setVehicleModel(model);
+                              setCustomModel(false);
+                            }}
+                          />
+                        ))}
+                        <Chip
+                          label="기타"
+                          selected={customModel}
+                          onPress={() => {
+                            setCustomModel(true);
+                            setVehicleModel('');
+                          }}
+                        />
+                      </View>
+                      {customModel ? (
+                        <TextField
+                          label="모델명 직접입력"
+                          value={vehicleModel}
+                          onChangeText={setVehicleModel}
+                          placeholder="모델명을 입력하세요"
+                        />
+                      ) : null}
+                    </View>
+                  ) : (
+                    <TextField
+                      label="모델명"
+                      value={vehicleModel}
+                      onChangeText={setVehicleModel}
+                      placeholder="예) 아반떼, 그랜저"
+                    />
+                  )}
                 </View>
               ) : (
                 <TextField
@@ -330,19 +380,37 @@ export function AssetFormModal({
 
               {livePriced ? (
                 <>
-                  <TextField
-                    label="심볼(티커)"
-                    value={symbol}
-                    onChangeText={setSymbol}
-                    autoCapitalize="characters"
-                    placeholder={type === 'STOCK' ? '국내 005930.KS · 미국 AAPL' : 'BTC, ETH...'}
-                  />
+                  {type === 'STOCK' ? (
+                    <StockSymbolAutocomplete
+                      value={symbol}
+                      onChangeText={setSymbol}
+                      onSelect={(candidate) => {
+                        setSymbol(candidate.symbol);
+                        if (!name.trim()) setName(candidate.name);
+                      }}
+                    />
+                  ) : (
+                    <TextField
+                      label="심볼(티커)"
+                      value={symbol}
+                      onChangeText={setSymbol}
+                      autoCapitalize="characters"
+                      placeholder="BTC, ETH..."
+                    />
+                  )}
                   <TextField
                     label="보유 수량"
                     value={quantity}
                     onChangeText={setQuantity}
                     keyboardType="decimal-pad"
                     placeholder="0"
+                  />
+                  <TextField
+                    label="평단가 (선택)"
+                    value={averagePrice}
+                    onChangeText={setAveragePrice}
+                    keyboardType="decimal-pad"
+                    placeholder="매수 평균 단가"
                   />
                   <Text className="text-xs text-slate-400">
                     현재가는 저장 후 "새로고침"을 누르면 실시간으로 조회돼요.

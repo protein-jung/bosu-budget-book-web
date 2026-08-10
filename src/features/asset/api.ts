@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/apiClient';
-import type { Asset, AssetRefreshResult, AssetSummary, AssetType } from '@/lib/types';
+import type { Asset, AssetRefreshResult, AssetSummary, AssetType, StockSymbolCandidate } from '@/lib/types';
 
 export type AssetInput = {
   type: AssetType;
@@ -9,6 +9,7 @@ export type AssetInput = {
   custodian: string | null;
   symbol: string | null;
   quantity: number | null;
+  averagePrice: number | null;
   manualValue: number | null;
   memo: string | null;
   address: string | null;
@@ -23,6 +24,8 @@ const assetApi = {
   update: (id: number, data: AssetInput) => apiClient.put<Asset>(`/api/assets/${id}`, data).then((res) => res.data),
   remove: (id: number) => apiClient.delete(`/api/assets/${id}`),
   refreshPrices: () => apiClient.post<AssetRefreshResult>('/api/assets/refresh-prices').then((res) => res.data),
+  searchSymbols: (query: string) =>
+    apiClient.get<StockSymbolCandidate[]>('/api/assets/search-symbols', { params: { query } }).then((res) => res.data),
 };
 
 export const ASSET_QUERY_KEY = ['assets'];
@@ -65,4 +68,8 @@ export function useDeleteAsset() {
 export function useRefreshAssetPrices() {
   const invalidate = useInvalidateAssetQueries();
   return useMutation({ mutationFn: assetApi.refreshPrices, onSuccess: invalidate });
+}
+
+export function useSearchStockSymbols() {
+  return useMutation({ mutationFn: assetApi.searchSymbols });
 }

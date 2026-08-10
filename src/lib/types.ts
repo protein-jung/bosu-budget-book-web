@@ -137,6 +137,7 @@ export type Asset = {
   custodian: string | null;
   symbol: string | null;
   quantity: number | null;
+  averagePrice: number | null;
   manualValue: number | null;
   currentPrice: number | null;
   priceUpdatedAt: string | null;
@@ -161,6 +162,8 @@ export type AssetRefreshResult = {
   failedCount: number;
   assets: Asset[];
 };
+
+export type StockSymbolCandidate = { symbol: string; name: string; exchange: string };
 
 export type SigunguOption = { name: string; code: string };
 export type RealEstateRegion = { sido: string; sigunguList: SigunguOption[] };
