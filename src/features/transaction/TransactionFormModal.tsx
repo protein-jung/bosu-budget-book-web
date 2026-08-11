@@ -9,6 +9,7 @@ import { useCategories } from '@/features/category/api';
 import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { getErrorMessage } from '@/lib/apiClient';
 import { formatAmountInput } from '@/lib/format';
+import { useIsDesktop } from '@/lib/responsive';
 import type { Category, Transaction, TransactionType } from '@/lib/types';
 
 import { useCreateTransaction, useDeleteTransaction, useUpdateTransaction } from './api';
@@ -29,6 +30,7 @@ export function TransactionFormModal({
   initialType,
 }: TransactionFormModalProps) {
   const isEdit = !!transaction;
+  const isDesktop = useIsDesktop();
   const { data: categories = [] } = useCategories();
   const { data: cards = [] } = useCards();
 
@@ -118,10 +120,14 @@ export function TransactionFormModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable onPress={onClose} className="flex-1 justify-end bg-black/40">
+      <Pressable
+        onPress={onClose}
+        className={`flex-1 bg-black/40 ${isDesktop ? 'items-center justify-center' : 'justify-end'}`}>
         <Pressable
           onPress={(e) => e.stopPropagation()}
-          className="max-h-[85%] rounded-t-3xl bg-white p-5 dark:bg-slate-900">
+          className={`max-h-[85%] bg-white p-5 dark:bg-slate-900 ${
+            isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
+          }`}>
           <ScrollView contentContainerClassName="gap-4" showsVerticalScrollIndicator={false}>
             <Text className="text-xl font-bold text-slate-900 dark:text-white">
               {dateKey} {isEdit ? '내역 수정' : '내역 추가'}

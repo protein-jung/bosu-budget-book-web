@@ -5,6 +5,7 @@ import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { useClearMonthlyTarget, useSetMonthlyTarget } from '@/features/category/api';
 import { getErrorMessage } from '@/lib/apiClient';
+import { useIsDesktop } from '@/lib/responsive';
 import type { CategoryBudget } from '@/lib/types';
 
 export function BudgetTargetModal({
@@ -20,6 +21,7 @@ export function BudgetTargetModal({
   year: number;
   month: number;
 }) {
+  const isDesktop = useIsDesktop();
   const [amount, setAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -58,8 +60,11 @@ export function BudgetTargetModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
-        <View className="gap-4 rounded-t-3xl bg-white p-5 dark:bg-slate-900">
+      <View className={`flex-1 bg-black/40 ${isDesktop ? 'items-center justify-center' : 'justify-end'}`}>
+        <View
+          className={`gap-4 bg-white p-5 dark:bg-slate-900 ${
+            isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
+          }`}>
           <Text className="text-xl font-bold text-slate-900 dark:text-white">
             {budget.icon ? `${budget.icon} ` : ''}
             {budget.categoryName}

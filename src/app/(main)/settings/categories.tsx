@@ -207,7 +207,7 @@ export default function CategoriesScreen() {
   );
 
   return (
-    <Screen>
+    <Screen maxWidthClassName={isDesktop ? 'max-w-[680px]' : 'max-w-[480px]'}>
       <Text className="text-xs text-slate-400">카드 오른쪽의 아이콘을 눌러서 끌면 순서를 바꿀 수 있어요.</Text>
       {renderTypeSection('지출', expenseRoots)}
       {renderTypeSection('수입', incomeRoots)}

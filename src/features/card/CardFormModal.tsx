@@ -6,6 +6,7 @@ import { Chip } from '@/components/Chip';
 import { TextField } from '@/components/TextField';
 import { useMyHousehold } from '@/features/household/api';
 import { getErrorMessage } from '@/lib/apiClient';
+import { useIsDesktop } from '@/lib/responsive';
 import type { CardAccount, CardType } from '@/lib/types';
 
 import { useCreateCard, useDeleteCard, useUpdateCard } from './api';
@@ -26,6 +27,7 @@ export function CardFormModal({
   card?: CardAccount | null;
 }) {
   const isEdit = !!card;
+  const isDesktop = useIsDesktop();
   const { data: household } = useMyHousehold();
   const [name, setName] = useState('');
   const [type, setType] = useState<CardType>('CREDIT');
@@ -81,8 +83,11 @@ export function CardFormModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
-        <View className="gap-4 rounded-t-3xl bg-white p-5 dark:bg-slate-900">
+      <View className={`flex-1 bg-black/40 ${isDesktop ? 'items-center justify-center' : 'justify-end'}`}>
+        <View
+          className={`gap-4 bg-white p-5 dark:bg-slate-900 ${
+            isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
+          }`}>
           <Text className="text-xl font-bold text-slate-900 dark:text-white">
             {isEdit ? '카드 수정' : '카드 추가'}
           </Text>

@@ -6,6 +6,7 @@ import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useMe, useUpdateMe, type UserProfile } from '@/features/user/api';
 import { getErrorMessage } from '@/lib/apiClient';
+import { useIsDesktop } from '@/lib/responsive';
 import { useAuthStore } from '@/store/authStore';
 
 const BIRTH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -26,6 +27,7 @@ function ProfileForm({ me }: { me: UserProfile }) {
   const [birthDate, setBirthDate] = useState(me.birthDate ?? '');
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const isDesktop = useIsDesktop();
 
   const handleSubmit = () => {
     setError(null);
@@ -49,7 +51,7 @@ function ProfileForm({ me }: { me: UserProfile }) {
   };
 
   return (
-    <Screen>
+    <Screen maxWidthClassName={isDesktop ? 'max-w-[680px]' : 'max-w-[480px]'}>
       <View className="gap-1">
         <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">이름</Text>
         <Text className="text-2xl font-bold text-slate-900 dark:text-white">{me.name}</Text>
@@ -60,7 +62,7 @@ function ProfileForm({ me }: { me: UserProfile }) {
         <Text className="text-base text-slate-700 dark:text-slate-300">{me.email}</Text>
       </View>
 
-      <View className="gap-4 rounded-xl bg-white p-4 dark:bg-slate-900">
+      <View className={`gap-4 rounded-xl bg-white p-4 dark:bg-slate-900 ${isDesktop ? 'max-w-[360px]' : ''}`}>
         <TextField
           label="생년월일"
           value={birthDate}

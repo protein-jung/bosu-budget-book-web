@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/apiClient';
-import type { Asset, AssetRefreshResult, AssetSummary, AssetType, StockSymbolCandidate } from '@/lib/types';
+import type { AccountCategory, Asset, AssetRefreshResult, AssetSummary, AssetType, StockSymbolCandidate } from '@/lib/types';
 
 export type AssetInput = {
   type: AssetType;
@@ -18,6 +18,7 @@ export type AssetInput = {
   lawdCd: string | null;
   complexName: string | null;
   regionDongName: string | null;
+  accountCategory: AccountCategory | null;
 };
 
 const assetApi = {

@@ -8,13 +8,15 @@ import { TextField } from '@/components/TextField';
 import { AddressAutocomplete } from '@/features/realEstate/AddressAutocomplete';
 import { RealEstateTradeLookup } from '@/features/realEstate/RealEstateTradeLookup';
 import { getErrorMessage } from '@/lib/apiClient';
-import { formatDecimalAmountInput } from '@/lib/format';
+import { formatAmountInput, formatDecimalAmountInput } from '@/lib/format';
 import { ASSET_TYPE_META } from '@/lib/palette';
-import type { Asset, AssetType } from '@/lib/types';
+import { useIsDesktop } from '@/lib/responsive';
+import type { AccountCategory, Asset, AssetType } from '@/lib/types';
 import { VEHICLE_BRANDS } from '@/lib/vehicleBrands';
 import { VEHICLE_MODELS } from '@/lib/vehicleModels';
 
 import { useCreateAsset, useDeleteAsset, useUpdateAsset } from './api';
+import { CustodianField } from './CustodianField';
 import { StockSymbolAutocomplete } from './StockSymbolAutocomplete';
 
 const ASSET_TYPES = Object.keys(ASSET_TYPE_META) as AssetType[];
@@ -28,9 +30,15 @@ function splitVehicleName(fullName: string): { brand: string; model: string } {
   return brand ? { brand, model: fullName.slice(brand.length + 1) } : { brand: '', model: fullName };
 }
 
-type StockRow = { symbol: string; name: string; quantity: string; averagePrice: string };
+type StockRow = {
+  symbol: string;
+  name: string;
+  quantity: string;
+  averagePrice: string;
+  accountCategory: AccountCategory;
+};
 
-const EMPTY_STOCK_ROW: StockRow = { symbol: '', name: '', quantity: '', averagePrice: '' };
+const EMPTY_STOCK_ROW: StockRow = { symbol: '', name: '', quantity: '', averagePrice: '', accountCategory: 'GENERAL' };
 
 export function AssetFormModal({
   visible,
@@ -42,12 +50,14 @@ export function AssetFormModal({
   asset?: Asset | null;
 }) {
   const isEdit = !!asset;
+  const isDesktop = useIsDesktop();
   const [type, setType] = useState<AssetType>('REAL_ESTATE');
   const [name, setName] = useState('');
   const [custodian, setCustodian] = useState('');
   const [symbol, setSymbol] = useState('');
   const [quantity, setQuantity] = useState('');
   const [averagePrice, setAveragePrice] = useState('');
+  const [accountCategory, setAccountCategory] = useState<AccountCategory>('GENERAL');
   const [manualValue, setManualValue] = useState('');
   const [memo, setMemo] = useState('');
   const [address, setAddress] = useState('');
@@ -80,6 +90,7 @@ export function AssetFormModal({
       setSymbol(asset.symbol ?? '');
       setQuantity(asset.quantity != null ? String(asset.quantity) : '');
       setAveragePrice(asset.averagePrice != null ? String(asset.averagePrice) : '');
+      setAccountCategory(asset.accountCategory ?? 'GENERAL');
       setManualValue(asset.manualValue != null ? String(asset.manualValue) : '');
       setMemo(asset.memo ?? '');
       setAddress(asset.address ?? '');
@@ -105,6 +116,7 @@ export function AssetFormModal({
       setSymbol('');
       setQuantity('');
       setAveragePrice('');
+      setAccountCategory('GENERAL');
       setManualValue('');
       setMemo('');
       setAddress('');
@@ -163,6 +175,7 @@ export function AssetFormModal({
         lawdCd: null,
         complexName: null,
         regionDongName: null,
+        accountCategory: type === 'STOCK' ? row.accountCategory : null,
       }));
       try {
         await Promise.all(payloads.map((payload) => createAsset.mutateAsync(payload)));
@@ -221,6 +234,7 @@ export function AssetFormModal({
       lawdCd: type === 'REAL_ESTATE' ? lawdCd : null,
       complexName: type === 'REAL_ESTATE' ? complexName : null,
       regionDongName: type === 'REAL_ESTATE' ? dongName : null,
+      accountCategory: type === 'STOCK' ? accountCategory : null,
     };
 
     if (isEdit && asset) {
@@ -246,10 +260,14 @@ export function AssetFormModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable onPress={onClose} className="flex-1 justify-end bg-black/40">
+      <Pressable
+        onPress={onClose}
+        className={`flex-1 bg-black/40 ${isDesktop ? 'items-center justify-center' : 'justify-end'}`}>
         <Pressable
           onPress={(e) => e.stopPropagation()}
-          className="max-h-[85%] gap-4 rounded-t-3xl bg-white p-5 dark:bg-slate-900">
+          className={`max-h-[85%] gap-4 bg-white p-5 dark:bg-slate-900 ${
+            isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
+          }`}>
           <Text className="text-xl font-bold text-slate-900 dark:text-white">
             {isEdit ? '자산 수정' : '자산 추가'}
           </Text>
@@ -357,12 +375,7 @@ export function AssetFormModal({
               )}
 
               {type !== 'REAL_ESTATE' && type !== 'VEHICLE' ? (
-                <TextField
-                  label="보관처 (선택)"
-                  value={custodian}
-                  onChangeText={setCustodian}
-                  placeholder="예) 미래에셋증권, 업비트, ○○은행"
-                />
+                <CustodianField value={custodian} onChangeText={setCustodian} />
               ) : null}
 
               {type === 'REAL_ESTATE' ? (
@@ -498,6 +511,20 @@ export function AssetFormModal({
                           />
                         </View>
                       </View>
+                      {type === 'STOCK' ? (
+                        <View className="flex-row gap-2">
+                          <Chip
+                            label="일반"
+                            selected={row.accountCategory === 'GENERAL'}
+                            onPress={() => updateStockRow(index, { accountCategory: 'GENERAL' })}
+                          />
+                          <Chip
+                            label="연금"
+                            selected={row.accountCategory === 'PENSION'}
+                            onPress={() => updateStockRow(index, { accountCategory: 'PENSION' })}
+                          />
+                        </View>
+                      ) : null}
                       {stockRows.length > 1 ? (
                         <Pressable onPress={() => removeStockRow(index)} className="self-end">
                           <Text className="text-xs font-medium text-red-500">삭제</Text>
@@ -552,6 +579,20 @@ export function AssetFormModal({
                     keyboardType="decimal-pad"
                     placeholder="매수 평균 단가"
                   />
+                  {type === 'STOCK' ? (
+                    <View className="flex-row gap-2">
+                      <Chip
+                        label="일반"
+                        selected={accountCategory === 'GENERAL'}
+                        onPress={() => setAccountCategory('GENERAL')}
+                      />
+                      <Chip
+                        label="연금"
+                        selected={accountCategory === 'PENSION'}
+                        onPress={() => setAccountCategory('PENSION')}
+                      />
+                    </View>
+                  ) : null}
                   <Text className="text-xs text-slate-400">
                     현재가는 저장 후 "새로고침"을 누르면 실시간으로 조회돼요.
                   </Text>
@@ -559,8 +600,8 @@ export function AssetFormModal({
               ) : (
                 <TextField
                   label="평가금액"
-                  value={manualValue}
-                  onChangeText={setManualValue}
+                  value={formatAmountInput(manualValue)}
+                  onChangeText={(text) => setManualValue(text.replace(/[^0-9]/g, ''))}
                   keyboardType="numeric"
                   placeholder="0"
                 />

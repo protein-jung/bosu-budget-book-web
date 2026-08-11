@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { queryClient } from '@/lib/queryClient';
+import { useIsDesktop } from '@/lib/responsive';
 import { useAuthStore } from '@/store/authStore';
 
 const MENU: {
@@ -20,6 +21,7 @@ const MENU: {
 export default function SettingsScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const isDesktop = useIsDesktop();
 
   const handleLogout = async () => {
     await logout();
@@ -28,17 +30,18 @@ export default function SettingsScreen() {
   };
 
   return (
-    <Screen>
+    <Screen maxWidthClassName={isDesktop ? 'max-w-[760px]' : 'max-w-[480px]'}>
       {user ? (
         <Text className="text-slate-500 dark:text-slate-400">
           {user.name} ({user.email})
         </Text>
       ) : null}
 
-      <View className="gap-3">
+      <View className={isDesktop ? 'flex-row flex-wrap gap-3' : 'gap-3'}>
         {MENU.map((item) => (
           <Link key={item.href} href={item.href} asChild>
-            <Pressable className="gap-1 rounded-xl bg-white p-4 dark:bg-slate-900">
+            <Pressable
+              className={`gap-1.5 rounded-xl bg-white p-4 dark:bg-slate-900 ${isDesktop ? 'w-[48%] p-5' : ''}`}>
               <Text className="text-base font-semibold text-slate-900 dark:text-white">{item.label}</Text>
               <Text className="text-sm text-slate-500 dark:text-slate-400">{item.description}</Text>
             </Pressable>
@@ -46,7 +49,9 @@ export default function SettingsScreen() {
         ))}
       </View>
 
-      <Pressable onPress={handleLogout} className="items-center rounded-xl bg-slate-200 p-4 dark:bg-slate-800">
+      <Pressable
+        onPress={handleLogout}
+        className={`items-center rounded-xl bg-slate-200 p-4 dark:bg-slate-800 ${isDesktop ? 'self-start px-8' : ''}`}>
         <Text className="font-semibold text-slate-700 dark:text-slate-200">로그아웃</Text>
       </Pressable>
     </Screen>

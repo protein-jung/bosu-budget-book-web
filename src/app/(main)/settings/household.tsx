@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { useMyHousehold } from '@/features/household/api';
+import { useIsDesktop } from '@/lib/responsive';
 
 const ROLE_LABEL: Record<'OWNER' | 'MEMBER', string> = {
   OWNER: '가계부 생성자',
@@ -13,6 +14,7 @@ const ROLE_LABEL: Record<'OWNER' | 'MEMBER', string> = {
 export default function HouseholdScreen() {
   const { data: household } = useMyHousehold();
   const [copied, setCopied] = useState(false);
+  const isDesktop = useIsDesktop();
 
   const handleCopy = async () => {
     if (!household) return;
@@ -24,7 +26,7 @@ export default function HouseholdScreen() {
   if (!household) return null;
 
   return (
-    <Screen>
+    <Screen maxWidthClassName={isDesktop ? 'max-w-[680px]' : 'max-w-[480px]'}>
       <View className="gap-1">
         <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">가계부 이름</Text>
         <Text className="text-2xl font-bold text-slate-900 dark:text-white">{household.name}</Text>
@@ -45,15 +47,21 @@ export default function HouseholdScreen() {
 
       <View className="gap-2">
         <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">구성원</Text>
-        {household.members.map((member) => (
-          <View key={member.userId} className="flex-row items-center justify-between rounded-xl bg-white p-4 dark:bg-slate-900">
-            <View className="gap-0.5">
-              <Text className="font-medium text-slate-900 dark:text-white">{member.name}</Text>
-              <Text className="text-xs text-slate-400">{member.email}</Text>
+        <View className={isDesktop ? 'flex-row flex-wrap gap-3' : 'gap-2'}>
+          {household.members.map((member) => (
+            <View
+              key={member.userId}
+              className={`flex-row items-center justify-between rounded-xl bg-white p-4 dark:bg-slate-900 ${
+                isDesktop ? 'w-[48%] p-5' : ''
+              }`}>
+              <View className="gap-0.5">
+                <Text className="font-medium text-slate-900 dark:text-white">{member.name}</Text>
+                <Text className="text-xs text-slate-400">{member.email}</Text>
+              </View>
+              <Text className="text-sm text-slate-500 dark:text-slate-400">{ROLE_LABEL[member.role]}</Text>
             </View>
-            <Text className="text-sm text-slate-500 dark:text-slate-400">{ROLE_LABEL[member.role]}</Text>
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
     </Screen>
   );

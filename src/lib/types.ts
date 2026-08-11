@@ -129,6 +129,7 @@ export type RangeSummary = {
 };
 
 export type AssetType = 'REAL_ESTATE' | 'VEHICLE' | 'STOCK' | 'CRYPTO' | 'CASH' | 'OTHER';
+export type AccountCategory = 'GENERAL' | 'PENSION';
 
 export type Asset = {
   id: number;
@@ -149,6 +150,9 @@ export type Asset = {
   lawdCd: string | null;
   complexName: string | null;
   regionDongName: string | null;
+  accountCategory: AccountCategory;
+  ownerUserId: number | null;
+  ownerName: string | null;
 };
 
 export type AssetTypeBreakdown = { type: AssetType; amount: number };

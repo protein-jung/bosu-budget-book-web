@@ -7,6 +7,7 @@ import { useAssets, useAssetSummary, useRefreshAssetPrices } from '@/features/as
 import { AssetFormModal } from '@/features/asset/AssetFormModal';
 import { formatKrw } from '@/lib/format';
 import { ASSET_TYPE_META } from '@/lib/palette';
+import { useIsDesktop } from '@/lib/responsive';
 import type { Asset, AssetType } from '@/lib/types';
 
 const ASSET_TYPE_ORDER = Object.keys(ASSET_TYPE_META) as AssetType[];
@@ -31,19 +32,76 @@ export default function AssetsScreen() {
   const { data: assets = [], isLoading } = useAssets();
   const { data: summary } = useAssetSummary();
   const refreshPrices = useRefreshAssetPrices();
+  const isDesktop = useIsDesktop();
   const [editing, setEditing] = useState<Asset | null | undefined>(undefined);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false);
+  const [refreshError, setRefreshError] = useState(false);
 
   useEffect(() => {
     if (hasAutoRefreshed || assets.length === 0) return;
     setHasAutoRefreshed(true);
-    refreshPrices.mutate(undefined, { onSuccess: () => setLastRefreshedAt(new Date()) });
+    refreshPrices.mutate(undefined, {
+      onSuccess: () => {
+        setRefreshError(false);
+        setLastRefreshedAt(new Date());
+      },
+      onError: () => setRefreshError(true),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasAutoRefreshed, assets.length]);
 
   const handleRefresh = () => {
-    refreshPrices.mutate(undefined, { onSuccess: () => setLastRefreshedAt(new Date()) });
+    refreshPrices.mutate(undefined, {
+      onSuccess: () => {
+        setRefreshError(false);
+        setLastRefreshedAt(new Date());
+      },
+      onError: () => setRefreshError(true),
+    });
+  };
+
+  const renderAssetRow = (asset: Asset) => {
+    const gainInfo = computeGain(asset);
+    const subtitleParts: string[] = [];
+    if (asset.symbol) {
+      subtitleParts.push(asset.symbol, `${asset.quantity}개`);
+      if (asset.averagePrice != null) subtitleParts.push(`매입 ${formatKrw(asset.averagePrice)}`);
+      if (asset.currentPrice != null) subtitleParts.push(`현재 ${formatKrw(asset.currentPrice)}`);
+    }
+    if (asset.type === 'REAL_ESTATE' && asset.currentPrice != null) {
+      subtitleParts.push(`실거래가 ${formatKrw(asset.currentPrice)}`);
+    }
+    if (asset.type === 'STOCK' && asset.accountCategory === 'PENSION') subtitleParts.push('연금');
+    if (asset.type !== 'REAL_ESTATE' && asset.type !== 'VEHICLE' && asset.ownerName) {
+      subtitleParts.push(asset.ownerName);
+    }
+
+    return (
+      <Pressable
+        key={asset.id}
+        onPress={() => setEditing(asset)}
+        className="flex-row items-center justify-between rounded-xl bg-white p-4 dark:bg-slate-900">
+        <View className="flex-1 gap-0.5">
+          <Text className="font-medium text-slate-900 dark:text-white">{asset.name}</Text>
+          {subtitleParts.length > 0 ? (
+            <Text className="text-xs text-slate-400">{subtitleParts.join(' · ')}</Text>
+          ) : null}
+        </View>
+        <View className="items-end gap-0.5">
+          <Text className="font-semibold text-slate-900 dark:text-white">
+            {asset.currentValue != null ? formatKrw(asset.currentValue) : '시세 대기중'}
+          </Text>
+          {gainInfo ? (
+            <Text className={`text-xs font-medium ${gainInfo.gain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+              {gainInfo.gain >= 0 ? '▲' : '▼'} {gainInfo.gain >= 0 ? '+' : ''}
+              {formatKrw(Math.round(gainInfo.gain))} ({gainInfo.rate >= 0 ? '+' : ''}
+              {gainInfo.rate.toFixed(1)}%)
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+    );
   };
 
   const donutData = useMemo(
@@ -55,19 +113,44 @@ export default function AssetsScreen() {
   );
 
   const groupedAssets = useMemo(() => {
-    const map = new Map<AssetType, Asset[]>();
+    const sortByValueDesc = (items: Asset[]) =>
+      [...items].sort((a, b) => (b.currentValue ?? -Infinity) - (a.currentValue ?? -Infinity));
+
+    const byType = new Map<AssetType, Asset[]>();
     for (const asset of assets) {
-      const list = map.get(asset.type) ?? [];
+      const list = byType.get(asset.type) ?? [];
       list.push(asset);
-      map.set(asset.type, list);
+      byType.set(asset.type, list);
     }
-    return ASSET_TYPE_ORDER.map((type) => ({ type, items: map.get(type) ?? [] })).filter(
-      (group) => group.items.length > 0,
-    );
+    return ASSET_TYPE_ORDER.map((type) => {
+      const items = byType.get(type) ?? [];
+      const custodianMap = new Map<string, Asset[]>();
+      const ungrouped: Asset[] = [];
+      for (const asset of items) {
+        if (asset.custodian) {
+          const list = custodianMap.get(asset.custodian) ?? [];
+          list.push(asset);
+          custodianMap.set(asset.custodian, list);
+        } else {
+          ungrouped.push(asset);
+        }
+      }
+      const custodianGroups = Array.from(custodianMap.entries())
+        .map(([custodian, groupItems]) => ({
+          custodian,
+          items: sortByValueDesc(groupItems),
+          total: groupItems.reduce((sum, a) => sum + (a.currentValue ?? 0), 0),
+        }))
+        .sort((a, b) => b.total - a.total);
+      const typeTotal = items.reduce((sum, a) => sum + (a.currentValue ?? 0), 0);
+      return { type, items, typeTotal, custodianGroups, ungrouped: sortByValueDesc(ungrouped) };
+    })
+      .filter((group) => group.items.length > 0)
+      .sort((a, b) => b.typeTotal - a.typeTotal);
   }, [assets]);
 
-  return (
-    <Screen>
+  const summaryColumn = (
+    <View className="gap-5">
       <View className="gap-1">
         <Text className="text-2xl font-bold text-slate-900 dark:text-white">자산</Text>
         <Text className="text-3xl font-bold text-primary">{formatKrw(summary?.totalValue ?? 0)}</Text>
@@ -92,7 +175,9 @@ export default function AssetsScreen() {
       ) : null}
 
       <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-slate-400">{minutesAgoLabel(lastRefreshedAt) ?? '시세 갱신 전'}</Text>
+        <Text className="text-xs text-slate-400">
+          {refreshError ? '시세 갱신에 실패했어요. 다시 시도해주세요.' : (minutesAgoLabel(lastRefreshedAt) ?? '시세 갱신 전')}
+        </Text>
         <Pressable
           onPress={handleRefresh}
           disabled={refreshPrices.isPending}
@@ -102,64 +187,69 @@ export default function AssetsScreen() {
         </Pressable>
       </View>
 
+      {isDesktop ? (
+        <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
+          <Text className="font-semibold text-white">+ 자산 추가</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+
+  const listColumn = (
+    <View className="gap-5">
       {isLoading ? (
         <ActivityIndicator />
       ) : assets.length === 0 ? (
         <Text className="py-6 text-center text-slate-400">등록된 자산이 없습니다.</Text>
       ) : (
-        <View className="gap-5">
+        <View className={isDesktop ? 'flex-row flex-wrap gap-5' : 'gap-5'}>
           {groupedAssets.map((group) => (
-            <View key={group.type} className="gap-2">
+            <View key={group.type} className={`gap-3 ${isDesktop ? 'w-[48%]' : ''}`}>
               <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                 {ASSET_TYPE_META[group.type].icon} {ASSET_TYPE_META[group.type].label}
               </Text>
-              {group.items.map((asset) => {
-                const gainInfo = computeGain(asset);
-                return (
-                  <Pressable
-                    key={asset.id}
-                    onPress={() => setEditing(asset)}
-                    className="flex-row items-center justify-between rounded-xl bg-white p-4 dark:bg-slate-900">
-                    <View className="flex-1 gap-0.5">
-                      <Text className="font-medium text-slate-900 dark:text-white">{asset.name}</Text>
-                      <Text className="text-xs text-slate-400">
-                        {asset.custodian ? asset.custodian : '보관처 미지정'}
-                        {asset.symbol
-                          ? ` · ${asset.symbol} · ${asset.quantity}개${
-                              asset.currentPrice ? ` · ${formatKrw(asset.currentPrice)}` : ''
-                            }`
-                          : ''}
-                        {asset.type === 'REAL_ESTATE' && asset.currentPrice != null
-                          ? ` · 실거래가 ${formatKrw(asset.currentPrice)}`
-                          : ''}
-                      </Text>
-                    </View>
-                    <View className="items-end gap-0.5">
-                      <Text className="font-semibold text-slate-900 dark:text-white">
-                        {asset.currentValue != null ? formatKrw(asset.currentValue) : '시세 대기중'}
-                      </Text>
-                      {gainInfo ? (
-                        <Text
-                          className={`text-xs font-medium ${
-                            gainInfo.gain >= 0 ? 'text-emerald-600' : 'text-red-500'
-                          }`}>
-                          {gainInfo.gain >= 0 ? '+' : ''}
-                          {formatKrw(Math.round(gainInfo.gain))} ({gainInfo.rate >= 0 ? '+' : ''}
-                          {gainInfo.rate.toFixed(1)}%)
-                        </Text>
-                      ) : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {group.custodianGroups.map((custodianGroup) => (
+                <View key={custodianGroup.custodian} className="gap-2">
+                  <View className="flex-row items-center justify-between px-1">
+                    <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {custodianGroup.custodian}
+                    </Text>
+                    <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {formatKrw(custodianGroup.total)}
+                    </Text>
+                  </View>
+                  {custodianGroup.items.map(renderAssetRow)}
+                </View>
+              ))}
+              {group.ungrouped.length > 0 ? (
+                <View className="gap-2">{group.ungrouped.map(renderAssetRow)}</View>
+              ) : null}
             </View>
           ))}
         </View>
       )}
 
-      <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
-        <Text className="font-semibold text-white">+ 자산 추가</Text>
-      </Pressable>
+      {!isDesktop ? (
+        <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
+          <Text className="font-semibold text-white">+ 자산 추가</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+
+  return (
+    <Screen maxWidthClassName={isDesktop ? 'max-w-[1100px]' : 'max-w-[480px]'}>
+      {isDesktop ? (
+        <View className="flex-row items-start gap-6">
+          <View className="w-[360px]">{summaryColumn}</View>
+          <View className="flex-1">{listColumn}</View>
+        </View>
+      ) : (
+        <>
+          {summaryColumn}
+          {listColumn}
+        </>
+      )}
 
       <AssetFormModal visible={editing !== undefined} onClose={() => setEditing(undefined)} asset={editing} />
     </Screen>

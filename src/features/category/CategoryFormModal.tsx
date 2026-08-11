@@ -6,6 +6,7 @@ import { Chip } from '@/components/Chip';
 import { TextField } from '@/components/TextField';
 import { getErrorMessage } from '@/lib/apiClient';
 import { CATEGORY_COLOR_PALETTE, CATEGORY_ICON_PALETTE } from '@/lib/palette';
+import { useIsDesktop } from '@/lib/responsive';
 import type { Category, TransactionType } from '@/lib/types';
 
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from './api';
@@ -24,6 +25,7 @@ export function CategoryFormModal({
   onCreated?: (category: Category) => void;
 }) {
   const isEdit = !!category;
+  const isDesktop = useIsDesktop();
   const { data: categories = [] } = useCategories();
   const [name, setName] = useState('');
   const [type, setType] = useState<TransactionType>('EXPENSE');
@@ -106,8 +108,11 @@ export function CategoryFormModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
-        <View className="max-h-[85%] gap-4 rounded-t-3xl bg-white p-5 dark:bg-slate-900">
+      <View className={`flex-1 bg-black/40 ${isDesktop ? 'items-center justify-center' : 'justify-end'}`}>
+        <View
+          className={`max-h-[85%] gap-4 bg-white p-5 dark:bg-slate-900 ${
+            isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
+          }`}>
           <Text className="text-xl font-bold text-slate-900 dark:text-white">
             {isEdit ? '카테고리 수정' : '카테고리 추가'}
           </Text>

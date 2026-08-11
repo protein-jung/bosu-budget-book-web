@@ -1,4 +1,4 @@
-const KRW_FORMATTER = new Intl.NumberFormat('ko-KR');
+const KRW_FORMATTER = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 });
 
 export function formatKrw(amount: number): string {
   return `${KRW_FORMATTER.format(amount)}원`;
