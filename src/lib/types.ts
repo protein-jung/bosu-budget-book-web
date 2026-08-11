@@ -1,5 +1,5 @@
 export type TransactionType = 'INCOME' | 'EXPENSE';
-export type ImportProvider = 'SAMSUNG_CARD' | 'GYEONGGI_LOCAL_CURRENCY';
+export type ImportProvider = 'SAMSUNG_CARD' | 'GYEONGGI_LOCAL_CURRENCY' | 'COUPANG';
 export type CardType = 'CREDIT' | 'DEBIT' | 'CASH';
 export type HouseholdRole = 'OWNER' | 'MEMBER';
 
