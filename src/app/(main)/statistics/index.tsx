@@ -139,7 +139,7 @@ export default function StatisticsScreen() {
   };
 
   const rows = useMemo(() => buildRows(categories, order), [categories, order]);
-  const months = range?.months ?? [];
+  const months = useMemo(() => [...(range?.months ?? [])].reverse(), [range]);
   const hasCustomOrder = Object.keys(order).length > 0;
 
   // DraggableList는 items 참조가 매 렌더마다 새로 생기면 내부 상태를 계속 리셋하므로,
