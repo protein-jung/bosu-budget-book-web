@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
@@ -54,6 +54,9 @@ export default function SignupScreen() {
   return (
     <Screen>
       <View className="mt-16 gap-1">
+        <Pressable onPress={() => router.push('/welcome')} className="mb-1 self-start">
+          <Text className="text-sm font-semibold text-primary dark:text-secondary">보수가계부</Text>
+        </Pressable>
         <Text className="text-3xl font-bold text-slate-900 dark:text-white">회원가입</Text>
         <Text className="text-base text-slate-500 dark:text-slate-400">보수가계부를 시작해보세요</Text>
       </View>
