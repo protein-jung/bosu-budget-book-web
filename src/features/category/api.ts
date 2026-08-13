@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/apiClient';
-import type { Category, TransactionType } from '@/lib/types';
+import type { Category, CategoryMemo, TransactionType } from '@/lib/types';
 
 export type CategoryInput = {
   name: string;
@@ -10,6 +10,7 @@ export type CategoryInput = {
   icon?: string | null;
   parentId?: number | null;
   targetAmount?: number | null;
+  isGroup: boolean;
 };
 
 const categoryApi = {
@@ -23,6 +24,11 @@ const categoryApi = {
     apiClient.put(`/api/categories/${id}/monthly-target/${year}/${month}`, { amount }),
   clearMonthlyTarget: (id: number, year: number, month: number) =>
     apiClient.delete(`/api/categories/${id}/monthly-target/${year}/${month}`),
+  getMemos: () => apiClient.get<CategoryMemo[]>('/api/categories/memos').then((res) => res.data),
+  setMemo: (id: number, year: number, month: number, memo: string) =>
+    apiClient.put(`/api/categories/${id}/memo/${year}/${month}`, { memo }),
+  clearMemo: (id: number, year: number, month: number) =>
+    apiClient.delete(`/api/categories/${id}/memo/${year}/${month}`),
 };
 
 export const CATEGORY_QUERY_KEY = ['categories'];
@@ -70,6 +76,30 @@ export function useClearMonthlyTarget() {
     mutationFn: ({ id, year, month }: { id: number; year: number; month: number }) =>
       categoryApi.clearMonthlyTarget(id, year, month),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['statistics'] }),
+  });
+}
+
+export const CATEGORY_MEMO_QUERY_KEY = ['category-memos'];
+
+export function useCategoryMemos() {
+  return useQuery({ queryKey: CATEGORY_MEMO_QUERY_KEY, queryFn: categoryApi.getMemos });
+}
+
+export function useSetCategoryMemo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, year, month, memo }: { id: number; year: number; month: number; memo: string }) =>
+      categoryApi.setMemo(id, year, month, memo),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CATEGORY_MEMO_QUERY_KEY }),
+  });
+}
+
+export function useClearCategoryMemo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, year, month }: { id: number; year: number; month: number }) =>
+      categoryApi.clearMemo(id, year, month),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CATEGORY_MEMO_QUERY_KEY }),
   });
 }
 

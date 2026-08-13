@@ -6,11 +6,13 @@ import { BarChart } from '@/components/charts/BarChart';
 import { DonutChart, type DonutDatum } from '@/components/charts/DonutChart';
 import { GroupedBarChart } from '@/components/charts/GroupedBarChart';
 import { Screen } from '@/components/Screen';
+import { useCategories } from '@/features/category/api';
+import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { BudgetTargetModal } from '@/features/statistics/BudgetTargetModal';
 import { useMonthlyStatistics, useRangeStatistics } from '@/features/statistics/api';
 import { addMonths, formatMonthLabel } from '@/lib/calendar';
 import { formatCompactKrw, formatKrw } from '@/lib/format';
-import type { CategoryBudget, CategoryStat } from '@/lib/types';
+import type { Category, CategoryBudget, CategoryStat } from '@/lib/types';
 
 const OTHER_COLOR = '#94a3b8';
 const CARD_COLOR = '#E07A5F';
@@ -48,6 +50,48 @@ function buildLegend(categories: CategoryStat[]): LegendDatum[] {
   ];
 }
 
+type BudgetGroup = {
+  key: string;
+  parentCategory: Category | null;
+  parent: CategoryBudget | null;
+  children: CategoryBudget[];
+};
+
+/** 예산 목록을 상위 카테고리 기준으로 묶는다. 상위 카테고리 자체엔 예산이 없어도 하위에 있으면 묶음만 만든다. */
+function groupBudgets(budgets: CategoryBudget[], categories: Category[]): BudgetGroup[] {
+  if (budgets.length === 0) return [];
+  const categoryById = new Map(categories.map((c) => [c.id, c]));
+  const budgetByCategoryId = new Map(budgets.map((b) => [b.categoryId, b]));
+  const childrenByParent = new Map<number, CategoryBudget[]>();
+  for (const b of budgets) {
+    const parentId = categoryById.get(b.categoryId)?.parentId;
+    if (parentId == null) continue;
+    const list = childrenByParent.get(parentId) ?? [];
+    list.push(b);
+    childrenByParent.set(parentId, list);
+  }
+
+  const groups: BudgetGroup[] = [];
+  const handled = new Set<number>();
+  for (const category of categories.filter((c) => c.parentId == null)) {
+    const ownBudget = budgetByCategoryId.get(category.id) ?? null;
+    const children = childrenByParent.get(category.id) ?? [];
+    if (!ownBudget && children.length === 0) continue;
+    handled.add(category.id);
+    groups.push({ key: String(category.id), parentCategory: category, parent: ownBudget, children });
+  }
+
+  // 상위 카테고리를 categories 목록에서 못 찾은 예산(이론상 거의 없음)은 단독 항목으로 남긴다.
+  for (const b of budgets) {
+    const category = categoryById.get(b.categoryId);
+    if (category?.parentId == null && !handled.has(b.categoryId)) {
+      groups.push({ key: `standalone-${b.categoryId}`, parentCategory: category ?? null, parent: b, children: [] });
+    }
+  }
+
+  return groups;
+}
+
 export default function StatisticsMonthScreen() {
   const params = useLocalSearchParams<{ year?: string; month?: string }>();
   const today = useMemo(() => new Date(), []);
@@ -55,9 +99,47 @@ export default function StatisticsMonthScreen() {
   const [month, setMonth] = useState(() => (params.month ? Number(params.month) : today.getMonth() + 1));
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [editingBudget, setEditingBudget] = useState<CategoryBudget | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+
+  const { data: categories = [] } = useCategories();
+  const editingCategory = useMemo(
+    () => categories.find((c) => c.id === editingCategoryId) ?? null,
+    [categories, editingCategoryId],
+  );
 
   const { data: summary, isLoading } = useMonthlyStatistics(year, month);
   const { data: range, isLoading: rangeLoading } = useRangeStatistics(year, month, TREND_MONTHS);
+
+  const budgetGroups = useMemo(
+    () => groupBudgets(summary?.budgets ?? [], categories),
+    [summary, categories],
+  );
+
+  const renderBudgetRow = (b: CategoryBudget) => {
+    const pct = b.targetAmount > 0 ? Math.min(100, Math.round((b.spentAmount / b.targetAmount) * 100)) : 0;
+    const over = b.spentAmount > b.targetAmount;
+    const barColor = over ? '#e03131' : pct >= 80 ? '#f08c00' : '#2f9e44';
+    return (
+      <Pressable key={b.categoryId} onPress={() => setEditingBudget(b)} className="gap-1.5">
+        <View className="flex-row items-center justify-between gap-2">
+          <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200" numberOfLines={1}>
+            {b.icon ? `${b.icon} ` : ''}
+            {b.categoryName}
+            {b.monthOverride ? ' · 이번 달 조정' : ''}
+          </Text>
+          <Text className={`text-sm font-medium ${over ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
+            {formatKrw(b.spentAmount)} / {formatKrw(b.targetAmount)}
+          </Text>
+        </View>
+        <View className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <View
+            className="h-full rounded-full"
+            style={{ width: `${Math.max(pct, b.spentAmount > 0 ? 3 : 0)}%`, backgroundColor: barColor }}
+          />
+        </View>
+      </Pressable>
+    );
+  };
 
   const changeMonth = (delta: number) => {
     const next = addMonths(year, month, delta);
@@ -210,31 +292,23 @@ export default function StatisticsMonthScreen() {
           {summary.budgets.length > 0 ? (
             <View className="gap-3 rounded-xl bg-white p-4 dark:bg-slate-900">
               <Text className="text-base font-semibold text-slate-900 dark:text-white">예산</Text>
-              {summary.budgets.map((b) => {
-                const pct = b.targetAmount > 0 ? Math.min(100, Math.round((b.spentAmount / b.targetAmount) * 100)) : 0;
-                const over = b.spentAmount > b.targetAmount;
-                const barColor = over ? '#e03131' : pct >= 80 ? '#f08c00' : '#2f9e44';
-                return (
-                  <Pressable key={b.categoryId} onPress={() => setEditingBudget(b)} className="gap-1.5">
-                    <View className="flex-row items-center justify-between gap-2">
-                      <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200" numberOfLines={1}>
-                        {b.icon ? `${b.icon} ` : ''}
-                        {b.categoryName}
-                        {b.monthOverride ? ' · 이번 달 조정' : ''}
-                      </Text>
-                      <Text className={`text-sm font-medium ${over ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
-                        {formatKrw(b.spentAmount)} / {formatKrw(b.targetAmount)}
-                      </Text>
+              {budgetGroups.map((group) => (
+                <View key={group.key} className="gap-1.5">
+                  {group.parent ? (
+                    renderBudgetRow(group.parent)
+                  ) : (
+                    <Text className="text-sm font-medium text-slate-500 dark:text-slate-400" numberOfLines={1}>
+                      {group.parentCategory?.icon ? `${group.parentCategory.icon} ` : ''}
+                      {group.parentCategory?.name ?? ''}
+                    </Text>
+                  )}
+                  {group.children.length > 0 ? (
+                    <View className="ml-4 gap-1.5 border-l border-slate-100 pl-3 dark:border-slate-800">
+                      {group.children.map(renderBudgetRow)}
                     </View>
-                    <View className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                      <View
-                        className="h-full rounded-full"
-                        style={{ width: `${Math.max(pct, b.spentAmount > 0 ? 3 : 0)}%`, backgroundColor: barColor }}
-                      />
-                    </View>
-                  </Pressable>
-                );
-              })}
+                  ) : null}
+                </View>
+              ))}
             </View>
           ) : null}
 
@@ -273,8 +347,10 @@ export default function StatisticsMonthScreen() {
                     return (
                       <Pressable
                         key={item.key}
-                        disabled={!canDrill}
-                        onPress={() => setSelectedParentId(item.categoryId)}
+                        disabled={item.categoryId <= 0}
+                        onPress={() =>
+                          canDrill ? setSelectedParentId(item.categoryId) : setEditingCategoryId(item.categoryId)
+                        }
                         className="flex-row items-center gap-2.5">
                         <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                         <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200" numberOfLines={1}>
@@ -298,7 +374,10 @@ export default function StatisticsMonthScreen() {
               <View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
                 <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">수입 카테고리</Text>
                 {incomeParents.map((item) => (
-                  <View key={item.categoryId} className="flex-row items-center gap-2.5">
+                  <Pressable
+                    key={item.categoryId}
+                    onPress={() => setEditingCategoryId(item.categoryId)}
+                    className="flex-row items-center gap-2.5">
                     <View
                       className="h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: item.color ?? '#1F6F5C' }}
@@ -309,7 +388,7 @@ export default function StatisticsMonthScreen() {
                     <Text className="text-sm font-medium text-slate-900 dark:text-white">
                       {formatKrw(item.amount)}
                     </Text>
-                  </View>
+                  </Pressable>
                 ))}
               </View>
             ) : null}
@@ -386,6 +465,12 @@ export default function StatisticsMonthScreen() {
         budget={editingBudget}
         year={year}
         month={month}
+      />
+
+      <CategoryFormModal
+        visible={editingCategory !== null}
+        category={editingCategory}
+        onClose={() => setEditingCategoryId(null)}
       />
     </Screen>
   );

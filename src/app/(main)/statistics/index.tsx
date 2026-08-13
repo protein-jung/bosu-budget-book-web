@@ -5,8 +5,10 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 
 import { DraggableList } from '@/components/DraggableList';
 import { Screen } from '@/components/Screen';
-import { useCategories } from '@/features/category/api';
+import { useCategories, useCategoryMemos } from '@/features/category/api';
+import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { useFullHistoryStatistics } from '@/features/statistics/api';
+import { CategoryMemoModal, type MemoTarget } from '@/features/statistics/CategoryMemoModal';
 import { formatKrw } from '@/lib/format';
 import { storage } from '@/lib/storage';
 import type { Category, MonthlyTrendPoint, TransactionType } from '@/lib/types';
@@ -24,6 +26,8 @@ type Row = {
   categoryId: number | null;
   kind: 'section' | 'group' | 'leaf';
   indent: boolean;
+  /** 이 행이 어느 대분류(그룹)의 하위 행인지. 그 대분류가 접혀 있으면 이 행은 숨긴다. */
+  parentCategoryId: number | null;
 };
 
 /** 이 페이지에서만 쓰는 로컬 정렬 순서. 지정 안 된 카테고리는 원래 sortOrder를 따른다. */
@@ -41,12 +45,36 @@ function buildTypeRows(categories: Category[], type: TransactionType, order: Rec
   const rows: Row[] = [];
   for (const root of roots) {
     const children = sortWithOrder(typeCategories.filter((c) => c.parentId === root.id), order);
-    if (children.length === 0) {
-      rows.push({ key: `c${root.id}`, label: root.name, icon: root.icon, categoryId: root.id, kind: 'leaf', indent: false });
+    if (children.length === 0 && !root.isGroup) {
+      rows.push({
+        key: `c${root.id}`,
+        label: root.name,
+        icon: root.icon,
+        categoryId: root.id,
+        kind: 'leaf',
+        indent: false,
+        parentCategoryId: null,
+      });
     } else {
-      rows.push({ key: `g${root.id}`, label: root.name, icon: root.icon, categoryId: root.id, kind: 'group', indent: false });
+      rows.push({
+        key: `g${root.id}`,
+        label: root.name,
+        icon: root.icon,
+        categoryId: root.id,
+        kind: 'group',
+        indent: false,
+        parentCategoryId: null,
+      });
       for (const child of children) {
-        rows.push({ key: `c${child.id}`, label: child.name, icon: child.icon, categoryId: child.id, kind: 'leaf', indent: true });
+        rows.push({
+          key: `c${child.id}`,
+          label: child.name,
+          icon: child.icon,
+          categoryId: child.id,
+          kind: 'leaf',
+          indent: true,
+          parentCategoryId: root.id,
+        });
       }
     }
   }
@@ -55,9 +83,9 @@ function buildTypeRows(categories: Category[], type: TransactionType, order: Rec
 
 function buildRows(categories: Category[], order: Record<number, number>): Row[] {
   return [
-    { key: 'section-income', label: '수입', icon: null, categoryId: null, kind: 'section', indent: false },
+    { key: 'section-income', label: '수입', icon: null, categoryId: null, kind: 'section', indent: false, parentCategoryId: null },
     ...buildTypeRows(categories, 'INCOME', order),
-    { key: 'section-expense', label: '지출', icon: null, categoryId: null, kind: 'section', indent: false },
+    { key: 'section-expense', label: '지출', icon: null, categoryId: null, kind: 'section', indent: false, parentCategoryId: null },
     ...buildTypeRows(categories, 'EXPENSE', order),
   ];
 }
@@ -70,6 +98,10 @@ function amountFor(point: MonthlyTrendPoint, row: Row): number {
 
 function monthLabel(point: MonthlyTrendPoint) {
   return `${point.year}.${String(point.month).padStart(2, '0')}`;
+}
+
+function memoKeyFor(categoryId: number, year: number, month: number) {
+  return `${categoryId}:${year}:${month}`;
 }
 
 function OrderRow({
@@ -102,8 +134,33 @@ function OrderRow({
 export default function StatisticsScreen() {
   const { data: categories = [] } = useCategories();
   const { data: range, isLoading } = useFullHistoryStatistics();
+  const { data: memos = [] } = useCategoryMemos();
   const [order, setOrder] = useState<Record<number, number>>({});
   const [editingOrder, setEditingOrder] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingMemo, setEditingMemo] = useState<MemoTarget | null>(null);
+  const [hoveredMemoKey, setHoveredMemoKey] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set());
+
+  const toggleGroup = (categoryId: number) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const memoMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of memos) {
+      map.set(memoKeyFor(m.categoryId, m.year, m.month), m.memo);
+    }
+    return map;
+  }, [memos]);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,7 +195,12 @@ export default function StatisticsScreen() {
     storage.removeItem(ORDER_STORAGE_KEY);
   };
 
+  const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const rows = useMemo(() => buildRows(categories, order), [categories, order]);
+  const visibleRows = useMemo(
+    () => rows.filter((row) => row.parentCategoryId == null || !collapsedGroups.has(row.parentCategoryId)),
+    [rows, collapsedGroups],
+  );
   const months = useMemo(() => [...(range?.months ?? [])].reverse(), [range]);
   const hasCustomOrder = Object.keys(order).length > 0;
 
@@ -228,13 +290,9 @@ export default function StatisticsScreen() {
               className="justify-center border-b border-slate-200 bg-slate-50 px-2 dark:border-slate-700 dark:bg-slate-800">
               <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">카테고리</Text>
             </View>
-            {rows.map((row) => (
-              <View
-                key={row.key}
-                style={{ height: ROW_HEIGHT, paddingLeft: row.indent ? 20 : 8 }}
-                className={`justify-center border-b border-slate-100 pr-2 dark:border-slate-800 ${
-                  row.kind === 'section' ? 'bg-slate-100 dark:bg-slate-800' : ''
-                }`}>
+            {visibleRows.map((row) => {
+              const isCollapsed = row.kind === 'group' && row.categoryId != null && collapsedGroups.has(row.categoryId);
+              const content = (
                 <Text
                   numberOfLines={1}
                   className={
@@ -244,11 +302,35 @@ export default function StatisticsScreen() {
                         ? 'text-xs font-bold text-slate-900 dark:text-white'
                         : 'text-xs text-slate-600 dark:text-slate-300'
                   }>
+                  {row.kind === 'group' ? (isCollapsed ? '▸ ' : '▾ ') : ''}
                   {row.icon ? `${row.icon} ` : ''}
                   {row.label}
                 </Text>
-              </View>
-            ))}
+              );
+              if (row.kind === 'section') {
+                return (
+                  <View
+                    key={row.key}
+                    style={{ height: ROW_HEIGHT, paddingLeft: row.indent ? 20 : 8 }}
+                    className="justify-center border-b border-slate-100 bg-slate-100 pr-2 dark:border-slate-800 dark:bg-slate-800">
+                    {content}
+                  </View>
+                );
+              }
+              return (
+                <Pressable
+                  key={row.key}
+                  style={{ height: ROW_HEIGHT, paddingLeft: row.indent ? 20 : 8 }}
+                  className="justify-center border-b border-slate-100 pr-2 dark:border-slate-800"
+                  onPress={() =>
+                    row.kind === 'group' && row.categoryId != null
+                      ? toggleGroup(row.categoryId)
+                      : setEditingCategory(categories.find((c) => c.id === row.categoryId) ?? null)
+                  }>
+                  {content}
+                </Pressable>
+              );
+            })}
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator>
@@ -270,7 +352,7 @@ export default function StatisticsScreen() {
                 ))}
               </View>
 
-              {rows.map((row) =>
+              {visibleRows.map((row) =>
                 row.kind === 'section' ? (
                   <View
                     key={row.key}
@@ -281,23 +363,61 @@ export default function StatisticsScreen() {
                   <View key={row.key} style={{ height: ROW_HEIGHT }} className="flex-row border-b border-slate-100 dark:border-slate-800">
                     {months.map((m) => {
                       const amount = amountFor(m, row);
+                      const categoryId = row.categoryId;
+                      const key = categoryId != null ? memoKeyFor(categoryId, m.year, m.month) : null;
+                      const cellMemo = key != null ? memoMap.get(key) : undefined;
+                      const category = categoryId != null ? categoryById.get(categoryId) : undefined;
+                      const isOverBudget =
+                        category?.type === 'EXPENSE' &&
+                        category.targetAmount != null &&
+                        amount > category.targetAmount;
                       return (
-                        <View
+                        <Pressable
                           key={`${row.key}-${m.year}-${m.month}`}
-                          style={{ width: COL_WIDTH }}
-                          className="items-end justify-center pr-2">
+                          style={{ width: COL_WIDTH, position: 'relative' }}
+                          className="items-end justify-center pr-2"
+                          onPress={() => {
+                            if (categoryId == null) return;
+                            setEditingMemo({
+                              categoryId,
+                              categoryName: row.label,
+                              icon: row.icon,
+                              year: m.year,
+                              month: m.month,
+                              memo: cellMemo ?? null,
+                            });
+                          }}
+                          onHoverIn={() => key != null && setHoveredMemoKey(key)}
+                          onHoverOut={() => setHoveredMemoKey((current) => (current === key ? null : current))}>
                           <Text
                             numberOfLines={1}
                             className={
-                              row.kind === 'group'
-                                ? 'text-xs font-bold text-slate-900 dark:text-white'
-                                : amount === 0
-                                  ? 'text-xs text-slate-300 dark:text-slate-600'
-                                  : 'text-xs text-slate-700 dark:text-slate-200'
+                              isOverBudget
+                                ? `text-xs font-bold text-red-600 dark:text-red-400`
+                                : row.kind === 'group'
+                                  ? 'text-xs font-bold text-slate-900 dark:text-white'
+                                  : amount === 0
+                                    ? 'text-xs text-slate-300 dark:text-slate-600'
+                                    : 'text-xs text-slate-700 dark:text-slate-200'
                             }>
                             {formatKrw(amount)}
                           </Text>
-                        </View>
+                          {cellMemo ? (
+                            <View
+                              pointerEvents="none"
+                              style={{ position: 'absolute', top: 3, right: 3 }}
+                              className="h-1.5 w-1.5 rounded-full bg-primary"
+                            />
+                          ) : null}
+                          {cellMemo && hoveredMemoKey === key ? (
+                            <View
+                              pointerEvents="none"
+                              style={{ position: 'absolute', bottom: '100%', right: 0, zIndex: 50, marginBottom: 4, maxWidth: 200 }}
+                              className="rounded-lg bg-slate-900 px-2.5 py-1.5 shadow-lg dark:bg-slate-700">
+                              <Text className="text-xs text-white">{cellMemo}</Text>
+                            </View>
+                          ) : null}
+                        </Pressable>
                       );
                     })}
                   </View>
@@ -307,6 +427,13 @@ export default function StatisticsScreen() {
           </ScrollView>
         </View>
       )}
+
+      <CategoryFormModal
+        visible={editingCategory !== null}
+        category={editingCategory}
+        onClose={() => setEditingCategory(null)}
+      />
+      <CategoryMemoModal visible={editingMemo !== null} target={editingMemo} onClose={() => setEditingMemo(null)} />
     </Screen>
   );
 }
