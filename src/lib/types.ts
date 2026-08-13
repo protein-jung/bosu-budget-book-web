@@ -12,6 +12,7 @@ export type Category = {
   parentId: number | null;
   sortOrder: number;
   targetAmount: number | null;
+  isGroup: boolean;
 };
 
 export type CardAccount = {
@@ -103,6 +104,13 @@ export type CategoryBudget = {
   monthOverride: boolean;
 };
 
+export type CategoryMemo = {
+  categoryId: number;
+  year: number;
+  month: number;
+  memo: string;
+};
+
 export type MonthlySummary = {
   totalIncome: number;
   totalExpense: number;
@@ -128,8 +136,11 @@ export type RangeSummary = {
   months: MonthlyTrendPoint[];
 };
 
-export type AssetType = 'REAL_ESTATE' | 'VEHICLE' | 'STOCK' | 'CRYPTO' | 'CASH' | 'OTHER';
+export type AssetType = 'REAL_ESTATE' | 'VEHICLE' | 'STOCK' | 'CRYPTO' | 'CASH' | 'LOAN' | 'OTHER';
 export type AccountCategory = 'GENERAL' | 'PENSION';
+export type PriceCurrency = 'KRW' | 'USD';
+export type CashCategory = 'ACCOUNT' | 'DEPOSIT' | 'SAVINGS';
+export type LoanRepaymentType = 'EQUAL_INSTALLMENT' | 'EQUAL_PRINCIPAL';
 
 export type Asset = {
   id: number;
@@ -153,6 +164,20 @@ export type Asset = {
   accountCategory: AccountCategory;
   ownerUserId: number | null;
   ownerName: string | null;
+  cashCategory: CashCategory | null;
+  maturityDate: string | null;
+  matured: boolean;
+  cashInterestRate: number | null;
+  cashStartDate: string | null;
+  purchaseDate: string | null;
+  encarUrl: string | null;
+  loanPrincipal: number | null;
+  loanStartMonth: string | null;
+  loanTermMonths: number | null;
+  loanMonthlyPayment: number | null;
+  loanInterestRate: number | null;
+  loanRepaymentType: LoanRepaymentType | null;
+  currentMonthlyPayment: number | null;
 };
 
 export type AssetTypeBreakdown = { type: AssetType; amount: number };
@@ -168,6 +193,12 @@ export type AssetRefreshResult = {
   updatedCount: number;
   failedCount: number;
   assets: Asset[];
+};
+
+export type AssetSnapshot = {
+  date: string;
+  totalValue: number;
+  byType: AssetTypeBreakdown[];
 };
 
 export type StockSymbolCandidate = { symbol: string; name: string; exchange: string };

@@ -13,11 +13,13 @@ export function DayPickerModal({
   onClose,
   onSelectDate,
   initialDateKey,
+  yearRangeFuture = YEAR_RANGE_FUTURE,
 }: {
   visible: boolean;
   onClose: () => void;
   onSelectDate: (dateKey: string) => void;
   initialDateKey?: string;
+  yearRangeFuture?: number;
 }) {
   const today = useMemo(() => new Date(), []);
   const initial = initialDateKey ? new Date(initialDateKey) : today;
@@ -34,11 +36,11 @@ export function DayPickerModal({
   const years = useMemo(() => {
     const thisYear = today.getFullYear();
     const list: number[] = [];
-    for (let y = thisYear + YEAR_RANGE_FUTURE; y >= thisYear - YEAR_RANGE_PAST; y -= 1) {
+    for (let y = thisYear + yearRangeFuture; y >= thisYear - YEAR_RANGE_PAST; y -= 1) {
       list.push(y);
     }
     return list;
-  }, [today]);
+  }, [today, yearRangeFuture]);
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>

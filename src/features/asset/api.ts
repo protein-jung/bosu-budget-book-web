@@ -1,7 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/apiClient';
-import type { AccountCategory, Asset, AssetRefreshResult, AssetSummary, AssetType, StockSymbolCandidate } from '@/lib/types';
+import type {
+  AccountCategory,
+  Asset,
+  AssetRefreshResult,
+  AssetSnapshot,
+  AssetSummary,
+  AssetType,
+  CashCategory,
+  LoanRepaymentType,
+  PriceCurrency,
+  StockSymbolCandidate,
+} from '@/lib/types';
 
 export type AssetInput = {
   type: AssetType;
@@ -10,6 +21,7 @@ export type AssetInput = {
   symbol: string | null;
   quantity: number | null;
   averagePrice: number | null;
+  averagePriceCurrency: PriceCurrency | null;
   manualValue: number | null;
   memo: string | null;
   address: string | null;
@@ -19,11 +31,25 @@ export type AssetInput = {
   complexName: string | null;
   regionDongName: string | null;
   accountCategory: AccountCategory | null;
+  cashCategory: CashCategory | null;
+  maturityDate: string | null;
+  cashInterestRate: number | null;
+  cashStartDate: string | null;
+  purchaseDate: string | null;
+  encarUrl: string | null;
+  loanPrincipal: number | null;
+  loanStartMonth: string | null;
+  loanTermMonths: number | null;
+  loanMonthlyPayment: number | null;
+  loanInterestRate: number | null;
+  loanRepaymentType: LoanRepaymentType | null;
 };
 
 const assetApi = {
   getAll: () => apiClient.get<Asset[]>('/api/assets').then((res) => res.data),
   getSummary: () => apiClient.get<AssetSummary>('/api/assets/summary').then((res) => res.data),
+  getSnapshots: (days: number) =>
+    apiClient.get<AssetSnapshot[]>('/api/assets/snapshots', { params: { days } }).then((res) => res.data),
   create: (data: AssetInput) => apiClient.post<Asset>('/api/assets', data).then((res) => res.data),
   update: (id: number, data: AssetInput) => apiClient.put<Asset>(`/api/assets/${id}`, data).then((res) => res.data),
   remove: (id: number) => apiClient.delete(`/api/assets/${id}`),
@@ -49,6 +75,13 @@ export function useAssets() {
 
 export function useAssetSummary() {
   return useQuery({ queryKey: ASSET_SUMMARY_QUERY_KEY, queryFn: assetApi.getSummary });
+}
+
+export function useAssetTrend(days = 90) {
+  return useQuery({
+    queryKey: ['assets', 'snapshots', days],
+    queryFn: () => assetApi.getSnapshots(days),
+  });
 }
 
 export function useCreateAsset() {

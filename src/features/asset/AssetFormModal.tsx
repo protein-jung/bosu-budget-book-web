@@ -9,9 +9,9 @@ import { AddressAutocomplete } from '@/features/realEstate/AddressAutocomplete';
 import { RealEstateTradeLookup } from '@/features/realEstate/RealEstateTradeLookup';
 import { getErrorMessage } from '@/lib/apiClient';
 import { formatAmountInput, formatDecimalAmountInput } from '@/lib/format';
-import { ASSET_TYPE_META } from '@/lib/palette';
+import { ASSET_TYPE_META, CASH_CATEGORY_META, LOAN_REPAYMENT_TYPE_META } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
-import type { AccountCategory, Asset, AssetType } from '@/lib/types';
+import type { AccountCategory, Asset, AssetType, CashCategory, LoanRepaymentType, PriceCurrency } from '@/lib/types';
 import { VEHICLE_BRANDS } from '@/lib/vehicleBrands';
 import { VEHICLE_MODELS } from '@/lib/vehicleModels';
 
@@ -20,9 +20,27 @@ import { CustodianField } from './CustodianField';
 import { StockSymbolAutocomplete } from './StockSymbolAutocomplete';
 
 const ASSET_TYPES = Object.keys(ASSET_TYPE_META) as AssetType[];
+const CASH_CATEGORIES = Object.keys(CASH_CATEGORY_META) as CashCategory[];
 
 function isLivePriced(type: AssetType) {
   return type === 'STOCK' || type === 'CRYPTO';
+}
+
+/** YYYY-MM-DD 문자열에 개월 수를 더한 새 날짜 키를 계산한다(예금/적금 만기일 자동 계산용). */
+function addMonthsToDateKey(dateKey: string, months: number): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const date = new Date(y, m - 1 + months, d);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** 시작일~만기일 사이의 개월 수를 대략 계산한다(기존 자산을 수정할 때 예치 기간 입력칸을 채우는 용도). */
+function approxMonthsBetweenDateKeys(startKey: string, endKey: string): number {
+  const [sy, sm] = startKey.split('-').map(Number);
+  const [ey, em] = endKey.split('-').map(Number);
+  return Math.max(1, (ey - sy) * 12 + (em - sm));
 }
 
 function splitVehicleName(fullName: string): { brand: string; model: string } {
@@ -30,15 +48,59 @@ function splitVehicleName(fullName: string): { brand: string; model: string } {
   return brand ? { brand, model: fullName.slice(brand.length + 1) } : { brand: '', model: fullName };
 }
 
+/** 원리금균등상환 공식으로 (고정) 월 납입금을 계산한다. 입력값이 유효하지 않으면 null. */
+function calculateEqualInstallmentPayment(
+  principal: number,
+  annualRatePercent: number,
+  termMonths: number,
+): number | null {
+  if (!Number.isFinite(principal) || principal <= 0) return null;
+  if (!Number.isFinite(termMonths) || termMonths <= 0) return null;
+  if (!Number.isFinite(annualRatePercent) || annualRatePercent < 0) return null;
+  const monthlyRate = annualRatePercent / 100 / 12;
+  if (monthlyRate === 0) return principal / termMonths;
+  const factor = Math.pow(1 + monthlyRate, termMonths);
+  return (principal * monthlyRate * factor) / (factor - 1);
+}
+
+/** 원금균등상환의 첫 달 납입금(원금/기간 + 첫 달 이자)을 계산한다. 매달 원금 상환액은 고정이지만
+ * 이자가 잔액에 비례해 줄어들어 총 납입금은 이 값에서 매달 감소한다. 입력값이 유효하지 않으면 null. */
+function calculateEqualPrincipalFirstPayment(
+  principal: number,
+  annualRatePercent: number,
+  termMonths: number,
+): number | null {
+  if (!Number.isFinite(principal) || principal <= 0) return null;
+  if (!Number.isFinite(termMonths) || termMonths <= 0) return null;
+  if (!Number.isFinite(annualRatePercent) || annualRatePercent < 0) return null;
+  const monthlyPrincipal = principal / termMonths;
+  const firstMonthInterest = principal * (annualRatePercent / 100 / 12);
+  return monthlyPrincipal + firstMonthInterest;
+}
+
+type StockHoldingType = 'SYMBOL' | 'MANUAL';
+
 type StockRow = {
+  holdingType: StockHoldingType;
   symbol: string;
   name: string;
   quantity: string;
   averagePrice: string;
+  averagePriceCurrency: PriceCurrency;
+  manualValue: string;
   accountCategory: AccountCategory;
 };
 
-const EMPTY_STOCK_ROW: StockRow = { symbol: '', name: '', quantity: '', averagePrice: '', accountCategory: 'GENERAL' };
+const EMPTY_STOCK_ROW: StockRow = {
+  holdingType: 'SYMBOL',
+  symbol: '',
+  name: '',
+  quantity: '',
+  averagePrice: '',
+  averagePriceCurrency: 'KRW',
+  manualValue: '',
+  accountCategory: 'GENERAL',
+};
 
 export function AssetFormModal({
   visible,
@@ -57,7 +119,25 @@ export function AssetFormModal({
   const [symbol, setSymbol] = useState('');
   const [quantity, setQuantity] = useState('');
   const [averagePrice, setAveragePrice] = useState('');
+  const [averagePriceCurrency, setAveragePriceCurrency] = useState<PriceCurrency>('KRW');
   const [accountCategory, setAccountCategory] = useState<AccountCategory>('GENERAL');
+  const [cashCategory, setCashCategory] = useState<CashCategory>('ACCOUNT');
+  const [maturityDate, setMaturityDate] = useState<string | null>(null);
+  const [cashInterestRate, setCashInterestRate] = useState('');
+  const [cashStartDate, setCashStartDate] = useState<string | null>(null);
+  const [showCashStartPicker, setShowCashStartPicker] = useState(false);
+  const [cashTermMonths, setCashTermMonths] = useState('');
+  const [purchaseDate, setPurchaseDate] = useState<string | null>(null);
+  const [showPurchaseDatePicker, setShowPurchaseDatePicker] = useState(false);
+  const [encarUrl, setEncarUrl] = useState('');
+  const [stockHoldingType, setStockHoldingType] = useState<StockHoldingType>('SYMBOL');
+  const [loanPrincipal, setLoanPrincipal] = useState('');
+  const [loanStartMonth, setLoanStartMonth] = useState<string | null>(null);
+  const [showLoanStartPicker, setShowLoanStartPicker] = useState(false);
+  const [loanTermMonths, setLoanTermMonths] = useState('');
+  const [loanMonthlyPayment, setLoanMonthlyPayment] = useState('');
+  const [loanInterestRate, setLoanInterestRate] = useState('');
+  const [loanRepaymentType, setLoanRepaymentType] = useState<LoanRepaymentType>('EQUAL_INSTALLMENT');
   const [manualValue, setManualValue] = useState('');
   const [memo, setMemo] = useState('');
   const [address, setAddress] = useState('');
@@ -90,7 +170,26 @@ export function AssetFormModal({
       setSymbol(asset.symbol ?? '');
       setQuantity(asset.quantity != null ? String(asset.quantity) : '');
       setAveragePrice(asset.averagePrice != null ? String(asset.averagePrice) : '');
+      setAveragePriceCurrency('KRW');
       setAccountCategory(asset.accountCategory ?? 'GENERAL');
+      setCashCategory(asset.cashCategory ?? 'ACCOUNT');
+      setMaturityDate(asset.maturityDate);
+      setCashInterestRate(asset.cashInterestRate != null ? String(asset.cashInterestRate) : '');
+      setCashStartDate(asset.cashStartDate);
+      setCashTermMonths(
+        asset.cashStartDate && asset.maturityDate
+          ? String(approxMonthsBetweenDateKeys(asset.cashStartDate, asset.maturityDate))
+          : '',
+      );
+      setPurchaseDate(asset.purchaseDate);
+      setEncarUrl(asset.encarUrl ?? '');
+      setStockHoldingType(asset.type === 'STOCK' && !asset.symbol ? 'MANUAL' : 'SYMBOL');
+      setLoanPrincipal(asset.loanPrincipal != null ? String(asset.loanPrincipal) : '');
+      setLoanStartMonth(asset.loanStartMonth);
+      setLoanTermMonths(asset.loanTermMonths != null ? String(asset.loanTermMonths) : '');
+      setLoanMonthlyPayment(asset.loanMonthlyPayment != null ? String(asset.loanMonthlyPayment) : '');
+      setLoanInterestRate(asset.loanInterestRate != null ? String(asset.loanInterestRate) : '');
+      setLoanRepaymentType(asset.loanRepaymentType ?? 'EQUAL_INSTALLMENT');
       setManualValue(asset.manualValue != null ? String(asset.manualValue) : '');
       setMemo(asset.memo ?? '');
       setAddress(asset.address ?? '');
@@ -116,7 +215,22 @@ export function AssetFormModal({
       setSymbol('');
       setQuantity('');
       setAveragePrice('');
+      setAveragePriceCurrency('KRW');
       setAccountCategory('GENERAL');
+      setCashCategory('ACCOUNT');
+      setMaturityDate(null);
+      setCashInterestRate('');
+      setCashStartDate(null);
+      setCashTermMonths('');
+      setPurchaseDate(null);
+      setEncarUrl('');
+      setStockHoldingType('SYMBOL');
+      setLoanPrincipal('');
+      setLoanStartMonth(null);
+      setLoanTermMonths('');
+      setLoanMonthlyPayment('');
+      setLoanInterestRate('');
+      setLoanRepaymentType('EQUAL_INSTALLMENT');
       setManualValue('');
       setMemo('');
       setAddress('');
@@ -132,8 +246,33 @@ export function AssetFormModal({
     setCustomBrand(false);
     setDealDate(null);
     setShowDayPicker(false);
+    setShowCashStartPicker(false);
+    setShowPurchaseDatePicker(false);
+    setShowLoanStartPicker(false);
     setStockRows([EMPTY_STOCK_ROW]);
   }, [visible, asset]);
+
+  // 월 납입금은 직접 입력받지 않고 원금/이율/기간/상환방식으로부터 항상 다시 계산한다 — 넷 중
+  // 하나만 바뀌어도 잔액 계산과 어긋나지 않도록. 원금균등은 첫 달 납입금(이후 매달 감소)을 보여준다.
+  useEffect(() => {
+    if (!visible || type !== 'LOAN') return;
+    const principal = Number(loanPrincipal);
+    const rate = Number(loanInterestRate);
+    const term = Number(loanTermMonths);
+    const computed =
+      loanRepaymentType === 'EQUAL_PRINCIPAL'
+        ? calculateEqualPrincipalFirstPayment(principal, rate, term)
+        : calculateEqualInstallmentPayment(principal, rate, term);
+    setLoanMonthlyPayment(computed != null ? String(Math.round(computed)) : '');
+  }, [visible, type, loanPrincipal, loanInterestRate, loanTermMonths, loanRepaymentType]);
+
+  // 예금/적금 만기일은 직접 고르지 않고 시작일 + 예치 기간(개월)으로부터 항상 다시 계산한다.
+  useEffect(() => {
+    if (!visible || type !== 'CASH' || cashCategory === 'ACCOUNT') return;
+    const months = Number(cashTermMonths);
+    if (!cashStartDate || !Number.isFinite(months) || months <= 0) return;
+    setMaturityDate(addMonthsToDateKey(cashStartDate, months));
+  }, [visible, type, cashCategory, cashStartDate, cashTermMonths]);
 
   const updateStockRow = (index: number, patch: Partial<StockRow>) => {
     setStockRows((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -148,35 +287,90 @@ export function AssetFormModal({
     setError(null);
 
     if (bulkStockEntry) {
-      const validRows = stockRows.filter((row) => row.symbol.trim());
+      const isManualRow = (row: StockRow) => type === 'STOCK' && row.holdingType === 'MANUAL';
+      const validRows = stockRows.filter((row) => (isManualRow(row) ? row.name.trim() : row.symbol.trim()));
       if (validRows.length === 0) {
         setError('최소 1개 종목을 입력해주세요.');
         return;
       }
       for (const row of validRows) {
+        if (isManualRow(row)) {
+          const manualValueNumber = Number(row.manualValue);
+          if (!row.manualValue || Number.isNaN(manualValueNumber) || manualValueNumber < 0) {
+            setError(`${row.name.trim()}의 평가금액을 올바르게 입력해주세요.`);
+            return;
+          }
+          continue;
+        }
         const quantityNumber = Number(row.quantity);
         if (!row.quantity || Number.isNaN(quantityNumber) || quantityNumber <= 0) {
           setError(`${row.symbol.trim()} 종목의 보유 수량을 올바르게 입력해주세요.`);
           return;
         }
       }
-      const payloads = validRows.map((row) => ({
-        type,
-        name: (type === 'STOCK' ? row.name || row.symbol : row.symbol).trim(),
-        custodian: custodian.trim() || null,
-        symbol: row.symbol.trim().toUpperCase(),
-        quantity: Number(row.quantity),
-        averagePrice: row.averagePrice.trim() ? Number(row.averagePrice) : null,
-        manualValue: null,
-        memo: memo.trim() || null,
-        address: null,
-        dong: null,
-        ho: null,
-        lawdCd: null,
-        complexName: null,
-        regionDongName: null,
-        accountCategory: type === 'STOCK' ? row.accountCategory : null,
-      }));
+      const payloads = validRows.map((row) =>
+        isManualRow(row)
+          ? {
+              type,
+              name: row.name.trim(),
+              custodian: custodian.trim() || null,
+              symbol: null,
+              quantity: null,
+              averagePrice: null,
+              averagePriceCurrency: null,
+              manualValue: Number(row.manualValue),
+              memo: memo.trim() || null,
+              address: null,
+              dong: null,
+              ho: null,
+              lawdCd: null,
+              complexName: null,
+              regionDongName: null,
+              accountCategory: row.accountCategory,
+              cashCategory: null,
+              maturityDate: null,
+              cashInterestRate: null,
+              cashStartDate: null,
+              purchaseDate: null,
+              encarUrl: null,
+              loanPrincipal: null,
+              loanStartMonth: null,
+              loanTermMonths: null,
+              loanMonthlyPayment: null,
+              loanInterestRate: null,
+              loanRepaymentType: null,
+            }
+          : {
+              type,
+              name: (type === 'STOCK' ? row.name || row.symbol : row.symbol).trim(),
+              custodian: custodian.trim() || null,
+              symbol: row.symbol.trim().toUpperCase(),
+              quantity: Number(row.quantity),
+              averagePrice: row.averagePrice.trim() ? Number(row.averagePrice) : null,
+              averagePriceCurrency: type === 'STOCK' && row.averagePrice.trim() ? row.averagePriceCurrency : null,
+              manualValue: null,
+              memo: memo.trim() || null,
+              address: null,
+              dong: null,
+              ho: null,
+              lawdCd: null,
+              complexName: null,
+              regionDongName: null,
+              accountCategory: type === 'STOCK' ? row.accountCategory : null,
+              cashCategory: null,
+              maturityDate: null,
+              cashInterestRate: null,
+              cashStartDate: null,
+              purchaseDate: null,
+              encarUrl: null,
+              loanPrincipal: null,
+              loanStartMonth: null,
+              loanTermMonths: null,
+              loanMonthlyPayment: null,
+              loanInterestRate: null,
+              loanRepaymentType: null,
+            },
+      );
       try {
         await Promise.all(payloads.map((payload) => createAsset.mutateAsync(payload)));
         onClose();
@@ -201,7 +395,35 @@ export function AssetFormModal({
       setError('이름을 입력해주세요.');
       return;
     }
-    if (livePriced) {
+    const isStockManual = type === 'STOCK' && stockHoldingType === 'MANUAL';
+    const effectiveLivePriced = livePriced && !isStockManual;
+
+    if (type === 'LOAN') {
+      const principalNumber = Number(loanPrincipal);
+      if (!loanPrincipal || Number.isNaN(principalNumber) || principalNumber < 0) {
+        setError('대출 원금을 올바르게 입력해주세요.');
+        return;
+      }
+      if (!loanStartMonth) {
+        setError('대출 시작년월을 선택해주세요.');
+        return;
+      }
+      const termNumber = Number(loanTermMonths);
+      if (!loanTermMonths || Number.isNaN(termNumber) || termNumber <= 0) {
+        setError('상환 기한을 올바르게 입력해주세요.');
+        return;
+      }
+      const interestRateNumber = Number(loanInterestRate);
+      if (loanInterestRate.trim() === '' || Number.isNaN(interestRateNumber) || interestRateNumber < 0) {
+        setError('이율을 올바르게 입력해주세요.');
+        return;
+      }
+      const monthlyPaymentNumber = Number(loanMonthlyPayment);
+      if (!loanMonthlyPayment || Number.isNaN(monthlyPaymentNumber) || monthlyPaymentNumber < 0) {
+        setError('월 납입금을 계산하지 못했어요. 원금·이율·상환 기한을 다시 확인해주세요.');
+        return;
+      }
+    } else if (effectiveLivePriced) {
       if (!symbol.trim()) {
         setError('심볼(티커)을 입력해주세요.');
         return;
@@ -223,10 +445,11 @@ export function AssetFormModal({
       type,
       name: finalName,
       custodian: custodian.trim() || null,
-      symbol: livePriced ? symbol.trim().toUpperCase() : null,
-      quantity: livePriced ? Number(quantity) : null,
-      averagePrice: livePriced && averagePrice.trim() ? Number(averagePrice) : null,
-      manualValue: livePriced ? null : Number(manualValue),
+      symbol: effectiveLivePriced ? symbol.trim().toUpperCase() : null,
+      quantity: effectiveLivePriced ? Number(quantity) : null,
+      averagePrice: effectiveLivePriced && averagePrice.trim() ? Number(averagePrice) : null,
+      averagePriceCurrency: type === 'STOCK' && !isStockManual && averagePrice.trim() ? averagePriceCurrency : null,
+      manualValue: effectiveLivePriced || type === 'LOAN' ? null : Number(manualValue),
       memo: memo.trim() || null,
       address: address.trim() || null,
       dong: dong.trim() || null,
@@ -235,6 +458,19 @@ export function AssetFormModal({
       complexName: type === 'REAL_ESTATE' ? complexName : null,
       regionDongName: type === 'REAL_ESTATE' ? dongName : null,
       accountCategory: type === 'STOCK' ? accountCategory : null,
+      cashCategory: type === 'CASH' ? cashCategory : null,
+      maturityDate: type === 'CASH' && cashCategory !== 'ACCOUNT' ? maturityDate : null,
+      cashInterestRate:
+        type === 'CASH' && cashCategory !== 'ACCOUNT' && cashInterestRate.trim() ? Number(cashInterestRate) : null,
+      cashStartDate: type === 'CASH' && cashCategory !== 'ACCOUNT' ? cashStartDate : null,
+      purchaseDate: type === 'VEHICLE' ? purchaseDate : null,
+      encarUrl: type === 'VEHICLE' ? encarUrl.trim() || null : null,
+      loanPrincipal: type === 'LOAN' ? Number(loanPrincipal) : null,
+      loanStartMonth: type === 'LOAN' ? loanStartMonth : null,
+      loanTermMonths: type === 'LOAN' ? Number(loanTermMonths) : null,
+      loanMonthlyPayment: type === 'LOAN' ? Number(loanMonthlyPayment) : null,
+      loanInterestRate: type === 'LOAN' ? Number(loanInterestRate) : null,
+      loanRepaymentType: type === 'LOAN' ? loanRepaymentType : null,
     };
 
     if (isEdit && asset) {
@@ -364,6 +600,41 @@ export function AssetFormModal({
                       placeholder="예) 아반떼, 그랜저"
                     />
                   )}
+
+                  <View className="gap-1.5">
+                    <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">구매일 (선택)</Text>
+                    <View className="flex-row items-center gap-2">
+                      <Pressable
+                        onPress={() => setShowPurchaseDatePicker(true)}
+                        className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800">
+                        <Text className={purchaseDate ? 'text-slate-900 dark:text-white' : 'text-slate-400'}>
+                          {purchaseDate ?? '구매일을 선택하세요'}
+                        </Text>
+                      </Pressable>
+                      {purchaseDate ? (
+                        <Pressable onPress={() => setPurchaseDate(null)} className="px-2 py-3">
+                          <Text className="text-xs font-medium text-slate-400">지우기</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  </View>
+                  <DayPickerModal
+                    visible={showPurchaseDatePicker}
+                    onClose={() => setShowPurchaseDatePicker(false)}
+                    onSelectDate={setPurchaseDate}
+                    initialDateKey={purchaseDate ?? undefined}
+                  />
+
+                  <TextField
+                    label="엔카 매물 목록 URL (선택)"
+                    value={encarUrl}
+                    onChangeText={setEncarUrl}
+                    placeholder="car.encar.com에서 같은 차종으로 검색한 목록 URL을 붙여넣으세요"
+                  />
+                  <Text className="text-xs text-slate-400">
+                    새로고침할 때마다 이 URL의 매물 목록에서 가격을 가져와 평균값을 현재가로 써요. 비워두면
+                    구매가를 그대로 현재가로 써요.
+                  </Text>
                 </View>
               ) : bulkStockEntry ? null : (
                 <TextField
@@ -376,6 +647,71 @@ export function AssetFormModal({
 
               {type !== 'REAL_ESTATE' && type !== 'VEHICLE' ? (
                 <CustodianField value={custodian} onChangeText={setCustodian} />
+              ) : null}
+
+              {type === 'CASH' ? (
+                <View className="gap-1.5">
+                  <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">현금 종류</Text>
+                  <View className="flex-row flex-wrap gap-2">
+                    {CASH_CATEGORIES.map((option) => (
+                      <Chip
+                        key={option}
+                        label={CASH_CATEGORY_META[option].label}
+                        selected={cashCategory === option}
+                        onPress={() => setCashCategory(option)}
+                      />
+                    ))}
+                  </View>
+                  {cashCategory !== 'ACCOUNT' ? (
+                    <>
+                      <View className="gap-1.5">
+                        <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">시작일 (선택)</Text>
+                        <View className="flex-row items-center gap-2">
+                          <Pressable
+                            onPress={() => setShowCashStartPicker(true)}
+                            className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800">
+                            <Text className={cashStartDate ? 'text-slate-900 dark:text-white' : 'text-slate-400'}>
+                              {cashStartDate ?? '예치 시작일을 선택하세요'}
+                            </Text>
+                          </Pressable>
+                          {cashStartDate ? (
+                            <Pressable onPress={() => setCashStartDate(null)} className="px-2 py-3">
+                              <Text className="text-xs font-medium text-slate-400">지우기</Text>
+                            </Pressable>
+                          ) : null}
+                        </View>
+                      </View>
+                      <DayPickerModal
+                        visible={showCashStartPicker}
+                        onClose={() => setShowCashStartPicker(false)}
+                        onSelectDate={setCashStartDate}
+                        initialDateKey={cashStartDate ?? undefined}
+                        yearRangeFuture={10}
+                      />
+                      <TextField
+                        label="예치 기간 (개월, 선택)"
+                        value={cashTermMonths}
+                        onChangeText={(text) => setCashTermMonths(text.replace(/[^0-9]/g, ''))}
+                        keyboardType="number-pad"
+                        placeholder="예) 12"
+                      />
+                      <TextField
+                        label="이율 (연 %, 선택)"
+                        value={cashInterestRate}
+                        onChangeText={(text) => setCashInterestRate(text.replace(/[^0-9.]/g, ''))}
+                        keyboardType="decimal-pad"
+                        placeholder="예) 3.5"
+                      />
+                      <View className="gap-1.5 opacity-70">
+                        <TextField label="만기일 (자동 계산)" value={maturityDate ?? ''} editable={false} placeholder="시작일과 기간을 입력하면 계산돼요" />
+                      </View>
+                      <Text className="text-xs text-slate-400">
+                        시작일·이율·기간을 모두 입력하면 단리 기준으로 오늘까지 늘어난 이자와 만기 예상 수령액을
+                        보여드려요.
+                      </Text>
+                    </>
+                  ) : null}
+                </View>
               ) : null}
 
               {type === 'REAL_ESTATE' ? (
@@ -469,48 +805,96 @@ export function AssetFormModal({
                   {stockRows.map((row, index) => (
                     <View key={index} className="gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
                       {type === 'STOCK' ? (
-                        <StockSymbolAutocomplete
-                          value={row.symbol}
-                          onChangeText={(text) => updateStockRow(index, { symbol: text })}
-                          onSelect={(candidate) =>
-                            updateStockRow(index, { symbol: candidate.symbol, name: candidate.name })
-                          }
-                        />
-                      ) : (
-                        <TextField
-                          label="심볼(티커)"
-                          value={row.symbol}
-                          onChangeText={(text) => updateStockRow(index, { symbol: text.toUpperCase() })}
-                          autoCapitalize="characters"
-                          placeholder="BTC, ETH..."
-                        />
-                      )}
-                      <View className="flex-row gap-2">
-                        <View className="flex-1">
+                        <View className="flex-row gap-2">
+                          <Chip
+                            label="종목 보유"
+                            selected={row.holdingType === 'SYMBOL'}
+                            onPress={() => updateStockRow(index, { holdingType: 'SYMBOL' })}
+                          />
+                          <Chip
+                            label="현금·보장형 상품"
+                            selected={row.holdingType === 'MANUAL'}
+                            onPress={() => updateStockRow(index, { holdingType: 'MANUAL' })}
+                          />
+                        </View>
+                      ) : null}
+                      {type === 'STOCK' && row.holdingType === 'MANUAL' ? (
+                        <>
                           <TextField
-                            label="보유 수량"
-                            value={row.quantity}
-                            onChangeText={(text) => updateStockRow(index, { quantity: text })}
-                            keyboardType="decimal-pad"
+                            label="이름"
+                            value={row.name}
+                            onChangeText={(text) => updateStockRow(index, { name: text })}
+                            placeholder="예) 현금 잔고, 원리금보장형 상품"
+                          />
+                          <TextField
+                            label="평가금액"
+                            value={formatAmountInput(row.manualValue)}
+                            onChangeText={(text) => updateStockRow(index, { manualValue: text.replace(/[^0-9]/g, '') })}
+                            keyboardType="numeric"
                             placeholder="0"
                           />
-                        </View>
-                        <View className="flex-1">
-                          <TextField
-                            label="평단가 (선택)"
-                            value={formatDecimalAmountInput(row.averagePrice)}
-                            onChangeText={(text) => {
-                              const cleaned = text.replace(/[^0-9.]/g, '');
-                              const [intPart, ...rest] = cleaned.split('.');
-                              updateStockRow(index, {
-                                averagePrice: rest.length > 0 ? `${intPart}.${rest.join('')}` : intPart,
-                              });
-                            }}
-                            keyboardType="decimal-pad"
-                            placeholder="매수 평균 단가"
-                          />
-                        </View>
-                      </View>
+                        </>
+                      ) : (
+                        <>
+                          {type === 'STOCK' ? (
+                            <StockSymbolAutocomplete
+                              value={row.symbol}
+                              onChangeText={(text) => updateStockRow(index, { symbol: text })}
+                              onSelect={(candidate) =>
+                                updateStockRow(index, { symbol: candidate.symbol, name: candidate.name })
+                              }
+                            />
+                          ) : (
+                            <TextField
+                              label="심볼(티커)"
+                              value={row.symbol}
+                              onChangeText={(text) => updateStockRow(index, { symbol: text.toUpperCase() })}
+                              autoCapitalize="characters"
+                              placeholder="BTC, ETH..."
+                            />
+                          )}
+                          <View className="flex-row gap-2">
+                            <View className="flex-1">
+                              <TextField
+                                label="보유 수량"
+                                value={row.quantity}
+                                onChangeText={(text) => updateStockRow(index, { quantity: text })}
+                                keyboardType="decimal-pad"
+                                placeholder="0"
+                              />
+                            </View>
+                            <View className="flex-1">
+                              <TextField
+                                label="평단가 (선택)"
+                                value={formatDecimalAmountInput(row.averagePrice)}
+                                onChangeText={(text) => {
+                                  const cleaned = text.replace(/[^0-9.]/g, '');
+                                  const [intPart, ...rest] = cleaned.split('.');
+                                  updateStockRow(index, {
+                                    averagePrice: rest.length > 0 ? `${intPart}.${rest.join('')}` : intPart,
+                                  });
+                                }}
+                                keyboardType="decimal-pad"
+                                placeholder="매수 평균 단가"
+                              />
+                            </View>
+                          </View>
+                          {type === 'STOCK' ? (
+                            <View className="flex-row gap-2">
+                              <Chip
+                                label="원화"
+                                selected={row.averagePriceCurrency === 'KRW'}
+                                onPress={() => updateStockRow(index, { averagePriceCurrency: 'KRW' })}
+                              />
+                              <Chip
+                                label="달러"
+                                selected={row.averagePriceCurrency === 'USD'}
+                                onPress={() => updateStockRow(index, { averagePriceCurrency: 'USD' })}
+                              />
+                            </View>
+                          ) : null}
+                        </>
+                      )}
                       {type === 'STOCK' ? (
                         <View className="flex-row gap-2">
                           <Chip
@@ -544,41 +928,81 @@ export function AssetFormModal({
               ) : livePriced ? (
                 <>
                   {type === 'STOCK' ? (
-                    <StockSymbolAutocomplete
-                      value={symbol}
-                      onChangeText={setSymbol}
-                      onSelect={(candidate) => {
-                        setSymbol(candidate.symbol);
-                        if (!name.trim()) setName(candidate.name);
-                      }}
+                    <View className="flex-row gap-2">
+                      <Chip
+                        label="종목 보유"
+                        selected={stockHoldingType === 'SYMBOL'}
+                        onPress={() => setStockHoldingType('SYMBOL')}
+                      />
+                      <Chip
+                        label="현금·보장형 상품"
+                        selected={stockHoldingType === 'MANUAL'}
+                        onPress={() => setStockHoldingType('MANUAL')}
+                      />
+                    </View>
+                  ) : null}
+                  {type === 'STOCK' && stockHoldingType === 'MANUAL' ? (
+                    <TextField
+                      label="평가금액"
+                      value={formatAmountInput(manualValue)}
+                      onChangeText={(text) => setManualValue(text.replace(/[^0-9]/g, ''))}
+                      keyboardType="numeric"
+                      placeholder="0"
                     />
                   ) : (
-                    <TextField
-                      label="심볼(티커)"
-                      value={symbol}
-                      onChangeText={setSymbol}
-                      autoCapitalize="characters"
-                      placeholder="BTC, ETH..."
-                    />
+                    <>
+                      {type === 'STOCK' ? (
+                        <StockSymbolAutocomplete
+                          value={symbol}
+                          onChangeText={setSymbol}
+                          onSelect={(candidate) => {
+                            setSymbol(candidate.symbol);
+                            if (!name.trim()) setName(candidate.name);
+                          }}
+                        />
+                      ) : (
+                        <TextField
+                          label="심볼(티커)"
+                          value={symbol}
+                          onChangeText={setSymbol}
+                          autoCapitalize="characters"
+                          placeholder="BTC, ETH..."
+                        />
+                      )}
+                      <TextField
+                        label="보유 수량"
+                        value={quantity}
+                        onChangeText={setQuantity}
+                        keyboardType="decimal-pad"
+                        placeholder="0"
+                      />
+                      <TextField
+                        label="평단가 (선택)"
+                        value={formatDecimalAmountInput(averagePrice)}
+                        onChangeText={(text) => {
+                          const cleaned = text.replace(/[^0-9.]/g, '');
+                          const [intPart, ...rest] = cleaned.split('.');
+                          setAveragePrice(rest.length > 0 ? `${intPart}.${rest.join('')}` : intPart);
+                        }}
+                        keyboardType="decimal-pad"
+                        placeholder="매수 평균 단가"
+                      />
+                      {type === 'STOCK' ? (
+                        <View className="flex-row gap-2">
+                          <Chip
+                            label="원화"
+                            selected={averagePriceCurrency === 'KRW'}
+                            onPress={() => setAveragePriceCurrency('KRW')}
+                          />
+                          <Chip
+                            label="달러"
+                            selected={averagePriceCurrency === 'USD'}
+                            onPress={() => setAveragePriceCurrency('USD')}
+                          />
+                        </View>
+                      ) : null}
+                    </>
                   )}
-                  <TextField
-                    label="보유 수량"
-                    value={quantity}
-                    onChangeText={setQuantity}
-                    keyboardType="decimal-pad"
-                    placeholder="0"
-                  />
-                  <TextField
-                    label="평단가 (선택)"
-                    value={formatDecimalAmountInput(averagePrice)}
-                    onChangeText={(text) => {
-                      const cleaned = text.replace(/[^0-9.]/g, '');
-                      const [intPart, ...rest] = cleaned.split('.');
-                      setAveragePrice(rest.length > 0 ? `${intPart}.${rest.join('')}` : intPart);
-                    }}
-                    keyboardType="decimal-pad"
-                    placeholder="매수 평균 단가"
-                  />
                   {type === 'STOCK' ? (
                     <View className="flex-row gap-2">
                       <Chip
@@ -593,18 +1017,96 @@ export function AssetFormModal({
                       />
                     </View>
                   ) : null}
+                  {stockHoldingType === 'SYMBOL' ? (
+                    <Text className="text-xs text-slate-400">
+                      현재가는 저장 후 "새로고침"을 누르면 실시간으로 조회돼요.
+                    </Text>
+                  ) : null}
+                </>
+              ) : type === 'LOAN' ? (
+                <>
+                  <TextField
+                    label="원금"
+                    value={formatAmountInput(loanPrincipal)}
+                    onChangeText={(text) => setLoanPrincipal(text.replace(/[^0-9]/g, ''))}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                  <View className="gap-1.5">
+                    <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">시작년월</Text>
+                    <Pressable
+                      onPress={() => setShowLoanStartPicker(true)}
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800">
+                      <Text className={loanStartMonth ? 'text-slate-900 dark:text-white' : 'text-slate-400'}>
+                        {loanStartMonth ?? '대출 시작년월을 선택하세요'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <DayPickerModal
+                    visible={showLoanStartPicker}
+                    onClose={() => setShowLoanStartPicker(false)}
+                    onSelectDate={setLoanStartMonth}
+                    initialDateKey={loanStartMonth ?? undefined}
+                  />
+                  <TextField
+                    label="상환 기한 (개월)"
+                    value={loanTermMonths}
+                    onChangeText={(text) => setLoanTermMonths(text.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    placeholder="예) 360"
+                  />
+                  <TextField
+                    label="이율 (연 %)"
+                    value={loanInterestRate}
+                    onChangeText={(text) => setLoanInterestRate(text.replace(/[^0-9.]/g, ''))}
+                    keyboardType="decimal-pad"
+                    placeholder="예) 4.5"
+                  />
+                  <View className="gap-1.5">
+                    <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">상환 방식</Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {(Object.keys(LOAN_REPAYMENT_TYPE_META) as LoanRepaymentType[]).map((repaymentType) => (
+                        <Chip
+                          key={repaymentType}
+                          label={LOAN_REPAYMENT_TYPE_META[repaymentType].label}
+                          selected={loanRepaymentType === repaymentType}
+                          onPress={() => setLoanRepaymentType(repaymentType)}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                  <View className="gap-1.5 opacity-70">
+                    <TextField
+                      label={
+                        loanRepaymentType === 'EQUAL_PRINCIPAL' ? '월 납입금 (첫 달, 자동 계산)' : '월 납입금 (자동 계산)'
+                      }
+                      value={loanMonthlyPayment ? `${formatAmountInput(loanMonthlyPayment)}원` : ''}
+                      editable={false}
+                      placeholder="원금·이율·상환 기한을 입력하면 계산돼요"
+                    />
+                  </View>
                   <Text className="text-xs text-slate-400">
-                    현재가는 저장 후 "새로고침"을 누르면 실시간으로 조회돼요.
+                    {loanRepaymentType === 'EQUAL_PRINCIPAL'
+                      ? '매달 원금 상환액은 고정이고 이자가 잔액에 비례해 줄어들어, 총 납입금이 매달 조금씩 줄어요. 잔액도 그 기준(선형 감소)으로 보여드려요.'
+                      : '원금·이율·상환 기한으로 원리금균등분할상환 월 납입금을 자동 계산해요. 매달 잔액이 그 기준으로 줄어드는 추정 잔액을 보여드려요.'}
                   </Text>
                 </>
               ) : (
-                <TextField
-                  label="평가금액"
-                  value={formatAmountInput(manualValue)}
-                  onChangeText={(text) => setManualValue(text.replace(/[^0-9]/g, ''))}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
+                <>
+                  <TextField
+                    label={type === 'VEHICLE' ? '구매 가격' : '평가금액'}
+                    value={formatAmountInput(manualValue)}
+                    onChangeText={(text) => setManualValue(text.replace(/[^0-9]/g, ''))}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                  {type === 'VEHICLE' && purchaseDate ? (
+                    <Text className="text-xs text-slate-400">
+                      1년차 -25%, 이후 매년 -12%씩 감가상각한 추정 시세를 자동으로 계산해요(공식 시세는
+                      아니에요).
+                    </Text>
+                  ) : null}
+                </>
               )}
 
               <TextField label="메모 (선택)" value={memo} onChangeText={setMemo} placeholder="메모를 입력하세요" />
