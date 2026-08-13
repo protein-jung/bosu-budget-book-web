@@ -12,10 +12,13 @@ import { formatKrw } from '@/lib/format';
 import { useIsDesktop } from '@/lib/responsive';
 import type { ImportProvider, ImportResult } from '@/lib/types';
 
-const PROVIDERS: { value: ImportProvider; label: string }[] = [
+type UiProvider = ImportProvider | 'NAVER_PAY';
+
+const PROVIDERS: { value: UiProvider; label: string }[] = [
   { value: 'SAMSUNG_CARD', label: '삼성카드' },
   { value: 'GYEONGGI_LOCAL_CURRENCY', label: '경기지역화폐' },
   { value: 'COUPANG', label: '쿠팡' },
+  { value: 'NAVER_PAY', label: '네이버페이' },
 ];
 
 const COUPANG_EXTENSION_URL =
@@ -29,7 +32,7 @@ const STATEMENT_MIME_TYPES = [
 ];
 
 export default function ImportScreen() {
-  const [provider, setProvider] = useState<ImportProvider>('SAMSUNG_CARD');
+  const [provider, setProvider] = useState<UiProvider>('SAMSUNG_CARD');
   const [cardId, setCardId] = useState<number | null>(null);
   const [pickedFile, setPickedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +53,7 @@ export default function ImportScreen() {
   };
 
   const handleUpload = () => {
+    if (provider === 'NAVER_PAY') return;
     if (!pickedFile) {
       setError('먼저 파일을 선택해주세요.');
       return;
@@ -89,9 +93,15 @@ export default function ImportScreen() {
             />
           ))}
         </View>
+        {provider === 'SAMSUNG_CARD' ? (
+          <Text className="text-xs text-slate-400">
+            삼성카드 홈페이지나 앱에서 이용대금 명세서를 다운로드해서 그대로 올리면 돼요.
+          </Text>
+        ) : null}
         {provider === 'GYEONGGI_LOCAL_CURRENCY' ? (
           <Text className="text-xs text-slate-400">
-            암호가 걸린 파일도 그대로 올리면 돼요. 마이페이지에 등록된 생년월일로 자동으로 풀어요.
+            앱에서 이용내역을 엑셀로 내려받아서 그대로 올리면 돼요. 암호가 걸린 파일도 그대로 올리면
+            돼요 — 마이페이지에 등록된 생년월일로 자동으로 풀어요.
           </Text>
         ) : null}
         {provider === 'COUPANG' ? (
@@ -108,36 +118,50 @@ export default function ImportScreen() {
             </Pressable>
           </View>
         ) : null}
+        {provider === 'NAVER_PAY' ? (
+          <Text className="text-xs text-slate-400">네이버페이 연동은 준비 중이에요. 곧 안내해드릴게요.</Text>
+        ) : null}
       </View>
 
-      <View className="gap-2">
-        <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">등록할 카드 (선택)</Text>
-        <View className="flex-row flex-wrap gap-2">
-          <Chip label="자동" selected={cardId === null} onPress={() => setCardId(null)} />
-          {cards.map((card) => (
-            <Chip key={card.id} label={card.name} selected={cardId === card.id} onPress={() => setCardId(card.id)} />
-          ))}
+      {provider !== 'NAVER_PAY' ? (
+        <View className="gap-2">
+          <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">등록할 카드 (선택)</Text>
+          <View className="flex-row flex-wrap gap-2">
+            <Chip label="자동" selected={cardId === null} onPress={() => setCardId(null)} />
+            {cards.map((card) => (
+              <Chip
+                key={card.id}
+                label={card.name}
+                selected={cardId === card.id}
+                onPress={() => setCardId(card.id)}
+              />
+            ))}
+          </View>
+          <Text className="text-xs text-slate-400">선택하지 않으면 출처 이름의 카드를 자동으로 찾거나 만들어요.</Text>
         </View>
-        <Text className="text-xs text-slate-400">선택하지 않으면 출처 이름의 카드를 자동으로 찾거나 만들어요.</Text>
-      </View>
+      ) : null}
 
-      <View className="gap-2">
-        <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">파일</Text>
-        <Button
-          title={pickedFile ? pickedFile.name : '파일 선택'}
-          variant="secondary"
-          onPress={handlePickFile}
-        />
-      </View>
+      {provider !== 'NAVER_PAY' ? (
+        <>
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">파일</Text>
+            <Button
+              title={pickedFile ? pickedFile.name : '파일 선택'}
+              variant="secondary"
+              onPress={handlePickFile}
+            />
+          </View>
 
-      {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
+          {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
 
-      <Button
-        title="가져오기"
-        onPress={handleUpload}
-        loading={importStatement.isPending}
-        disabled={!pickedFile}
-      />
+          <Button
+            title="가져오기"
+            onPress={handleUpload}
+            loading={importStatement.isPending}
+            disabled={!pickedFile}
+          />
+        </>
+      ) : null}
 
       {result ? (
         <View className="gap-3 rounded-xl bg-white p-4 dark:bg-slate-900">
