@@ -98,6 +98,9 @@ function CategoryRow({
           }>
           {category.name}
         </Text>
+        {category.isGroup ? (
+          <Text className={compact ? 'text-xs text-slate-400' : 'text-xs font-medium text-slate-400'}>상위</Text>
+        ) : null}
         {!isDesktop && category.targetAmount != null ? (
           <Text className={compact ? 'text-xs text-slate-400' : 'text-sm text-slate-400'}>
             목표 {formatCompactKrw(category.targetAmount)}원
@@ -124,6 +127,7 @@ export default function CategoriesScreen() {
   const updateCategory = useUpdateCategory();
   const isDesktop = useIsDesktop();
   const [editing, setEditing] = useState<Category | null | undefined>(undefined);
+  const [addingGroup, setAddingGroup] = useState(false);
 
   const expenseRoots = useMemo(
     () => sortedCategories(categories.filter((c) => c.type === 'EXPENSE' && c.parentId == null)),
@@ -150,6 +154,7 @@ export default function CategoriesScreen() {
         icon: category.icon,
         parentId: category.parentId,
         targetAmount: amount,
+        isGroup: category.isGroup,
       },
     });
   };
@@ -212,11 +217,31 @@ export default function CategoriesScreen() {
       {renderTypeSection('지출', expenseRoots)}
       {renderTypeSection('수입', incomeRoots)}
 
-      <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
-        <Text className="font-semibold text-white">+ 카테고리 추가</Text>
-      </Pressable>
+      <View className="gap-2">
+        <Pressable
+          onPress={() => {
+            setAddingGroup(false);
+            setEditing(null);
+          }}
+          className="items-center rounded-xl bg-primary p-4">
+          <Text className="font-semibold text-white">+ 카테고리 추가</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            setAddingGroup(true);
+            setEditing(null);
+          }}
+          className="items-center rounded-xl border border-primary p-4">
+          <Text className="font-semibold text-primary">+ 상위 카테고리 추가</Text>
+        </Pressable>
+      </View>
 
-      <CategoryFormModal visible={editing !== undefined} onClose={() => setEditing(undefined)} category={editing} />
+      <CategoryFormModal
+        visible={editing !== undefined}
+        onClose={() => setEditing(undefined)}
+        category={editing}
+        groupOnly={editing === null && addingGroup}
+      />
     </Screen>
   );
 }

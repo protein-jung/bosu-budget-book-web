@@ -17,14 +17,19 @@ export function CategoryFormModal({
   category,
   initialType,
   onCreated,
+  groupOnly,
 }: {
   visible: boolean;
   onClose: () => void;
   category?: Category | null;
   initialType?: TransactionType;
   onCreated?: (category: Category) => void;
+  /** true면 하위 카테고리를 묶는 상위(그룹) 카테고리 전용 모드로 연다 — 상위 카테고리 선택이
+   * 빠지고 항상 최상위로 생성된다. 기존 그룹 카테고리를 수정할 때도 자동으로 이 모드가 된다. */
+  groupOnly?: boolean;
 }) {
   const isEdit = !!category;
+  const isGroupMode = groupOnly || category?.isGroup === true;
   const isDesktop = useIsDesktop();
   const { data: categories = [] } = useCategories();
   const [name, setName] = useState('');
@@ -79,8 +84,9 @@ export function CategoryFormModal({
       type,
       color,
       icon: icon.trim() || null,
-      parentId,
+      parentId: isGroupMode ? null : parentId,
       targetAmount: targetAmount.trim() ? Number(targetAmount) : null,
+      isGroup: isGroupMode,
     };
     if (isEdit && category) {
       updateCategory.mutate(
@@ -114,8 +120,19 @@ export function CategoryFormModal({
             isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
           }`}>
           <Text className="text-xl font-bold text-slate-900 dark:text-white">
-            {isEdit ? '카테고리 수정' : '카테고리 추가'}
+            {isGroupMode
+              ? isEdit
+                ? '상위 카테고리 수정'
+                : '상위 카테고리 추가'
+              : isEdit
+                ? '카테고리 수정'
+                : '카테고리 추가'}
           </Text>
+          {!isEdit && isGroupMode ? (
+            <Text className="text-sm text-slate-500 dark:text-slate-400">
+              하위 카테고리를 묶는 상위 카테고리예요. 거래 입력할 때는 선택할 수 없어요.
+            </Text>
+          ) : null}
 
           <ScrollView className="max-h-[60%]" keyboardShouldPersistTaps="handled">
             <View className="gap-4">
@@ -140,21 +157,23 @@ export function CategoryFormModal({
 
               <TextField label="이름" value={name} onChangeText={setName} placeholder="예) 외식비" />
 
-              <View className="gap-2">
-                <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">상위 카테고리</Text>
-                <View className="flex-row flex-wrap gap-2">
-                  <Chip label="없음 (대분류)" selected={parentId == null} onPress={() => setParentId(null)} />
-                  {parentOptions.map((parent) => (
-                    <Chip
-                      key={parent.id}
-                      label={parent.name}
-                      icon={parent.icon}
-                      selected={parentId === parent.id}
-                      onPress={() => setParentId(parent.id)}
-                    />
-                  ))}
+              {isGroupMode ? null : (
+                <View className="gap-2">
+                  <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">상위 카테고리</Text>
+                  <View className="flex-row flex-wrap gap-2">
+                    <Chip label="없음 (대분류)" selected={parentId == null} onPress={() => setParentId(null)} />
+                    {parentOptions.map((parent) => (
+                      <Chip
+                        key={parent.id}
+                        label={parent.name}
+                        icon={parent.icon}
+                        selected={parentId === parent.id}
+                        onPress={() => setParentId(parent.id)}
+                      />
+                    ))}
+                  </View>
                 </View>
-              </View>
+              )}
 
               <View className="gap-2">
                 <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">색상</Text>

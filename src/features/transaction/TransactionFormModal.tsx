@@ -207,7 +207,8 @@ export function TransactionFormModal({
   );
 }
 
-/** 하위가 있는 대분류는 숨기고 소분류만 선택. 이미 선택된 대분류는 편집 호환을 위해 유지. */
+/** 하위가 있거나 상위 전용으로 만든 대분류는 숨기고 소분류만 선택. 이미 선택된 대분류는
+ * 편집 호환을 위해 유지. */
 function selectableCategories(
   categories: Category[],
   type: TransactionType,
@@ -217,5 +218,7 @@ function selectableCategories(
   const parentIdsWithChildren = new Set(
     ofType.filter((c) => c.parentId != null).map((c) => c.parentId as number),
   );
-  return ofType.filter((c) => !parentIdsWithChildren.has(c.id) || c.id === selectedId);
+  return ofType.filter(
+    (c) => (!parentIdsWithChildren.has(c.id) && !c.isGroup) || c.id === selectedId,
+  );
 }
