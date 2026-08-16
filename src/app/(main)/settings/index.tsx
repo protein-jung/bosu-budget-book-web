@@ -1,8 +1,7 @@
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
-import { queryClient } from '@/lib/queryClient';
 import { useIsDesktop } from '@/lib/responsive';
 import { useAuthStore } from '@/store/authStore';
 
@@ -20,14 +19,7 @@ const MENU: {
 
 export default function SettingsScreen() {
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
   const isDesktop = useIsDesktop();
-
-  const handleLogout = async () => {
-    await logout();
-    queryClient.clear();
-    router.replace('/login');
-  };
 
   return (
     <Screen maxWidthClassName={isDesktop ? 'max-w-[760px]' : 'max-w-[480px]'}>
@@ -48,12 +40,6 @@ export default function SettingsScreen() {
           </Link>
         ))}
       </View>
-
-      <Pressable
-        onPress={handleLogout}
-        className={`items-center rounded-xl bg-slate-200 p-4 dark:bg-slate-800 ${isDesktop ? 'self-start px-8' : ''}`}>
-        <Text className="font-semibold text-slate-700 dark:text-slate-200">로그아웃</Text>
-      </Pressable>
     </Screen>
   );
 }

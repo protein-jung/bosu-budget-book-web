@@ -11,8 +11,12 @@ export type UserProfile = {
 
 const userApi = {
   getMe: () => apiClient.get<UserProfile>('/api/users/me').then((res) => res.data),
-  updateMe: (data: { birthDate: string }) =>
+  updateMe: (data: { name: string; birthDate: string }) =>
     apiClient.patch<UserProfile>('/api/users/me', data).then((res) => res.data),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    apiClient.put<void>('/api/users/me/password', data).then((res) => res.data),
+  deleteAccount: (data: { password: string }) =>
+    apiClient.delete<void>('/api/users/me', { data }).then((res) => res.data),
 };
 
 export const USER_ME_QUERY_KEY = ['users', 'me'];
@@ -27,4 +31,12 @@ export function useUpdateMe() {
     mutationFn: userApi.updateMe,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: USER_ME_QUERY_KEY }),
   });
+}
+
+export function useChangePassword() {
+  return useMutation({ mutationFn: userApi.changePassword });
+}
+
+export function useDeleteAccount() {
+  return useMutation({ mutationFn: userApi.deleteAccount });
 }

@@ -48,7 +48,7 @@ export type Transaction = {
   categoryIcon: string | null;
   cardId: number | null;
   cardName: string | null;
-  userId: number;
+  userId: number | null;
   userName: string;
   memo: string | null;
 };
@@ -71,7 +71,7 @@ export type CardStat = {
 };
 
 export type MemberStat = {
-  userId: number;
+  userId: number | null;
   userName: string;
   income: number;
   expense: number;
@@ -179,6 +179,8 @@ export type Asset = {
   loanInterestRate: number | null;
   loanRepaymentType: LoanRepaymentType | null;
   currentMonthlyPayment: number | null;
+  realEstateCategory: RealEstateCategory | null;
+  monthlyRent: number | null;
 };
 
 export type AssetTypeBreakdown = { type: AssetType; amount: number };

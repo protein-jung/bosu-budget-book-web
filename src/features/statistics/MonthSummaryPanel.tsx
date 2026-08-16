@@ -110,8 +110,10 @@ export function MonthSummaryPanel({
         ) : (
           summary.byMember.map((item) => (
             <Pressable
-              key={item.userId}
-              onPress={() => onSelectMember?.(item.userId)}
+              key={item.userId ?? 'deleted'}
+              onPress={() => {
+                if (item.userId != null) onSelectMember?.(item.userId);
+              }}
               className={`flex-row items-center justify-between rounded-xl px-3 py-2 ${
                 selectedMemberUserId === item.userId ? 'bg-primary-light' : 'bg-cream'
               }`}>
