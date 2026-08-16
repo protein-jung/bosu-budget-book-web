@@ -136,11 +136,12 @@ export type RangeSummary = {
   months: MonthlyTrendPoint[];
 };
 
-export type AssetType = 'REAL_ESTATE' | 'VEHICLE' | 'STOCK' | 'CRYPTO' | 'CASH' | 'LOAN' | 'OTHER';
+export type AssetType = 'REAL_ESTATE' | 'VEHICLE' | 'STOCK' | 'CRYPTO' | 'GOLD' | 'SILVER' | 'CASH' | 'LOAN' | 'OTHER';
 export type AccountCategory = 'GENERAL' | 'PENSION';
 export type PriceCurrency = 'KRW' | 'USD';
 export type CashCategory = 'ACCOUNT' | 'DEPOSIT' | 'SAVINGS';
 export type LoanRepaymentType = 'EQUAL_INSTALLMENT' | 'EQUAL_PRINCIPAL';
+export type RealEstateCategory = 'OWNED' | 'JEONSE' | 'WOLSE';
 
 export type Asset = {
   id: number;

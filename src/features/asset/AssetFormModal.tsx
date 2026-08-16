@@ -9,9 +9,17 @@ import { AddressAutocomplete } from '@/features/realEstate/AddressAutocomplete';
 import { RealEstateTradeLookup } from '@/features/realEstate/RealEstateTradeLookup';
 import { getErrorMessage } from '@/lib/apiClient';
 import { formatAmountInput, formatDecimalAmountInput } from '@/lib/format';
-import { ASSET_TYPE_META, CASH_CATEGORY_META, LOAN_REPAYMENT_TYPE_META } from '@/lib/palette';
+import { ASSET_TYPE_META, CASH_CATEGORY_META, LOAN_REPAYMENT_TYPE_META, REAL_ESTATE_CATEGORY_META } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
-import type { AccountCategory, Asset, AssetType, CashCategory, LoanRepaymentType, PriceCurrency } from '@/lib/types';
+import type {
+  AccountCategory,
+  Asset,
+  AssetType,
+  CashCategory,
+  LoanRepaymentType,
+  PriceCurrency,
+  RealEstateCategory,
+} from '@/lib/types';
 import { VEHICLE_BRANDS } from '@/lib/vehicleBrands';
 import { VEHICLE_MODELS } from '@/lib/vehicleModels';
 
@@ -21,10 +29,18 @@ import { StockSymbolAutocomplete } from './StockSymbolAutocomplete';
 
 const ASSET_TYPES = Object.keys(ASSET_TYPE_META) as AssetType[];
 const CASH_CATEGORIES = Object.keys(CASH_CATEGORY_META) as CashCategory[];
+const REAL_ESTATE_CATEGORIES = Object.keys(REAL_ESTATE_CATEGORY_META) as RealEstateCategory[];
 
 function isLivePriced(type: AssetType) {
   return type === 'STOCK' || type === 'CRYPTO';
 }
+
+function isPreciousMetal(type: AssetType) {
+  return type === 'GOLD' || type === 'SILVER';
+}
+
+type WeightUnit = 'G' | 'DON';
+const GRAMS_PER_DON = 3.75;
 
 /** YYYY-MM-DD 문자열에 개월 수를 더한 새 날짜 키를 계산한다(예금/적금 만기일 자동 계산용). */
 function addMonthsToDateKey(dateKey: string, months: number): string {
@@ -150,6 +166,10 @@ export function AssetFormModal({
   const [lawdCd, setLawdCd] = useState<string | null>(null);
   const [dongName, setDongName] = useState<string | null>(null);
   const [complexName, setComplexName] = useState<string | null>(null);
+  const [realEstateCategory, setRealEstateCategory] = useState<RealEstateCategory>('OWNED');
+  const [monthlyRent, setMonthlyRent] = useState('');
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('G');
+  const [weightInput, setWeightInput] = useState('');
   const [dealDate, setDealDate] = useState<string | null>(null);
   const [showDayPicker, setShowDayPicker] = useState(false);
   const [stockRows, setStockRows] = useState<StockRow[]>([EMPTY_STOCK_ROW]);
@@ -198,6 +218,10 @@ export function AssetFormModal({
       setLawdCd(asset.lawdCd);
       setDongName(asset.regionDongName);
       setComplexName(asset.complexName);
+      setRealEstateCategory(asset.realEstateCategory ?? 'OWNED');
+      setMonthlyRent(asset.monthlyRent != null ? String(asset.monthlyRent) : '');
+      setWeightUnit('G');
+      setWeightInput(isPreciousMetal(asset.type) && asset.quantity != null ? String(asset.quantity) : '');
       if (asset.type === 'VEHICLE') {
         const { brand, model } = splitVehicleName(asset.name);
         setVehicleBrand(brand);
@@ -242,6 +266,10 @@ export function AssetFormModal({
       setLawdCd(null);
       setDongName(null);
       setComplexName(null);
+      setRealEstateCategory('OWNED');
+      setMonthlyRent('');
+      setWeightUnit('G');
+      setWeightInput('');
     }
     setCustomBrand(false);
     setDealDate(null);
@@ -339,6 +367,8 @@ export function AssetFormModal({
               loanMonthlyPayment: null,
               loanInterestRate: null,
               loanRepaymentType: null,
+              realEstateCategory: null,
+              monthlyRent: null,
             }
           : {
               type,
@@ -369,6 +399,8 @@ export function AssetFormModal({
               loanMonthlyPayment: null,
               loanInterestRate: null,
               loanRepaymentType: null,
+              realEstateCategory: null,
+              monthlyRent: null,
             },
       );
       try {
@@ -433,23 +465,44 @@ export function AssetFormModal({
         setError('보유 수량을 올바르게 입력해주세요.');
         return;
       }
+    } else if (isPreciousMetal(type)) {
+      const weightNumber = Number(weightInput);
+      if (!weightInput || Number.isNaN(weightNumber) || weightNumber <= 0) {
+        setError('중량을 올바르게 입력해주세요.');
+        return;
+      }
     } else {
       const manualValueNumber = Number(manualValue);
       if (!manualValue || Number.isNaN(manualValueNumber) || manualValueNumber < 0) {
-        setError('평가금액을 올바르게 입력해주세요.');
+        setError(
+          type === 'REAL_ESTATE' ? `${REAL_ESTATE_CATEGORY_META[realEstateCategory].valueLabel}을 올바르게 입력해주세요.` : '평가금액을 올바르게 입력해주세요.',
+        );
         return;
       }
+      if (type === 'REAL_ESTATE' && realEstateCategory === 'WOLSE') {
+        const monthlyRentNumber = Number(monthlyRent);
+        if (!monthlyRent || Number.isNaN(monthlyRentNumber) || monthlyRentNumber < 0) {
+          setError('월세를 올바르게 입력해주세요.');
+          return;
+        }
+      }
     }
+
+    const preciousMetalGrams = isPreciousMetal(type)
+      ? weightUnit === 'DON'
+        ? Number(weightInput) * GRAMS_PER_DON
+        : Number(weightInput)
+      : null;
 
     const payload = {
       type,
       name: finalName,
       custodian: custodian.trim() || null,
       symbol: effectiveLivePriced ? symbol.trim().toUpperCase() : null,
-      quantity: effectiveLivePriced ? Number(quantity) : null,
+      quantity: effectiveLivePriced ? Number(quantity) : preciousMetalGrams,
       averagePrice: effectiveLivePriced && averagePrice.trim() ? Number(averagePrice) : null,
       averagePriceCurrency: type === 'STOCK' && !isStockManual && averagePrice.trim() ? averagePriceCurrency : null,
-      manualValue: effectiveLivePriced || type === 'LOAN' ? null : Number(manualValue),
+      manualValue: effectiveLivePriced || type === 'LOAN' || isPreciousMetal(type) ? null : Number(manualValue),
       memo: memo.trim() || null,
       address: address.trim() || null,
       dong: dong.trim() || null,
@@ -471,6 +524,8 @@ export function AssetFormModal({
       loanMonthlyPayment: type === 'LOAN' ? Number(loanMonthlyPayment) : null,
       loanInterestRate: type === 'LOAN' ? Number(loanInterestRate) : null,
       loanRepaymentType: type === 'LOAN' ? loanRepaymentType : null,
+      realEstateCategory: type === 'REAL_ESTATE' ? realEstateCategory : null,
+      monthlyRent: type === 'REAL_ESTATE' && realEstateCategory === 'WOLSE' ? Number(monthlyRent) : null,
     };
 
     if (isEdit && asset) {
@@ -641,7 +696,15 @@ export function AssetFormModal({
                   label="이름"
                   value={name}
                   onChangeText={setName}
-                  placeholder={livePriced ? '예) 삼성전자' : '예) 우리집'}
+                  placeholder={
+                    livePriced
+                      ? '예) 삼성전자'
+                      : type === 'GOLD'
+                        ? '예) 골드바'
+                        : type === 'SILVER'
+                          ? '예) 실버바'
+                          : '예) 우리집'
+                  }
                 />
               )}
 
@@ -716,6 +779,20 @@ export function AssetFormModal({
 
               {type === 'REAL_ESTATE' ? (
                 <>
+                  <View className="gap-1.5">
+                    <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">보유 형태</Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {REAL_ESTATE_CATEGORIES.map((option) => (
+                        <Chip
+                          key={option}
+                          label={REAL_ESTATE_CATEGORY_META[option].label}
+                          selected={realEstateCategory === option}
+                          onPress={() => setRealEstateCategory(option)}
+                        />
+                      ))}
+                    </View>
+                  </View>
+
                   <AddressAutocomplete
                     value={address}
                     onChangeText={(text) => {
@@ -730,11 +807,11 @@ export function AssetFormModal({
                       setComplexName(candidate.buildingName);
                     }}
                   />
-                  {lawdCd && complexName ? (
+                  {realEstateCategory === 'OWNED' && lawdCd && complexName ? (
                     <Text className="text-xs text-slate-400">
                       &quot;{complexName}&quot; 단지의 국토부 실거래가로 시세를 자동 갱신해요.
                     </Text>
-                  ) : lawdCd ? (
+                  ) : realEstateCategory === 'OWNED' && lawdCd ? (
                     <Text className="text-xs text-slate-400">
                       단지명이 없는 주소는 실거래가를 자동으로 조회할 수 없어요. 평가금액을 직접 입력해주세요.
                     </Text>
@@ -760,40 +837,44 @@ export function AssetFormModal({
                     </View>
                   </View>
 
-                  <View className="gap-1.5">
-                    <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">매매일 (선택)</Text>
-                    <Pressable
-                      onPress={() => setShowDayPicker(true)}
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800">
-                      <Text className={dealDate ? 'text-slate-900 dark:text-white' : 'text-slate-400'}>
-                        {dealDate ?? '매매일을 선택하면 실거래가를 자동으로 조회해요'}
-                      </Text>
-                    </Pressable>
-                    {!lawdCd && dealDate ? (
-                      <Text className="text-xs text-slate-400">
-                        주소를 목록에서 선택해야 실거래가를 조회할 수 있어요.
-                      </Text>
-                    ) : null}
-                  </View>
+                  {realEstateCategory === 'OWNED' ? (
+                    <>
+                      <View className="gap-1.5">
+                        <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">매매일 (선택)</Text>
+                        <Pressable
+                          onPress={() => setShowDayPicker(true)}
+                          className="rounded-xl border border-slate-300 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800">
+                          <Text className={dealDate ? 'text-slate-900 dark:text-white' : 'text-slate-400'}>
+                            {dealDate ?? '매매일을 선택하면 실거래가를 자동으로 조회해요'}
+                          </Text>
+                        </Pressable>
+                        {!lawdCd && dealDate ? (
+                          <Text className="text-xs text-slate-400">
+                            주소를 목록에서 선택해야 실거래가를 조회할 수 있어요.
+                          </Text>
+                        ) : null}
+                      </View>
 
-                  {lawdCd && dealDate ? (
-                    <RealEstateTradeLookup
-                      lawdCd={lawdCd}
-                      dongName={dongName}
-                      complexName={complexName}
-                      unitDong={dong || null}
-                      unitHo={ho || null}
-                      dealDate={dealDate}
-                      onSelectAmount={(amount) => setManualValue(String(amount))}
-                    />
+                      {lawdCd && dealDate ? (
+                        <RealEstateTradeLookup
+                          lawdCd={lawdCd}
+                          dongName={dongName}
+                          complexName={complexName}
+                          unitDong={dong || null}
+                          unitHo={ho || null}
+                          dealDate={dealDate}
+                          onSelectAmount={(amount) => setManualValue(String(amount))}
+                        />
+                      ) : null}
+
+                      <DayPickerModal
+                        visible={showDayPicker}
+                        onClose={() => setShowDayPicker(false)}
+                        onSelectDate={setDealDate}
+                        initialDateKey={dealDate ?? undefined}
+                      />
+                    </>
                   ) : null}
-
-                  <DayPickerModal
-                    visible={showDayPicker}
-                    onClose={() => setShowDayPicker(false)}
-                    onSelectDate={setDealDate}
-                    initialDateKey={dealDate ?? undefined}
-                  />
                 </>
               ) : null}
 
@@ -1091,15 +1172,48 @@ export function AssetFormModal({
                       : '원금·이율·상환 기한으로 원리금균등분할상환 월 납입금을 자동 계산해요. 매달 잔액이 그 기준으로 줄어드는 추정 잔액을 보여드려요.'}
                   </Text>
                 </>
+              ) : isPreciousMetal(type) ? (
+                <>
+                  <View className="flex-row gap-2">
+                    <Chip label="g" selected={weightUnit === 'G'} onPress={() => setWeightUnit('G')} />
+                    <Chip label="돈" selected={weightUnit === 'DON'} onPress={() => setWeightUnit('DON')} />
+                  </View>
+                  <TextField
+                    label="중량"
+                    value={weightInput}
+                    onChangeText={(text) => setWeightInput(text.replace(/[^0-9.]/g, ''))}
+                    keyboardType="decimal-pad"
+                    placeholder={weightUnit === 'DON' ? '예) 1' : '예) 3.75'}
+                  />
+                  <Text className="text-xs text-slate-400">
+                    국제 시세(트로이온스) 기준으로 환산한 참고 가격이에요 — 국내 금은방 매매가와는 차이가 있을 수
+                    있어요. 현재가는 저장 후 &quot;새로고침&quot;을 누르면 실시간으로 조회돼요.
+                  </Text>
+                </>
               ) : (
                 <>
                   <TextField
-                    label={type === 'VEHICLE' ? '구매 가격' : '평가금액'}
+                    label={
+                      type === 'VEHICLE'
+                        ? '구매 가격'
+                        : type === 'REAL_ESTATE'
+                          ? REAL_ESTATE_CATEGORY_META[realEstateCategory].valueLabel
+                          : '평가금액'
+                    }
                     value={formatAmountInput(manualValue)}
                     onChangeText={(text) => setManualValue(text.replace(/[^0-9]/g, ''))}
                     keyboardType="numeric"
                     placeholder="0"
                   />
+                  {type === 'REAL_ESTATE' && realEstateCategory === 'WOLSE' ? (
+                    <TextField
+                      label="월세"
+                      value={formatAmountInput(monthlyRent)}
+                      onChangeText={(text) => setMonthlyRent(text.replace(/[^0-9]/g, ''))}
+                      keyboardType="numeric"
+                      placeholder="0"
+                    />
+                  ) : null}
                   {type === 'VEHICLE' && purchaseDate ? (
                     <Text className="text-xs text-slate-400">
                       1년차 -25%, 이후 매년 -12%씩 감가상각한 추정 시세를 자동으로 계산해요(공식 시세는

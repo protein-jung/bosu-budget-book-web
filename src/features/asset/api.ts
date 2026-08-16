@@ -11,6 +11,7 @@ import type {
   CashCategory,
   LoanRepaymentType,
   PriceCurrency,
+  RealEstateCategory,
   StockSymbolCandidate,
 } from '@/lib/types';
 
@@ -43,6 +44,8 @@ export type AssetInput = {
   loanMonthlyPayment: number | null;
   loanInterestRate: number | null;
   loanRepaymentType: LoanRepaymentType | null;
+  realEstateCategory: RealEstateCategory | null;
+  monthlyRent: number | null;
 };
 
 const assetApi = {

@@ -7,7 +7,7 @@ import { Screen } from '@/components/Screen';
 import { useAssets, useAssetSummary, useAssetTrend, useRefreshAssetPrices } from '@/features/asset/api';
 import { AssetFormModal } from '@/features/asset/AssetFormModal';
 import { formatKrw } from '@/lib/format';
-import { ASSET_TYPE_META, CASH_CATEGORY_META, LOAN_REPAYMENT_TYPE_META } from '@/lib/palette';
+import { ASSET_TYPE_META, CASH_CATEGORY_META, LOAN_REPAYMENT_TYPE_META, REAL_ESTATE_CATEGORY_META } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
 import type { Asset, AssetType } from '@/lib/types';
 
@@ -62,6 +62,11 @@ function buildTypeGroups(assets: Asset[], types: AssetType[]): TypeGroup[] {
     .sort((a, b) => b.typeTotal - a.typeTotal);
 }
 
+/** 소수점 둘째 자리까지 반올림하고 불필요한 0을 잘라낸다(금/은 중량 표시용). */
+function trimTrailingZeros(value: number): string {
+  return value.toFixed(2).replace(/\.?0+$/, '') || '0';
+}
+
 function minutesAgoLabel(date: Date | null) {
   if (!date) return null;
   const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
@@ -85,6 +90,9 @@ function elapsedMonthsSince(startDateKey: string): number {
 }
 
 function computeGainDetail(asset: Asset): { gain: number; costBasis: number } | null {
+  if (asset.type === 'REAL_ESTATE' && asset.realEstateCategory != null && asset.realEstateCategory !== 'OWNED') {
+    return null;
+  }
   if (asset.type === 'REAL_ESTATE' || asset.type === 'VEHICLE') {
     if (asset.manualValue == null || asset.manualValue === 0 || asset.currentPrice == null) return null;
     return { gain: asset.currentPrice - asset.manualValue, costBasis: asset.manualValue };
@@ -181,13 +189,31 @@ export default function AssetsScreen() {
       if (asset.currentPrice != null) subtitleParts.push(`현재 ${formatKrw(asset.currentPrice)}`);
     }
     if (asset.type === 'REAL_ESTATE') {
-      if (asset.manualValue != null) subtitleParts.push(`원금 ${formatKrw(asset.manualValue)}`);
-      if (asset.currentPrice != null) subtitleParts.push(`실거래가 ${formatKrw(asset.currentPrice)}`);
+      const realEstateCategory = asset.realEstateCategory ?? 'OWNED';
+      subtitleParts.push(REAL_ESTATE_CATEGORY_META[realEstateCategory].label);
+      if (realEstateCategory === 'OWNED') {
+        if (asset.manualValue != null) subtitleParts.push(`원금 ${formatKrw(asset.manualValue)}`);
+        if (asset.currentPrice != null) subtitleParts.push(`실거래가 ${formatKrw(asset.currentPrice)}`);
+      } else {
+        if (asset.manualValue != null) {
+          subtitleParts.push(`${REAL_ESTATE_CATEGORY_META[realEstateCategory].valueLabel} ${formatKrw(asset.manualValue)}`);
+        }
+        if (realEstateCategory === 'WOLSE' && asset.monthlyRent != null) {
+          subtitleParts.push(`월세 ${formatKrw(asset.monthlyRent)}`);
+        }
+      }
     }
     if (asset.type === 'VEHICLE') {
       if (asset.manualValue != null) subtitleParts.push(`구매가 ${formatKrw(asset.manualValue)}`);
       if (asset.purchaseDate) subtitleParts.push(`${asset.purchaseDate} 구매`);
       if (asset.currentPrice != null) subtitleParts.push(`엔카 매물 평균 ${formatKrw(asset.currentPrice)}`);
+    }
+    if (asset.type === 'GOLD' || asset.type === 'SILVER') {
+      if (asset.quantity != null) {
+        const don = asset.quantity / 3.75;
+        subtitleParts.push(`${trimTrailingZeros(asset.quantity)}g (${trimTrailingZeros(don)}돈)`);
+      }
+      if (asset.currentPrice != null) subtitleParts.push(`${formatKrw(asset.currentPrice)}/g`);
     }
     if (asset.type === 'LOAN') {
       if (asset.loanPrincipal != null) subtitleParts.push(`원금 ${formatKrw(asset.loanPrincipal)}`);
