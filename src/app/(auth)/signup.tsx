@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { Link, router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
@@ -12,11 +12,98 @@ import { useAuthStore } from '@/store/authStore';
 
 const BIRTH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+const DATE_BOX_BASE_CLASS =
+  'rounded-xl border border-slate-300 bg-white px-2 py-3 text-center text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white';
+const YEAR_BOX_CLASS = `${DATE_BOX_BASE_CLASS} flex-[3]`;
+const DATE_BOX_CLASS = `${DATE_BOX_BASE_CLASS} flex-[2]`;
+
+function BirthDateInput({
+  year,
+  month,
+  day,
+  onYearChange,
+  onMonthChange,
+  onDayChange,
+}: {
+  year: string;
+  month: string;
+  day: string;
+  onYearChange: (value: string) => void;
+  onMonthChange: (value: string) => void;
+  onDayChange: (value: string) => void;
+}) {
+  const yearRef = useRef<TextInput>(null);
+  const monthRef = useRef<TextInput>(null);
+  const dayRef = useRef<TextInput>(null);
+
+  return (
+    <View className="gap-1.5">
+      <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">생년월일</Text>
+      <View className="flex-row items-center gap-1.5">
+        <TextInput
+          ref={yearRef}
+          value={year}
+          onChangeText={(text) => {
+            const digits = text.replace(/[^0-9]/g, '').slice(0, 4);
+            onYearChange(digits);
+            if (digits.length === 4) monthRef.current?.focus();
+          }}
+          keyboardType="number-pad"
+          maxLength={4}
+          placeholder="YYYY"
+          placeholderTextColor="#94a3b8"
+          className={YEAR_BOX_CLASS}
+        />
+        <Text className="text-slate-400">-</Text>
+        <TextInput
+          ref={monthRef}
+          value={month}
+          onChangeText={(text) => {
+            const digits = text.replace(/[^0-9]/g, '').slice(0, 2);
+            onMonthChange(digits);
+            if (digits.length === 2) dayRef.current?.focus();
+          }}
+          onKeyPress={(e) => {
+            if (e.nativeEvent.key === 'Backspace' && month.length === 0) yearRef.current?.focus();
+          }}
+          onBlur={() => {
+            if (month.length === 1) onMonthChange(month.padStart(2, '0'));
+          }}
+          keyboardType="number-pad"
+          maxLength={2}
+          placeholder="MM"
+          placeholderTextColor="#94a3b8"
+          className={DATE_BOX_CLASS}
+        />
+        <Text className="text-slate-400">-</Text>
+        <TextInput
+          ref={dayRef}
+          value={day}
+          onChangeText={(text) => onDayChange(text.replace(/[^0-9]/g, '').slice(0, 2))}
+          onKeyPress={(e) => {
+            if (e.nativeEvent.key === 'Backspace' && day.length === 0) monthRef.current?.focus();
+          }}
+          onBlur={() => {
+            if (day.length === 1) onDayChange(day.padStart(2, '0'));
+          }}
+          keyboardType="number-pad"
+          maxLength={2}
+          placeholder="DD"
+          placeholderTextColor="#94a3b8"
+          className={DATE_BOX_CLASS}
+        />
+      </View>
+    </View>
+  );
+}
+
 export default function SignupScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [birthDate, setBirthDate] = useState('');
+  const [birthYear, setBirthYear] = useState('');
+  const [birthMonth, setBirthMonth] = useState('');
+  const [birthDay, setBirthDay] = useState('');
   const [error, setError] = useState<string | null>(null);
   const setSession = useAuthStore((state) => state.setSession);
 
@@ -36,6 +123,10 @@ export default function SignupScreen() {
 
   const handleSubmit = () => {
     setError(null);
+    const birthDate =
+      birthYear.length === 4 && birthMonth && birthDay
+        ? `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`
+        : '';
     if (!name || !email || !password || !birthDate) {
       setError('모든 항목을 입력해주세요.');
       return;
@@ -45,7 +136,7 @@ export default function SignupScreen() {
       return;
     }
     if (!BIRTH_DATE_PATTERN.test(birthDate) || Number.isNaN(new Date(birthDate).getTime())) {
-      setError('생년월일은 YYYY-MM-DD 형식으로 입력해주세요.');
+      setError('생년월일을 올바르게 입력해주세요.');
       return;
     }
     signupMutation.mutate({ name, email, password, birthDate });
@@ -78,12 +169,13 @@ export default function SignupScreen() {
           secureTextEntry
           placeholder="8자 이상"
         />
-        <TextField
-          label="생년월일"
-          value={birthDate}
-          onChangeText={setBirthDate}
-          keyboardType="numbers-and-punctuation"
-          placeholder="YYYY-MM-DD"
+        <BirthDateInput
+          year={birthYear}
+          month={birthMonth}
+          day={birthDay}
+          onYearChange={setBirthYear}
+          onMonthChange={setBirthMonth}
+          onDayChange={setBirthDay}
         />
         {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
         <Button title="회원가입" onPress={handleSubmit} loading={signupMutation.isPending} />
