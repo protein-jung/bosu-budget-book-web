@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { CalendarGrid } from '@/components/CalendarGrid';
 import { Chip } from '@/components/Chip';
 import { Screen } from '@/components/Screen';
+import { YearPickerModal } from '@/components/YearPickerModal';
 import { useCategories } from '@/features/category/api';
 import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { useMonthlyTransactions, useUpdateTransaction } from '@/features/transaction/api';
@@ -30,6 +31,7 @@ export default function CalendarScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [createType, setCreateType] = useState<TransactionType>('EXPENSE');
   const [addingCategoryType, setAddingCategoryType] = useState<TransactionType | null>(null);
+  const [showYearPicker, setShowYearPicker] = useState(false);
 
   const isDesktop = useIsDesktop();
   const { data: transactions = [], isLoading } = useMonthlyTransactions(year, month);
@@ -180,6 +182,12 @@ export default function CalendarScreen() {
     setMonth(next.month);
   };
 
+  const goToToday = () => {
+    setYear(today.getFullYear());
+    setMonth(today.getMonth() + 1);
+    selectDate(toDateKey(today));
+  };
+
   const handleReassignCategory = (transaction: Transaction, newCategoryId: number) => {
     updateTransaction.mutate({
       id: transaction.id,
@@ -208,13 +216,21 @@ export default function CalendarScreen() {
   const calendarColumn = (
     <View className="gap-4">
       <View className="flex-row items-center justify-between">
-        <Pressable onPress={() => changeMonth(-1)} className="px-3 py-2">
-          <Text className="text-xl text-slate-600">‹</Text>
+        <Pressable onPress={goToToday} className="w-11 items-start px-1 py-2">
+          <Text className="text-xs font-semibold text-primary">오늘</Text>
         </Pressable>
-        <Text className="text-lg font-bold text-slate-900">{formatMonthLabel(year, month)}</Text>
-        <Pressable onPress={() => changeMonth(1)} className="px-3 py-2">
-          <Text className="text-xl text-slate-600">›</Text>
-        </Pressable>
+        <View className="flex-row items-center">
+          <Pressable onPress={() => changeMonth(-1)} className="px-3 py-2">
+            <Text className="text-xl text-slate-600">‹</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowYearPicker(true)} className="px-2 py-1">
+            <Text className="text-lg font-bold text-slate-900">{formatMonthLabel(year, month)}</Text>
+          </Pressable>
+          <Pressable onPress={() => changeMonth(1)} className="px-3 py-2">
+            <Text className="text-xl text-slate-600">›</Text>
+          </Pressable>
+        </View>
+        <View className="w-11" />
       </View>
 
       {isLoading ? (
@@ -374,6 +390,13 @@ export default function CalendarScreen() {
         onClose={() => setAddingCategoryType(null)}
         category={null}
         initialType={addingCategoryType ?? 'EXPENSE'}
+      />
+
+      <YearPickerModal
+        visible={showYearPicker}
+        onClose={() => setShowYearPicker(false)}
+        year={year}
+        onSelectYear={setYear}
       />
     </Screen>
   );

@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 
 import { DraggableList } from '@/components/DraggableList';
 import { Screen } from '@/components/Screen';
 import { useCategories, useReorderCategories, useUpdateCategory } from '@/features/category/api';
 import { CategoryFormModal } from '@/features/category/CategoryFormModal';
-import { formatAmountInput, formatCompactKrw } from '@/lib/format';
 import { CATEGORY_COLOR_PALETTE } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
 import type { Category } from '@/lib/types';
@@ -15,111 +14,50 @@ function sortedCategories(items: Category[]) {
   return [...items].sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
 }
 
-/** 피시 화면 전용: 별도 저장 버튼 없이, 입력 후 포커스를 벗어나면 바로 저장한다. */
-function TargetAmountInlineInput({
-  value,
-  onSave,
-  compact,
-}: {
-  value: number | null;
-  onSave: (amount: number | null) => void;
-  compact?: boolean;
-}) {
-  const [prevValue, setPrevValue] = useState(value);
-  const [text, setText] = useState(value != null ? String(value) : '');
-
-  if (value !== prevValue) {
-    setPrevValue(value);
-    setText(value != null ? String(value) : '');
-  }
-
-  const handleBlur = () => {
-    const numeric = text.trim() ? Number(text) : null;
-    if (numeric !== value) {
-      onSave(numeric);
-    }
-  };
-
-  return (
-    <TextInput
-      value={formatAmountInput(text)}
-      onChangeText={(t) => setText(t.replace(/[^0-9]/g, ''))}
-      onBlur={handleBlur}
-      keyboardType="numeric"
-      placeholder="목표 금액"
-      placeholderTextColor="#94a3b8"
-      className={`w-28 rounded-lg border border-slate-200 bg-cream px-2 text-right text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 ${
-        compact ? 'py-1 text-xs' : 'py-1.5 text-sm'
-      }`}
-    />
-  );
-}
-
 function CategoryRow({
   category,
+  parentName,
   isDragging,
   dragHandleProps,
   onPress,
-  onSaveTarget,
-  isDesktop,
-  compact,
+  viewRef,
 }: {
   category: Category;
+  parentName?: string;
   isDragging: boolean;
   dragHandleProps: object;
   onPress: () => void;
-  onSaveTarget: (category: Category, amount: number | null) => void;
-  isDesktop: boolean;
-  compact?: boolean;
+  viewRef?: (ref: View | null) => void;
 }) {
   return (
     <View
-      className={`mb-2 flex-row items-center gap-2 rounded-xl p-4 ${
+      ref={viewRef}
+      className={`mb-1.5 flex-row items-center gap-1 rounded-lg border px-2 py-1.5 ${
         isDragging
-          ? 'bg-primary-light dark:bg-slate-700'
-          : compact
-            ? 'bg-white/80 dark:bg-slate-900/80'
-            : 'bg-white dark:bg-slate-900'
-      } ${compact ? 'py-3' : ''}`}>
-      <Pressable onPress={onPress} className="flex-1 flex-row items-center gap-3">
+          ? 'border-primary bg-primary-light dark:bg-slate-700'
+          : category.isGroup
+            ? 'border-dashed border-primary/50 bg-primary-light/40 dark:border-primary/40 dark:bg-slate-800'
+            : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'
+      }`}>
+      <Pressable onPress={onPress} className="min-w-0 flex-1 flex-row items-center gap-1">
         {category.icon ? (
-          <Text className={compact ? 'text-base' : 'text-lg'}>{category.icon}</Text>
+          <Text className="text-xs">{category.icon}</Text>
         ) : (
-          <View
-            className={compact ? 'h-2.5 w-2.5 rounded-full' : 'h-3 w-3 rounded-full'}
-            style={{ backgroundColor: category.color ?? '#94a3b8' }}
-          />
+          <View className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color ?? '#94a3b8' }} />
         )}
-        <Text
-          className={
-            compact
-              ? 'flex-1 text-sm text-slate-700 dark:text-slate-200'
-              : 'flex-1 text-base font-medium text-slate-900 dark:text-white'
-          }>
+        <Text numberOfLines={1} className="flex-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+          {parentName ? `${parentName} · ` : ''}
           {category.name}
         </Text>
-        {category.isGroup ? (
-          <Text className={compact ? 'text-xs text-slate-400' : 'text-xs font-medium text-slate-400'}>상위</Text>
-        ) : null}
-        {!isDesktop && category.targetAmount != null ? (
-          <Text className={compact ? 'text-xs text-slate-400' : 'text-sm text-slate-400'}>
-            목표 {formatCompactKrw(category.targetAmount)}원
-          </Text>
-        ) : null}
       </Pressable>
-      {isDesktop ? (
-        <TargetAmountInlineInput
-          value={category.targetAmount}
-          onSave={(amount) => onSaveTarget(category, amount)}
-          compact={compact}
-        />
-      ) : null}
-      <View {...dragHandleProps} className="px-1 py-1">
-        <Ionicons name="reorder-three-outline" size={22} color="#94a3b8" />
+      <View {...dragHandleProps} className="px-0.5 py-0.5">
+        <Ionicons name="reorder-three-outline" size={14} color="#94a3b8" />
       </View>
     </View>
   );
 }
+
+type DropZone = { x: number; y: number; width: number; height: number };
 
 export default function CategoriesScreen() {
   const { data: categories = [] } = useCategories();
@@ -129,93 +67,126 @@ export default function CategoriesScreen() {
   const [editing, setEditing] = useState<Category | null | undefined>(undefined);
   const [addingGroup, setAddingGroup] = useState(false);
 
+  // 하위 카테고리를 상위 카테고리 위로 드래그해서 놓으면 소속을 바꿀 수 있게, 상위 카테고리
+  // 카드들의 화면상 위치를 등록해뒀다가 드롭 시점에 그 위치와 겹치는지 확인한다.
+  const rootViewRefs = useRef(new Map<number, View>());
+  const dropZonesRef = useRef(new Map<number, DropZone>());
+
+  const parentNameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
+  const rootsById = useMemo(
+    () => new Map(categories.filter((c) => c.parentId == null).map((c) => [c.id, c])),
+    [categories],
+  );
+
   const expenseRoots = useMemo(
     () => sortedCategories(categories.filter((c) => c.type === 'EXPENSE' && c.parentId == null)),
+    [categories],
+  );
+  const expenseChildren = useMemo(
+    () => sortedCategories(categories.filter((c) => c.type === 'EXPENSE' && c.parentId != null)),
     [categories],
   );
   const incomeRoots = useMemo(
     () => sortedCategories(categories.filter((c) => c.type === 'INCOME' && c.parentId == null)),
     [categories],
   );
-
-  const childrenOf = (parentId: number) => sortedCategories(categories.filter((c) => c.parentId === parentId));
+  const incomeChildren = useMemo(
+    () => sortedCategories(categories.filter((c) => c.type === 'INCOME' && c.parentId != null)),
+    [categories],
+  );
 
   const handleReorder = (data: Category[]) => {
     reorderCategories.mutate(data.map((c) => c.id));
   };
 
-  const handleSaveTarget = (category: Category, amount: number | null) => {
-    updateCategory.mutate({
-      id: category.id,
-      data: {
-        name: category.name,
-        type: category.type,
-        color: category.color ?? CATEGORY_COLOR_PALETTE[0],
-        icon: category.icon,
-        parentId: category.parentId,
-        targetAmount: amount,
-        isGroup: category.isGroup,
-      },
+  const remeasureDropZones = () => {
+    rootViewRefs.current.forEach((view, id) => {
+      view.measureInWindow((x, y, width, height) => {
+        dropZonesRef.current.set(id, { x, y, width, height });
+      });
     });
   };
 
-  const renderTypeSection = (title: string, roots: Category[]) => (
-    <View className="gap-3">
-      <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">{title}</Text>
-      {roots.length === 0 ? (
-        <Text className="text-sm text-slate-400">아직 카테고리가 없어요.</Text>
+  const registerRootRef = (id: number) => (ref: View | null) => {
+    if (ref) {
+      rootViewRefs.current.set(id, ref);
+    } else {
+      rootViewRefs.current.delete(id);
+      dropZonesRef.current.delete(id);
+    }
+  };
+
+  const tryReparent = (item: Category, pos: { x: number; y: number }) => {
+    for (const [parentId, zone] of dropZonesRef.current) {
+      const root = rootsById.get(parentId);
+      if (!root || root.type !== item.type) continue;
+      if (pos.x < zone.x || pos.x > zone.x + zone.width || pos.y < zone.y || pos.y > zone.y + zone.height) continue;
+
+      if (parentId !== item.parentId) {
+        updateCategory.mutate({
+          id: item.id,
+          data: {
+            name: item.name,
+            type: item.type,
+            color: item.color ?? CATEGORY_COLOR_PALETTE[0],
+            icon: item.icon,
+            parentId,
+            targetAmount: item.targetAmount,
+            isGroup: item.isGroup,
+          },
+        });
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const renderColumn = (
+    title: string,
+    items: Category[],
+    showParentName: boolean,
+    isLast: boolean,
+    isParentColumn: boolean,
+  ) => (
+    <View className={`flex-1 gap-2 ${isLast ? '' : 'border-r border-slate-200 pr-3 dark:border-slate-700'}`}>
+      <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">{title}</Text>
+      {items.length === 0 ? (
+        <Text className="text-xs text-slate-400">없음</Text>
       ) : (
-        <>
-          <DraggableList
-            items={roots}
-            keyExtractor={(item) => String(item.id)}
-            onReorder={handleReorder}
-            renderItem={({ item, isDragging, dragHandleProps }) => (
-              <CategoryRow
-                category={item}
-                isDragging={isDragging}
-                dragHandleProps={dragHandleProps}
-                onPress={() => setEditing(item)}
-                onSaveTarget={handleSaveTarget}
-                isDesktop={isDesktop}
-              />
-            )}
-          />
-          {roots.map((root) => {
-            const children = childrenOf(root.id);
-            if (children.length === 0) return null;
-            return (
-              <View key={root.id} className="ml-4 gap-1.5">
-                <Text className="text-xs text-slate-400">{root.name} 하위</Text>
-                <DraggableList
-                  items={children}
-                  keyExtractor={(item) => String(item.id)}
-                  onReorder={handleReorder}
-                  renderItem={({ item, isDragging, dragHandleProps }) => (
-                    <CategoryRow
-                      category={item}
-                      isDragging={isDragging}
-                      dragHandleProps={dragHandleProps}
-                      onPress={() => setEditing(item)}
-                      onSaveTarget={handleSaveTarget}
-                      isDesktop={isDesktop}
-                      compact
-                    />
-                  )}
-                />
-              </View>
-            );
-          })}
-        </>
+        <DraggableList
+          items={items}
+          keyExtractor={(item) => String(item.id)}
+          onReorder={handleReorder}
+          onDragStart={isParentColumn ? undefined : remeasureDropZones}
+          onBeforeDrop={isParentColumn ? undefined : tryReparent}
+          renderItem={({ item, isDragging, dragHandleProps }) => (
+            <CategoryRow
+              category={item}
+              parentName={showParentName && item.parentId != null ? parentNameById.get(item.parentId) : undefined}
+              isDragging={isDragging}
+              dragHandleProps={dragHandleProps}
+              onPress={() => setEditing(item)}
+              viewRef={isParentColumn ? registerRootRef(item.id) : undefined}
+            />
+          )}
+        />
       )}
     </View>
   );
 
   return (
-    <Screen maxWidthClassName={isDesktop ? 'max-w-[680px]' : 'max-w-[480px]'}>
-      <Text className="text-xs text-slate-400">카드 오른쪽의 아이콘을 눌러서 끌면 순서를 바꿀 수 있어요.</Text>
-      {renderTypeSection('지출', expenseRoots)}
-      {renderTypeSection('수입', incomeRoots)}
+    <Screen maxWidthClassName={isDesktop ? 'max-w-[900px]' : 'max-w-[480px]'}>
+      <Text className="text-xs text-slate-400">
+        카드의 ⋮ 아이콘을 눌러서 끌면 순서를 바꿀 수 있어요. 하위 카테고리를 상위 카테고리 위로 끌어다 놓으면 소속을
+        바꿀 수 있어요.
+      </Text>
+
+      <View className="flex-row gap-3">
+        {renderColumn('지출 상위', expenseRoots, false, false, true)}
+        {renderColumn('지출 하위', expenseChildren, true, false, false)}
+        {renderColumn('수입 상위', incomeRoots, false, false, true)}
+        {renderColumn('수입 하위', incomeChildren, true, true, false)}
+      </View>
 
       <View className="gap-2">
         <Pressable
