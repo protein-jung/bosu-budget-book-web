@@ -21,7 +21,12 @@ export function ToastHost() {
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={toasts.length > 0} transparent animationType="none" onRequestClose={() => {}}>
+    <Modal
+      visible={toasts.length > 0}
+      transparent
+      animationType="none"
+      onRequestClose={() => {}}
+      pointerEvents="box-none">
       <View pointerEvents="box-none" className="flex-1 items-center" style={{ paddingTop: insets.top + 12 }}>
         <View pointerEvents="box-none" className="w-full max-w-[420px] gap-2 px-4">
           {toasts.map((item) => (

@@ -38,16 +38,24 @@ export default function CalendarScreen() {
   const { data: allCategories = [] } = useCategories();
   const updateTransaction = useUpdateTransaction();
 
+  const excludedFromExpenseCategoryIds = useMemo(
+    () => new Set(allCategories.filter((c) => c.excludedFromExpenseStats).map((c) => c.id)),
+    [allCategories],
+  );
+
   const summaries = useMemo(() => {
     const map: Record<string, { income: number; expense: number }> = {};
     for (const transaction of transactions) {
+      if (transaction.type === 'EXPENSE' && excludedFromExpenseCategoryIds.has(transaction.categoryId)) {
+        continue;
+      }
       const entry = map[transaction.transactionDate] ?? { income: 0, expense: 0 };
       if (transaction.type === 'INCOME') entry.income += transaction.amount;
       else entry.expense += transaction.amount;
       map[transaction.transactionDate] = entry;
     }
     return map;
-  }, [transactions]);
+  }, [transactions, excludedFromExpenseCategoryIds]);
 
   const monthCategories = useMemo(() => {
     const map = new Map<number, { id: number; name: string; color: string | null; icon: string | null }>();
@@ -153,6 +161,12 @@ export default function CalendarScreen() {
   };
 
   const selectParentCategory = (group: ParentCategoryFilter) => {
+    // "미분류"는 대분류라기보다 카테고리 하나에 가까우니, 대분류별 패널에서 눌러도
+    // 달력 아래 카테고리 칩에서 미분류를 고른 것과 똑같이 동작해서 바로 재분류 UI가 뜨게 한다.
+    if (group.name === UNCATEGORIZED_NAME) {
+      selectCategory(group.id);
+      return;
+    }
     setSelectedCategoryId(null);
     setSelectedType(null);
     setSelectedMemberUserId(null);
@@ -365,7 +379,7 @@ export default function CalendarScreen() {
             month={month}
             selectedType={selectedType}
             onSelectType={selectType}
-            selectedParentCategoryId={selectedParentCategory?.id ?? null}
+            selectedParentCategoryId={selectedParentCategory?.id ?? (isUncategorizedView ? selectedCategoryId : null)}
             onSelectParentCategory={selectParentCategory}
             selectedMemberUserId={selectedMemberUserId}
             onSelectMember={selectMember}
@@ -380,7 +394,7 @@ export default function CalendarScreen() {
       <TransactionFormModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        dateKey={selectedDateKey}
+        dateKey={editingTransaction?.transactionDate ?? selectedDateKey}
         transaction={editingTransaction}
         initialType={createType}
       />

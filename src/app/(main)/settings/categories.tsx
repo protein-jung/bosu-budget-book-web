@@ -16,37 +16,48 @@ function sortedCategories(items: Category[]) {
 
 function CategoryRow({
   category,
-  parentName,
+  indented,
   isDragging,
   dragHandleProps,
   onPress,
   viewRef,
+  collapsible,
+  collapsed,
+  onToggleCollapse,
 }: {
   category: Category;
-  parentName?: string;
+  indented?: boolean;
   isDragging: boolean;
   dragHandleProps: object;
   onPress: () => void;
   viewRef?: (ref: View | null) => void;
+  collapsible?: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   return (
     <View
       ref={viewRef}
-      className={`mb-1.5 flex-row items-center gap-1 rounded-lg border px-2 py-1.5 ${
+      className={`mb-1.5 flex-row items-center gap-1 rounded-lg border px-2 py-1.5 ${indented ? 'ml-4' : ''} ${
         isDragging
           ? 'border-primary bg-primary-light dark:bg-slate-700'
           : category.isGroup
             ? 'border-dashed border-primary/50 bg-primary-light/40 dark:border-primary/40 dark:bg-slate-800'
             : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'
       }`}>
+      {collapsible ? (
+        <Pressable onPress={onToggleCollapse} hitSlop={6} className="px-0.5 py-0.5">
+          <Ionicons name={collapsed ? 'chevron-forward' : 'chevron-down'} size={14} color="#94a3b8" />
+        </Pressable>
+      ) : null}
       <Pressable onPress={onPress} className="min-w-0 flex-1 flex-row items-center gap-1">
+        {indented ? <Ionicons name="return-down-forward-outline" size={11} color="#94a3b8" /> : null}
         {category.icon ? (
           <Text className="text-xs">{category.icon}</Text>
         ) : (
           <View className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color ?? '#94a3b8' }} />
         )}
         <Text numberOfLines={1} className="flex-1 text-xs font-medium text-slate-700 dark:text-slate-200">
-          {parentName ? `${parentName} · ` : ''}
           {category.name}
         </Text>
       </Pressable>
@@ -66,32 +77,46 @@ export default function CategoriesScreen() {
   const isDesktop = useIsDesktop();
   const [editing, setEditing] = useState<Category | null | undefined>(undefined);
   const [addingGroup, setAddingGroup] = useState(false);
+  const [collapsedRootIds, setCollapsedRootIds] = useState<Set<number>>(new Set());
+
+  const toggleCollapsed = (id: number) => {
+    setCollapsedRootIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   // 하위 카테고리를 상위 카테고리 위로 드래그해서 놓으면 소속을 바꿀 수 있게, 상위 카테고리
   // 카드들의 화면상 위치를 등록해뒀다가 드롭 시점에 그 위치와 겹치는지 확인한다.
   const rootViewRefs = useRef(new Map<number, View>());
   const dropZonesRef = useRef(new Map<number, DropZone>());
 
-  const parentNameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
   const rootsById = useMemo(
     () => new Map(categories.filter((c) => c.parentId == null).map((c) => [c.id, c])),
     [categories],
   );
+  const childrenByParentId = useMemo(() => {
+    const map = new Map<number, Category[]>();
+    categories
+      .filter((c) => c.parentId != null)
+      .forEach((c) => {
+        map.set(c.parentId!, [...(map.get(c.parentId!) ?? []), c]);
+      });
+    map.forEach((list, parentId) => map.set(parentId, sortedCategories(list)));
+    return map;
+  }, [categories]);
 
   const expenseRoots = useMemo(
     () => sortedCategories(categories.filter((c) => c.type === 'EXPENSE' && c.parentId == null)),
     [categories],
   );
-  const expenseChildren = useMemo(
-    () => sortedCategories(categories.filter((c) => c.type === 'EXPENSE' && c.parentId != null)),
-    [categories],
-  );
   const incomeRoots = useMemo(
     () => sortedCategories(categories.filter((c) => c.type === 'INCOME' && c.parentId == null)),
-    [categories],
-  );
-  const incomeChildren = useMemo(
-    () => sortedCategories(categories.filter((c) => c.type === 'INCOME' && c.parentId != null)),
     [categories],
   );
 
@@ -141,34 +166,53 @@ export default function CategoriesScreen() {
     return false;
   };
 
-  const renderColumn = (
-    title: string,
-    items: Category[],
-    showParentName: boolean,
-    isLast: boolean,
-    isParentColumn: boolean,
-  ) => (
+  const renderSection = (title: string, roots: Category[], isLast: boolean) => (
     <View className={`flex-1 gap-2 ${isLast ? '' : 'border-r border-slate-200 pr-3 dark:border-slate-700'}`}>
       <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">{title}</Text>
-      {items.length === 0 ? (
+
+      {roots.length === 0 ? (
         <Text className="text-xs text-slate-400">없음</Text>
       ) : (
         <DraggableList
-          items={items}
+          items={roots}
           keyExtractor={(item) => String(item.id)}
           onReorder={handleReorder}
-          onDragStart={isParentColumn ? undefined : remeasureDropZones}
-          onBeforeDrop={isParentColumn ? undefined : tryReparent}
-          renderItem={({ item, isDragging, dragHandleProps }) => (
-            <CategoryRow
-              category={item}
-              parentName={showParentName && item.parentId != null ? parentNameById.get(item.parentId) : undefined}
-              isDragging={isDragging}
-              dragHandleProps={dragHandleProps}
-              onPress={() => setEditing(item)}
-              viewRef={isParentColumn ? registerRootRef(item.id) : undefined}
-            />
-          )}
+          renderItem={({ item: root, isDragging, dragHandleProps }) => {
+            const children = childrenByParentId.get(root.id) ?? [];
+            const isCollapsed = collapsedRootIds.has(root.id);
+            return (
+              <View className="mb-1">
+                <CategoryRow
+                  category={root}
+                  isDragging={isDragging}
+                  dragHandleProps={dragHandleProps}
+                  onPress={() => setEditing(root)}
+                  viewRef={registerRootRef(root.id)}
+                  collapsible={children.length > 0}
+                  collapsed={isCollapsed}
+                  onToggleCollapse={() => toggleCollapsed(root.id)}
+                />
+                {children.length > 0 && !isCollapsed && (
+                  <DraggableList
+                    items={children}
+                    keyExtractor={(item) => String(item.id)}
+                    onReorder={handleReorder}
+                    onDragStart={remeasureDropZones}
+                    onBeforeDrop={tryReparent}
+                    renderItem={({ item: child, isDragging: childDragging, dragHandleProps: childHandleProps }) => (
+                      <CategoryRow
+                        category={child}
+                        indented
+                        isDragging={childDragging}
+                        dragHandleProps={childHandleProps}
+                        onPress={() => setEditing(child)}
+                      />
+                    )}
+                  />
+                )}
+              </View>
+            );
+          }}
         />
       )}
     </View>
@@ -182,10 +226,8 @@ export default function CategoriesScreen() {
       </Text>
 
       <View className="flex-row gap-3">
-        {renderColumn('지출 상위', expenseRoots, false, false, true)}
-        {renderColumn('지출 하위', expenseChildren, true, false, false)}
-        {renderColumn('수입 상위', incomeRoots, false, false, true)}
-        {renderColumn('수입 하위', incomeChildren, true, true, false)}
+        {renderSection('지출', expenseRoots, false)}
+        {renderSection('수입', incomeRoots, true)}
       </View>
 
       <View className="gap-2">

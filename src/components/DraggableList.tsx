@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { type GestureResponderHandlers, type LayoutChangeEvent, PanResponder, View } from 'react-native';
 
 function DragHandleCapture({
@@ -26,6 +26,8 @@ function DragHandleCapture({
 
   return <>{children(panResponder.panHandlers)}</>;
 }
+
+const DEFAULT_ROW_HEIGHT = 40;
 
 export function DraggableList<T>({
   items,
@@ -59,22 +61,42 @@ export function DraggableList<T>({
     pageX: number;
     pageY: number;
   } | null>(null);
-  const [itemHeight, setItemHeight] = useState(0);
+  // Rows can have different heights (e.g. a parent row that carries a nested children list),
+  // so each row's measured height is tracked by key instead of assuming one shared height.
+  const heightsRef = useRef(new Map<string, number>());
 
   if (items !== prevItems) {
     setPrevItems(items);
     setOrder(items);
   }
 
-  const hoverIndex =
-    dragState === null
-      ? null
-      : Math.min(Math.max(dragState.index + Math.round(dragState.dy / (itemHeight || 1)), 0), order.length - 1);
+  const heightOf = (item: T) => heightsRef.current.get(keyExtractor(item)) ?? DEFAULT_ROW_HEIGHT;
 
-  const handleRowLayout = (e: LayoutChangeEvent) => {
-    if (itemHeight === 0) {
-      setItemHeight(e.nativeEvent.layout.height);
-    }
+  const tops = (() => {
+    let acc = 0;
+    return order.map((item) => {
+      const top = acc;
+      acc += heightOf(item);
+      return top;
+    });
+  })();
+
+  let hoverIndex: number | null = null;
+  let draggedHeight = 0;
+  if (dragState) {
+    draggedHeight = heightOf(order[dragState.index]);
+    const draggedCenter = tops[dragState.index] + dragState.dy + draggedHeight / 2;
+    let count = 0;
+    order.forEach((item, idx) => {
+      if (idx === dragState.index) return;
+      const center = tops[idx] + heightOf(item) / 2;
+      if (center < draggedCenter) count++;
+    });
+    hoverIndex = Math.min(Math.max(count, 0), order.length - 1);
+  }
+
+  const handleRowLayout = (key: string) => (e: LayoutChangeEvent) => {
+    heightsRef.current.set(key, e.nativeEvent.layout.height);
   };
 
   const handleDragEnd = () => {
@@ -101,13 +123,14 @@ export function DraggableList<T>({
   return (
     <View>
       {order.map((item, index) => {
+        const key = keyExtractor(item);
         const isDragging = dragState?.index === index;
         let translateY = 0;
         if (dragState && !isDragging && hoverIndex !== null) {
           if (dragState.index < hoverIndex && index > dragState.index && index <= hoverIndex) {
-            translateY = -itemHeight;
+            translateY = -draggedHeight;
           } else if (dragState.index > hoverIndex && index < dragState.index && index >= hoverIndex) {
-            translateY = itemHeight;
+            translateY = draggedHeight;
           }
         }
         const style = isDragging
@@ -115,7 +138,7 @@ export function DraggableList<T>({
           : { transform: [{ translateY }] };
 
         return (
-          <View key={keyExtractor(item)} style={style} onLayout={handleRowLayout}>
+          <View key={key} style={style} onLayout={handleRowLayout(key)}>
             <DragHandleCapture
               index={index}
               onDragStart={(i, pos) => {

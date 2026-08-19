@@ -13,6 +13,7 @@ export type Category = {
   sortOrder: number;
   targetAmount: number | null;
   isGroup: boolean;
+  excludedFromExpenseStats: boolean;
 };
 
 export type CardAccount = {
