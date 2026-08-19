@@ -46,6 +46,7 @@ export type AssetInput = {
   loanRepaymentType: LoanRepaymentType | null;
   realEstateCategory: RealEstateCategory | null;
   monthlyRent: number | null;
+  includeInStats: boolean;
 };
 
 const assetApi = {

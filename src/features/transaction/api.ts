@@ -28,10 +28,11 @@ export function monthlyTransactionsKey(year: number, month: number) {
   return ['transactions', 'monthly', year, month];
 }
 
-export function useMonthlyTransactions(year: number, month: number) {
+export function useMonthlyTransactions(year: number, month: number, enabled = true) {
   return useQuery({
     queryKey: monthlyTransactionsKey(year, month),
     queryFn: () => transactionApi.getMonthly(year, month),
+    enabled,
   });
 }
 

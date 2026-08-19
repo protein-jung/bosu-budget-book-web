@@ -9,11 +9,11 @@ import { TextField } from '@/components/TextField';
 import { authApi } from '@/features/auth/api';
 import { getErrorMessage } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
+import { toast } from '@/store/toastStore';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const setSession = useAuthStore((state) => state.setSession);
 
   const loginMutation = useMutation({
@@ -27,13 +27,12 @@ export default function LoginScreen() {
       });
       router.replace('/calendar');
     },
-    onError: (err) => setError(getErrorMessage(err, '로그인에 실패했습니다.')),
+    onError: (err) => toast.error(getErrorMessage(err, '로그인에 실패했습니다.')),
   });
 
   const handleSubmit = () => {
-    setError(null);
     if (!email || !password) {
-      setError('이메일과 비밀번호를 입력해주세요.');
+      toast.error('이메일과 비밀번호를 입력해주세요.');
       return;
     }
     loginMutation.mutate({ email, password });
@@ -64,7 +63,6 @@ export default function LoginScreen() {
           secureTextEntry
           placeholder="8자 이상"
         />
-        {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
         <Button title="로그인" onPress={handleSubmit} loading={loginMutation.isPending} />
       </View>
 

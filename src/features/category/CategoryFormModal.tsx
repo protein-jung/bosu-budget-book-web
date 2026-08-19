@@ -5,9 +5,11 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { TextField } from '@/components/TextField';
 import { getErrorMessage } from '@/lib/apiClient';
+import { formatAmountInput } from '@/lib/format';
 import { CATEGORY_COLOR_PALETTE, CATEGORY_ICON_PALETTE } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
 import type { Category, TransactionType } from '@/lib/types';
+import { toast } from '@/store/toastStore';
 
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from './api';
 
@@ -38,7 +40,6 @@ export function CategoryFormModal({
   const [icon, setIcon] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [parentId, setParentId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
@@ -55,7 +56,6 @@ export function CategoryFormModal({
 
   useEffect(() => {
     if (!visible) return;
-    setError(null);
     if (category) {
       setName(category.name);
       setType(category.type);
@@ -73,10 +73,11 @@ export function CategoryFormModal({
     }
   }, [visible, category, initialType]);
 
+  const categoryLabel = isGroupMode ? '상위 카테고리' : '카테고리';
+
   const handleSubmit = () => {
-    setError(null);
     if (!name.trim()) {
-      setError('카테고리 이름을 입력해주세요.');
+      toast.error('카테고리 이름을 입력해주세요.');
       return;
     }
     const payload = {
@@ -91,15 +92,22 @@ export function CategoryFormModal({
     if (isEdit && category) {
       updateCategory.mutate(
         { id: category.id, data: payload },
-        { onSuccess: onClose, onError: (err) => setError(getErrorMessage(err, '수정에 실패했습니다.')) },
+        {
+          onSuccess: () => {
+            toast.success(`${categoryLabel}를 수정했어요.`);
+            onClose();
+          },
+          onError: (err) => toast.error(getErrorMessage(err, '수정에 실패했습니다.')),
+        },
       );
     } else {
       createCategory.mutate(payload, {
         onSuccess: (created) => {
+          toast.success(`${categoryLabel}를 추가했어요.`);
           onCreated?.(created);
           onClose();
         },
-        onError: (err) => setError(getErrorMessage(err, '추가에 실패했습니다.')),
+        onError: (err) => toast.error(getErrorMessage(err, '추가에 실패했습니다.')),
       });
     }
   };
@@ -107,8 +115,11 @@ export function CategoryFormModal({
   const handleDelete = () => {
     if (!category) return;
     deleteCategory.mutate(category.id, {
-      onSuccess: onClose,
-      onError: (err) => setError(getErrorMessage(err, '삭제에 실패했습니다.')),
+      onSuccess: () => {
+        toast.success(`${categoryLabel}를 삭제했어요.`);
+        onClose();
+      },
+      onError: (err) => toast.error(getErrorMessage(err, '삭제에 실패했습니다.')),
     });
   };
 
@@ -227,15 +238,13 @@ export function CategoryFormModal({
 
               <TextField
                 label="월 목표 금액 (선택)"
-                value={targetAmount}
+                value={formatAmountInput(targetAmount)}
                 onChangeText={(text) => setTargetAmount(text.replace(/[^0-9]/g, ''))}
                 keyboardType="numeric"
-                placeholder="예) 200000"
+                placeholder="예) 200,000"
               />
             </View>
           </ScrollView>
-
-          {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
 
           <View className="gap-2">
             <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />

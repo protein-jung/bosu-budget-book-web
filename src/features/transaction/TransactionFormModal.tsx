@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/lib/apiClient';
 import { formatAmountInput } from '@/lib/format';
 import { useIsDesktop } from '@/lib/responsive';
 import type { Category, Transaction, TransactionType } from '@/lib/types';
+import { toast } from '@/store/toastStore';
 
 import { useCreateTransaction, useDeleteTransaction, useUpdateTransaction } from './api';
 
@@ -39,7 +40,6 @@ export function TransactionFormModal({
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [cardId, setCardId] = useState<number | null>(null);
   const [memo, setMemo] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [addingCategory, setAddingCategory] = useState(false);
 
   const createTransaction = useCreateTransaction();
@@ -48,7 +48,6 @@ export function TransactionFormModal({
 
   useEffect(() => {
     if (!visible) return;
-    setError(null);
     if (transaction) {
       setType(transaction.type);
       setAmount(String(transaction.amount));
@@ -78,14 +77,13 @@ export function TransactionFormModal({
   const isPending = createTransaction.isPending || updateTransaction.isPending || deleteTransaction.isPending;
 
   const handleSubmit = () => {
-    setError(null);
     const numericAmount = Number(amount);
     if (!numericAmount || numericAmount <= 0) {
-      setError('금액을 올바르게 입력해주세요.');
+      toast.error('금액을 올바르게 입력해주세요.');
       return;
     }
     if (!categoryId) {
-      setError('카테고리를 선택해주세요.');
+      toast.error('카테고리를 선택해주세요.');
       return;
     }
     const payload = {
@@ -100,12 +98,21 @@ export function TransactionFormModal({
     if (isEdit && transaction) {
       updateTransaction.mutate(
         { id: transaction.id, data: payload },
-        { onSuccess: onClose, onError: (err) => setError(getErrorMessage(err, '수정에 실패했습니다.')) },
+        {
+          onSuccess: () => {
+            toast.success('내역을 수정했어요.');
+            onClose();
+          },
+          onError: (err) => toast.error(getErrorMessage(err, '수정에 실패했습니다.')),
+        },
       );
     } else {
       createTransaction.mutate(payload, {
-        onSuccess: onClose,
-        onError: (err) => setError(getErrorMessage(err, '등록에 실패했습니다.')),
+        onSuccess: () => {
+          toast.success('내역을 추가했어요.');
+          onClose();
+        },
+        onError: (err) => toast.error(getErrorMessage(err, '등록에 실패했습니다.')),
       });
     }
   };
@@ -113,8 +120,11 @@ export function TransactionFormModal({
   const handleDelete = () => {
     if (!transaction) return;
     deleteTransaction.mutate(transaction.id, {
-      onSuccess: onClose,
-      onError: (err) => setError(getErrorMessage(err, '삭제에 실패했습니다.')),
+      onSuccess: () => {
+        toast.success('내역을 삭제했어요.');
+        onClose();
+      },
+      onError: (err) => toast.error(getErrorMessage(err, '삭제에 실패했습니다.')),
     });
   };
 
@@ -182,8 +192,6 @@ export function TransactionFormModal({
             </View>
 
             <TextField label="메모 (선택)" value={memo} onChangeText={setMemo} placeholder="메모를 입력하세요" />
-
-            {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
 
             <View className="gap-2">
               <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />

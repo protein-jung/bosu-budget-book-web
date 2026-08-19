@@ -20,10 +20,6 @@ const categoryApi = {
     apiClient.put<Category>(`/api/categories/${id}`, data).then((res) => res.data),
   remove: (id: number) => apiClient.delete(`/api/categories/${id}`),
   reorder: (categoryIds: number[]) => apiClient.put('/api/categories/reorder', { categoryIds }),
-  setMonthlyTarget: (id: number, year: number, month: number, amount: number) =>
-    apiClient.put(`/api/categories/${id}/monthly-target/${year}/${month}`, { amount }),
-  clearMonthlyTarget: (id: number, year: number, month: number) =>
-    apiClient.delete(`/api/categories/${id}/monthly-target/${year}/${month}`),
   getMemos: () => apiClient.get<CategoryMemo[]>('/api/categories/memos').then((res) => res.data),
   setMemo: (id: number, year: number, month: number, memo: string) =>
     apiClient.put(`/api/categories/${id}/memo/${year}/${month}`, { memo }),
@@ -49,7 +45,11 @@ export function useUpdateCategory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CategoryInput }) => categoryApi.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEY });
+      // 목표 금액이 바뀌면 통계/예산 화면의 budgets 계산도 함께 갱신돼야 한다.
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
+    },
   });
 }
 
@@ -58,24 +58,6 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: (id: number) => categoryApi.remove(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEY }),
-  });
-}
-
-export function useSetMonthlyTarget() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, year, month, amount }: { id: number; year: number; month: number; amount: number }) =>
-      categoryApi.setMonthlyTarget(id, year, month, amount),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['statistics'] }),
-  });
-}
-
-export function useClearMonthlyTarget() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, year, month }: { id: number; year: number; month: number }) =>
-      categoryApi.clearMonthlyTarget(id, year, month),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['statistics'] }),
   });
 }
 

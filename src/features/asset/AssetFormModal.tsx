@@ -22,6 +22,7 @@ import type {
 } from '@/lib/types';
 import { VEHICLE_BRANDS } from '@/lib/vehicleBrands';
 import { VEHICLE_MODELS } from '@/lib/vehicleModels';
+import { toast } from '@/store/toastStore';
 
 import { useCreateAsset, useDeleteAsset, useUpdateAsset } from './api';
 import { CustodianField } from './CustodianField';
@@ -173,7 +174,7 @@ export function AssetFormModal({
   const [dealDate, setDealDate] = useState<string | null>(null);
   const [showDayPicker, setShowDayPicker] = useState(false);
   const [stockRows, setStockRows] = useState<StockRow[]>([EMPTY_STOCK_ROW]);
-  const [error, setError] = useState<string | null>(null);
+  const [includeInStats, setIncludeInStats] = useState(false);
 
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
@@ -182,7 +183,6 @@ export function AssetFormModal({
 
   useEffect(() => {
     if (!visible) return;
-    setError(null);
     if (asset) {
       setType(asset.type);
       setName(asset.name);
@@ -220,6 +220,7 @@ export function AssetFormModal({
       setComplexName(asset.complexName);
       setRealEstateCategory(asset.realEstateCategory ?? 'OWNED');
       setMonthlyRent(asset.monthlyRent != null ? String(asset.monthlyRent) : '');
+      setIncludeInStats(asset.includeInStats);
       setWeightUnit('G');
       setWeightInput(isPreciousMetal(asset.type) && asset.quantity != null ? String(asset.quantity) : '');
       if (asset.type === 'VEHICLE') {
@@ -268,6 +269,7 @@ export function AssetFormModal({
       setComplexName(null);
       setRealEstateCategory('OWNED');
       setMonthlyRent('');
+      setIncludeInStats(false);
       setWeightUnit('G');
       setWeightInput('');
     }
@@ -312,27 +314,25 @@ export function AssetFormModal({
   const bulkStockEntry = !isEdit && livePriced;
 
   const handleSubmit = async () => {
-    setError(null);
-
     if (bulkStockEntry) {
       const isManualRow = (row: StockRow) => type === 'STOCK' && row.holdingType === 'MANUAL';
       const validRows = stockRows.filter((row) => (isManualRow(row) ? row.name.trim() : row.symbol.trim()));
       if (validRows.length === 0) {
-        setError('최소 1개 종목을 입력해주세요.');
+        toast.error('최소 1개 종목을 입력해주세요.');
         return;
       }
       for (const row of validRows) {
         if (isManualRow(row)) {
           const manualValueNumber = Number(row.manualValue);
           if (!row.manualValue || Number.isNaN(manualValueNumber) || manualValueNumber < 0) {
-            setError(`${row.name.trim()}의 평가금액을 올바르게 입력해주세요.`);
+            toast.error(`${row.name.trim()}의 평가금액을 올바르게 입력해주세요.`);
             return;
           }
           continue;
         }
         const quantityNumber = Number(row.quantity);
         if (!row.quantity || Number.isNaN(quantityNumber) || quantityNumber <= 0) {
-          setError(`${row.symbol.trim()} 종목의 보유 수량을 올바르게 입력해주세요.`);
+          toast.error(`${row.symbol.trim()} 종목의 보유 수량을 올바르게 입력해주세요.`);
           return;
         }
       }
@@ -369,6 +369,7 @@ export function AssetFormModal({
               loanRepaymentType: null,
               realEstateCategory: null,
               monthlyRent: null,
+              includeInStats,
             }
           : {
               type,
@@ -401,13 +402,15 @@ export function AssetFormModal({
               loanRepaymentType: null,
               realEstateCategory: null,
               monthlyRent: null,
+              includeInStats,
             },
       );
       try {
         await Promise.all(payloads.map((payload) => createAsset.mutateAsync(payload)));
+        toast.success('자산을 추가했어요.');
         onClose();
       } catch (err) {
-        setError(getErrorMessage(err, '추가에 실패했습니다.'));
+        toast.error(getErrorMessage(err, '추가에 실패했습니다.'));
       }
       return;
     }
@@ -415,16 +418,16 @@ export function AssetFormModal({
     let finalName = name.trim();
     if (type === 'VEHICLE') {
       if (!vehicleBrand.trim()) {
-        setError('브랜드를 선택해주세요.');
+        toast.error('브랜드를 선택해주세요.');
         return;
       }
       if (!vehicleModel.trim()) {
-        setError('모델명을 입력해주세요.');
+        toast.error('모델명을 입력해주세요.');
         return;
       }
       finalName = `${vehicleBrand.trim()} ${vehicleModel.trim()}`;
     } else if (!finalName) {
-      setError('이름을 입력해주세요.');
+      toast.error('이름을 입력해주세요.');
       return;
     }
     const isStockManual = type === 'STOCK' && stockHoldingType === 'MANUAL';
@@ -433,48 +436,48 @@ export function AssetFormModal({
     if (type === 'LOAN') {
       const principalNumber = Number(loanPrincipal);
       if (!loanPrincipal || Number.isNaN(principalNumber) || principalNumber < 0) {
-        setError('대출 원금을 올바르게 입력해주세요.');
+        toast.error('대출 원금을 올바르게 입력해주세요.');
         return;
       }
       if (!loanStartMonth) {
-        setError('대출 시작년월을 선택해주세요.');
+        toast.error('대출 시작년월을 선택해주세요.');
         return;
       }
       const termNumber = Number(loanTermMonths);
       if (!loanTermMonths || Number.isNaN(termNumber) || termNumber <= 0) {
-        setError('상환 기한을 올바르게 입력해주세요.');
+        toast.error('상환 기한을 올바르게 입력해주세요.');
         return;
       }
       const interestRateNumber = Number(loanInterestRate);
       if (loanInterestRate.trim() === '' || Number.isNaN(interestRateNumber) || interestRateNumber < 0) {
-        setError('이율을 올바르게 입력해주세요.');
+        toast.error('이율을 올바르게 입력해주세요.');
         return;
       }
       const monthlyPaymentNumber = Number(loanMonthlyPayment);
       if (!loanMonthlyPayment || Number.isNaN(monthlyPaymentNumber) || monthlyPaymentNumber < 0) {
-        setError('월 납입금을 계산하지 못했어요. 원금·이율·상환 기한을 다시 확인해주세요.');
+        toast.error('월 납입금을 계산하지 못했어요. 원금·이율·상환 기한을 다시 확인해주세요.');
         return;
       }
     } else if (effectiveLivePriced) {
       if (!symbol.trim()) {
-        setError('심볼(티커)을 입력해주세요.');
+        toast.error('심볼(티커)을 입력해주세요.');
         return;
       }
       const quantityNumber = Number(quantity);
       if (!quantity || Number.isNaN(quantityNumber) || quantityNumber <= 0) {
-        setError('보유 수량을 올바르게 입력해주세요.');
+        toast.error('보유 수량을 올바르게 입력해주세요.');
         return;
       }
     } else if (isPreciousMetal(type)) {
       const weightNumber = Number(weightInput);
       if (!weightInput || Number.isNaN(weightNumber) || weightNumber <= 0) {
-        setError('중량을 올바르게 입력해주세요.');
+        toast.error('중량을 올바르게 입력해주세요.');
         return;
       }
     } else {
       const manualValueNumber = Number(manualValue);
       if (!manualValue || Number.isNaN(manualValueNumber) || manualValueNumber < 0) {
-        setError(
+        toast.error(
           type === 'REAL_ESTATE' ? `${REAL_ESTATE_CATEGORY_META[realEstateCategory].valueLabel}을 올바르게 입력해주세요.` : '평가금액을 올바르게 입력해주세요.',
         );
         return;
@@ -482,7 +485,7 @@ export function AssetFormModal({
       if (type === 'REAL_ESTATE' && realEstateCategory === 'WOLSE') {
         const monthlyRentNumber = Number(monthlyRent);
         if (!monthlyRent || Number.isNaN(monthlyRentNumber) || monthlyRentNumber < 0) {
-          setError('월세를 올바르게 입력해주세요.');
+          toast.error('월세를 올바르게 입력해주세요.');
           return;
         }
       }
@@ -526,17 +529,27 @@ export function AssetFormModal({
       loanRepaymentType: type === 'LOAN' ? loanRepaymentType : null,
       realEstateCategory: type === 'REAL_ESTATE' ? realEstateCategory : null,
       monthlyRent: type === 'REAL_ESTATE' && realEstateCategory === 'WOLSE' ? Number(monthlyRent) : null,
+      includeInStats,
     };
 
     if (isEdit && asset) {
       updateAsset.mutate(
         { id: asset.id, data: payload },
-        { onSuccess: onClose, onError: (err) => setError(getErrorMessage(err, '수정에 실패했습니다.')) },
+        {
+          onSuccess: () => {
+            toast.success('자산을 수정했어요.');
+            onClose();
+          },
+          onError: (err) => toast.error(getErrorMessage(err, '수정에 실패했습니다.')),
+        },
       );
     } else {
       createAsset.mutate(payload, {
-        onSuccess: onClose,
-        onError: (err) => setError(getErrorMessage(err, '추가에 실패했습니다.')),
+        onSuccess: () => {
+          toast.success('자산을 추가했어요.');
+          onClose();
+        },
+        onError: (err) => toast.error(getErrorMessage(err, '추가에 실패했습니다.')),
       });
     }
   };
@@ -544,8 +557,11 @@ export function AssetFormModal({
   const handleDelete = () => {
     if (!asset) return;
     deleteAsset.mutate(asset.id, {
-      onSuccess: onClose,
-      onError: (err) => setError(getErrorMessage(err, '삭제에 실패했습니다.')),
+      onSuccess: () => {
+        toast.success('자산을 삭제했어요.');
+        onClose();
+      },
+      onError: (err) => toast.error(getErrorMessage(err, '삭제에 실패했습니다.')),
     });
   };
 
@@ -1223,11 +1239,20 @@ export function AssetFormModal({
                 </>
               )}
 
+              <View className="gap-2">
+                <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">포트폴리오 통계에 포함</Text>
+                <View className="flex-row gap-2">
+                  <Chip label="안 함" selected={!includeInStats} onPress={() => setIncludeInStats(false)} />
+                  <Chip label="포함" selected={includeInStats} onPress={() => setIncludeInStats(true)} />
+                </View>
+                <Text className="text-xs text-slate-400">
+                  총자산·구성 비율·추이 그래프에 넣을지 정해요. 자산 목록에는 이 설정과 상관없이 항상 나와요.
+                </Text>
+              </View>
+
               <TextField label="메모 (선택)" value={memo} onChangeText={setMemo} placeholder="메모를 입력하세요" />
             </View>
           </ScrollView>
-
-          {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
 
           <View className="gap-2">
             <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />

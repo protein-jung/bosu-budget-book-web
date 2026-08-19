@@ -1,9 +1,10 @@
 import { Link, usePathname } from 'expo-router';
 import { Image, Pressable, Text, View } from 'react-native';
 
-const NAV_ITEMS: { href: '/calendar' | '/statistics' | '/portfolio' | '/settings'; label: string }[] = [
+const NAV_ITEMS: { href: '/calendar' | '/statistics' | '/budget' | '/portfolio' | '/settings'; label: string }[] = [
   { href: '/calendar', label: '달력' },
   { href: '/statistics', label: '통계' },
+  { href: '/budget', label: '예산' },
   { href: '/portfolio', label: '자산' },
   { href: '/settings', label: '설정' },
 ];

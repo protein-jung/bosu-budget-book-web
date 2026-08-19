@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/lib/apiClient';
 import { formatKrw } from '@/lib/format';
 import { useIsDesktop } from '@/lib/responsive';
 import type { ImportProvider, ImportResult } from '@/lib/types';
+import { toast } from '@/store/toastStore';
 
 type UiProvider = ImportProvider | 'NAVER_PAY';
 
@@ -18,6 +19,7 @@ const PROVIDERS: { value: UiProvider; label: string }[] = [
   { value: 'SAMSUNG_CARD', label: '삼성카드' },
   { value: 'GYEONGGI_LOCAL_CURRENCY', label: '경기지역화폐' },
   { value: 'COUPANG', label: '쿠팡' },
+  { value: 'KBANK', label: '케이뱅크' },
   { value: 'NAVER_PAY', label: '네이버페이' },
 ];
 
@@ -29,13 +31,13 @@ const STATEMENT_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'text/csv',
   'text/comma-separated-values',
+  'application/pdf',
 ];
 
 export default function ImportScreen() {
   const [provider, setProvider] = useState<UiProvider>('SAMSUNG_CARD');
   const [cardId, setCardId] = useState<number | null>(null);
   const [pickedFile, setPickedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
 
   const { data: cards = [] } = useCards();
@@ -43,7 +45,6 @@ export default function ImportScreen() {
   const isDesktop = useIsDesktop();
 
   const handlePickFile = async () => {
-    setError(null);
     setResult(null);
     const pickerResult = await DocumentPicker.getDocumentAsync({ type: STATEMENT_MIME_TYPES });
     if (pickerResult.canceled || !pickerResult.assets?.[0]) {
@@ -55,18 +56,18 @@ export default function ImportScreen() {
   const handleUpload = () => {
     if (provider === 'NAVER_PAY') return;
     if (!pickedFile) {
-      setError('먼저 파일을 선택해주세요.');
+      toast.error('먼저 파일을 선택해주세요.');
       return;
     }
-    setError(null);
     importStatement.mutate(
       { provider, file: pickedFile, cardId },
       {
         onSuccess: (data) => {
+          toast.success(`${data.importedCount}건을 가져왔어요.`);
           setResult(data);
           setPickedFile(null);
         },
-        onError: (err) => setError(getErrorMessage(err, '가져오기에 실패했습니다.')),
+        onError: (err) => toast.error(getErrorMessage(err, '가져오기에 실패했습니다.')),
       },
     );
   };
@@ -118,6 +119,11 @@ export default function ImportScreen() {
             </Pressable>
           </View>
         ) : null}
+        {provider === 'KBANK' ? (
+          <Text className="text-xs text-slate-400">
+            케이뱅크 앱에서 이용대금명세서(PDF)를 다운로드해서 그대로 올리면 돼요.
+          </Text>
+        ) : null}
         {provider === 'NAVER_PAY' ? (
           <Text className="text-xs text-slate-400">네이버페이 연동은 준비 중이에요. 곧 안내해드릴게요.</Text>
         ) : null}
@@ -151,8 +157,6 @@ export default function ImportScreen() {
               onPress={handlePickFile}
             />
           </View>
-
-          {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
 
           <Button
             title="가져오기"

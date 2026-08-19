@@ -7,18 +7,17 @@ import { TextField } from '@/components/TextField';
 import { useAdminLogin } from '@/features/admin/api';
 import { getErrorMessage } from '@/lib/apiClient';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
+import { toast } from '@/store/toastStore';
 
 export default function AdminLoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const setToken = useAdminAuthStore((state) => state.setToken);
   const loginMutation = useAdminLogin();
 
   const handleSubmit = () => {
-    setError(null);
     if (!username || !password) {
-      setError('아이디와 비밀번호를 입력해주세요.');
+      toast.error('아이디와 비밀번호를 입력해주세요.');
       return;
     }
     loginMutation.mutate(
@@ -28,7 +27,7 @@ export default function AdminLoginScreen() {
           await setToken(data.accessToken);
           router.replace('/admin');
         },
-        onError: (err) => setError(getErrorMessage(err, '로그인에 실패했습니다.')),
+        onError: (err) => toast.error(getErrorMessage(err, '로그인에 실패했습니다.')),
       },
     );
   };
@@ -56,7 +55,6 @@ export default function AdminLoginScreen() {
             secureTextEntry
             placeholder="비밀번호"
           />
-          {error ? <Text className="text-sm text-red-400">{error}</Text> : null}
           <Button title="로그인" onPress={handleSubmit} loading={loginMutation.isPending} />
         </View>
       </View>

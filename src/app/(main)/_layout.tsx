@@ -53,6 +53,13 @@ export default function MainLayout() {
           }}
         />
         <Tabs.Screen
+          name="budget"
+          options={{
+            title: '예산',
+            tabBarIcon: ({ color, size }) => <Ionicons name="calculator-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
           name="portfolio"
           options={{
             title: '자산',

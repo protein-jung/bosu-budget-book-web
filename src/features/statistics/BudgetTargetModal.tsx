@@ -3,58 +3,60 @@ import { Modal, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
-import { useClearMonthlyTarget, useSetMonthlyTarget } from '@/features/category/api';
+import { useUpdateCategory } from '@/features/category/api';
 import { getErrorMessage } from '@/lib/apiClient';
+import { CATEGORY_COLOR_PALETTE } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
-import type { CategoryBudget } from '@/lib/types';
+import type { Category } from '@/lib/types';
+import { toast } from '@/store/toastStore';
 
 export function BudgetTargetModal({
   visible,
   onClose,
-  budget,
-  year,
-  month,
+  category,
 }: {
   visible: boolean;
   onClose: () => void;
-  budget: CategoryBudget | null;
-  year: number;
-  month: number;
+  category: Category | null;
 }) {
   const isDesktop = useIsDesktop();
   const [amount, setAmount] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
-  const setMonthlyTarget = useSetMonthlyTarget();
-  const clearMonthlyTarget = useClearMonthlyTarget();
-  const isPending = setMonthlyTarget.isPending || clearMonthlyTarget.isPending;
+  const updateCategory = useUpdateCategory();
 
   useEffect(() => {
-    if (!visible || !budget) return;
-    setError(null);
-    setAmount(String(budget.targetAmount));
-  }, [visible, budget]);
+    if (!visible || !category) return;
+    setAmount(category.targetAmount != null ? String(category.targetAmount) : '');
+  }, [visible, category]);
 
-  if (!budget) return null;
+  if (!category) return null;
 
   const handleSave = () => {
-    setError(null);
     const numericAmount = Number(amount);
     if (!amount || numericAmount < 0) {
-      setError('목표 금액을 올바르게 입력해주세요.');
+      toast.error('목표 금액을 올바르게 입력해주세요.');
       return;
     }
-    setMonthlyTarget.mutate(
-      { id: budget.categoryId, year, month, amount: numericAmount },
-      { onSuccess: onClose, onError: (err) => setError(getErrorMessage(err, '저장에 실패했습니다.')) },
-    );
-  };
-
-  const handleReset = () => {
-    setError(null);
-    clearMonthlyTarget.mutate(
-      { id: budget.categoryId, year, month },
-      { onSuccess: onClose, onError: (err) => setError(getErrorMessage(err, '되돌리기에 실패했습니다.')) },
+    updateCategory.mutate(
+      {
+        id: category.id,
+        data: {
+          name: category.name,
+          type: category.type,
+          color: category.color ?? CATEGORY_COLOR_PALETTE[0],
+          icon: category.icon,
+          parentId: category.parentId,
+          targetAmount: numericAmount,
+          isGroup: category.isGroup,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success('목표 금액을 저장했어요.');
+          onClose();
+        },
+        onError: (err) => toast.error(getErrorMessage(err, '저장에 실패했습니다.')),
+      },
     );
   };
 
@@ -66,12 +68,10 @@ export function BudgetTargetModal({
             isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
           }`}>
           <Text className="text-xl font-bold text-slate-900 dark:text-white">
-            {budget.icon ? `${budget.icon} ` : ''}
-            {budget.categoryName}
+            {category.icon ? `${category.icon} ` : ''}
+            {category.name}
           </Text>
-          <Text className="text-sm text-slate-500 dark:text-slate-400">
-            {year}년 {month}월 목표 금액
-          </Text>
+          <Text className="text-sm text-slate-500 dark:text-slate-400">월 목표 금액</Text>
 
           <TextField
             label="목표 금액"
@@ -81,19 +81,9 @@ export function BudgetTargetModal({
             placeholder="0"
           />
 
-          {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
-
           <View className="gap-2">
-            <Button title="이번 달 목표 저장" onPress={handleSave} loading={setMonthlyTarget.isPending} />
-            {budget.monthOverride ? (
-              <Button
-                title="기본값으로 되돌리기"
-                variant="secondary"
-                onPress={handleReset}
-                loading={clearMonthlyTarget.isPending}
-              />
-            ) : null}
-            <Button title="취소" variant="secondary" onPress={onClose} disabled={isPending} />
+            <Button title="저장" onPress={handleSave} loading={updateCategory.isPending} />
+            <Button title="취소" variant="secondary" onPress={onClose} disabled={updateCategory.isPending} />
           </View>
         </View>
       </View>

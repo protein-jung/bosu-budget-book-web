@@ -8,6 +8,7 @@ import { useMyHousehold } from '@/features/household/api';
 import { getErrorMessage } from '@/lib/apiClient';
 import { useIsDesktop } from '@/lib/responsive';
 import type { CardAccount, CardType } from '@/lib/types';
+import { toast } from '@/store/toastStore';
 
 import { useCreateCard, useDeleteCard, useUpdateCard } from './api';
 
@@ -32,7 +33,6 @@ export function CardFormModal({
   const [name, setName] = useState('');
   const [type, setType] = useState<CardType>('CREDIT');
   const [ownerUserId, setOwnerUserId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const createCard = useCreateCard();
   const updateCard = useUpdateCard();
@@ -41,7 +41,6 @@ export function CardFormModal({
 
   useEffect(() => {
     if (!visible) return;
-    setError(null);
     if (card) {
       setName(card.name);
       setType(card.type);
@@ -54,21 +53,29 @@ export function CardFormModal({
   }, [visible, card]);
 
   const handleSubmit = () => {
-    setError(null);
     if (!name.trim()) {
-      setError('카드 이름을 입력해주세요.');
+      toast.error('카드 이름을 입력해주세요.');
       return;
     }
     const payload = { name: name.trim(), type, ownerUserId };
     if (isEdit && card) {
       updateCard.mutate(
         { id: card.id, data: payload },
-        { onSuccess: onClose, onError: (err) => setError(getErrorMessage(err, '수정에 실패했습니다.')) },
+        {
+          onSuccess: () => {
+            toast.success('카드를 수정했어요.');
+            onClose();
+          },
+          onError: (err) => toast.error(getErrorMessage(err, '수정에 실패했습니다.')),
+        },
       );
     } else {
       createCard.mutate(payload, {
-        onSuccess: onClose,
-        onError: (err) => setError(getErrorMessage(err, '추가에 실패했습니다.')),
+        onSuccess: () => {
+          toast.success('카드를 추가했어요.');
+          onClose();
+        },
+        onError: (err) => toast.error(getErrorMessage(err, '추가에 실패했습니다.')),
       });
     }
   };
@@ -76,8 +83,11 @@ export function CardFormModal({
   const handleDelete = () => {
     if (!card) return;
     deleteCard.mutate(card.id, {
-      onSuccess: onClose,
-      onError: (err) => setError(getErrorMessage(err, '삭제에 실패했습니다.')),
+      onSuccess: () => {
+        toast.success('카드를 삭제했어요.');
+        onClose();
+      },
+      onError: (err) => toast.error(getErrorMessage(err, '삭제에 실패했습니다.')),
     });
   };
 
@@ -122,8 +132,6 @@ export function CardFormModal({
               ))}
             </View>
           </View>
-
-          {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
 
           <View className="gap-2">
             <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />

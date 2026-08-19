@@ -98,7 +98,7 @@ export default function StatisticsMonthScreen() {
   const [year, setYear] = useState(() => (params.year ? Number(params.year) : today.getFullYear()));
   const [month, setMonth] = useState(() => (params.month ? Number(params.month) : today.getMonth() + 1));
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
-  const [editingBudget, setEditingBudget] = useState<CategoryBudget | null>(null);
+  const [editingBudgetCategory, setEditingBudgetCategory] = useState<Category | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
 
   const { data: categories = [] } = useCategories();
@@ -106,6 +106,7 @@ export default function StatisticsMonthScreen() {
     () => categories.find((c) => c.id === editingCategoryId) ?? null,
     [categories, editingCategoryId],
   );
+  const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const { data: summary, isLoading } = useMonthlyStatistics(year, month);
   const { data: range, isLoading: rangeLoading } = useRangeStatistics(year, month, TREND_MONTHS);
@@ -120,12 +121,14 @@ export default function StatisticsMonthScreen() {
     const over = b.spentAmount > b.targetAmount;
     const barColor = over ? '#e03131' : pct >= 80 ? '#f08c00' : '#2f9e44';
     return (
-      <Pressable key={b.categoryId} onPress={() => setEditingBudget(b)} className="gap-1.5">
+      <Pressable
+        key={b.categoryId}
+        onPress={() => setEditingBudgetCategory(categoryById.get(b.categoryId) ?? null)}
+        className="gap-1.5">
         <View className="flex-row items-center justify-between gap-2">
           <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200" numberOfLines={1}>
             {b.icon ? `${b.icon} ` : ''}
             {b.categoryName}
-            {b.monthOverride ? ' · 이번 달 조정' : ''}
           </Text>
           <Text className={`text-sm font-medium ${over ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
             {formatKrw(b.spentAmount)} / {formatKrw(b.targetAmount)}
@@ -460,11 +463,9 @@ export default function StatisticsMonthScreen() {
       )}
 
       <BudgetTargetModal
-        visible={editingBudget !== null}
-        onClose={() => setEditingBudget(null)}
-        budget={editingBudget}
-        year={year}
-        month={month}
+        visible={editingBudgetCategory !== null}
+        onClose={() => setEditingBudgetCategory(null)}
+        category={editingBudgetCategory}
       />
 
       <CategoryFormModal

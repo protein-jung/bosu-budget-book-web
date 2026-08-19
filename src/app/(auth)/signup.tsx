@@ -9,11 +9,12 @@ import { TextField } from '@/components/TextField';
 import { authApi } from '@/features/auth/api';
 import { getErrorMessage } from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
+import { toast } from '@/store/toastStore';
 
 const BIRTH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const DATE_BOX_BASE_CLASS =
-  'rounded-xl border border-slate-300 bg-white px-2 py-3 text-center text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white';
+  'min-w-0 rounded-xl border border-slate-300 bg-white px-2 py-3 text-center text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white';
 const YEAR_BOX_CLASS = `${DATE_BOX_BASE_CLASS} flex-[3]`;
 const DATE_BOX_CLASS = `${DATE_BOX_BASE_CLASS} flex-[2]`;
 
@@ -46,7 +47,9 @@ function BirthDateInput({
           onChangeText={(text) => {
             const digits = text.replace(/[^0-9]/g, '').slice(0, 4);
             onYearChange(digits);
-            if (digits.length === 4) monthRef.current?.focus();
+            // Deferred so this input's own controlled re-render settles before focus jumps —
+            // calling focus() synchronously here races with it and can garble the next field.
+            if (digits.length === 4) setTimeout(() => monthRef.current?.focus(), 0);
           }}
           keyboardType="number-pad"
           maxLength={4}
@@ -61,10 +64,10 @@ function BirthDateInput({
           onChangeText={(text) => {
             const digits = text.replace(/[^0-9]/g, '').slice(0, 2);
             onMonthChange(digits);
-            if (digits.length === 2) dayRef.current?.focus();
+            if (digits.length === 2) setTimeout(() => dayRef.current?.focus(), 0);
           }}
           onKeyPress={(e) => {
-            if (e.nativeEvent.key === 'Backspace' && month.length === 0) yearRef.current?.focus();
+            if (e.nativeEvent.key === 'Backspace' && month.length === 0) setTimeout(() => yearRef.current?.focus(), 0);
           }}
           onBlur={() => {
             if (month.length === 1) onMonthChange(month.padStart(2, '0'));
@@ -81,7 +84,7 @@ function BirthDateInput({
           value={day}
           onChangeText={(text) => onDayChange(text.replace(/[^0-9]/g, '').slice(0, 2))}
           onKeyPress={(e) => {
-            if (e.nativeEvent.key === 'Backspace' && day.length === 0) monthRef.current?.focus();
+            if (e.nativeEvent.key === 'Backspace' && day.length === 0) setTimeout(() => monthRef.current?.focus(), 0);
           }}
           onBlur={() => {
             if (day.length === 1) onDayChange(day.padStart(2, '0'));
@@ -104,7 +107,6 @@ export default function SignupScreen() {
   const [birthYear, setBirthYear] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthDay, setBirthDay] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const setSession = useAuthStore((state) => state.setSession);
 
   const signupMutation = useMutation({
@@ -118,25 +120,24 @@ export default function SignupScreen() {
       });
       router.replace('/calendar');
     },
-    onError: (err) => setError(getErrorMessage(err, '회원가입에 실패했습니다.')),
+    onError: (err) => toast.error(getErrorMessage(err, '회원가입에 실패했습니다.')),
   });
 
   const handleSubmit = () => {
-    setError(null);
     const birthDate =
       birthYear.length === 4 && birthMonth && birthDay
         ? `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`
         : '';
     if (!name || !email || !password || !birthDate) {
-      setError('모든 항목을 입력해주세요.');
+      toast.error('모든 항목을 입력해주세요.');
       return;
     }
     if (password.length < 8) {
-      setError('비밀번호는 8자 이상이어야 합니다.');
+      toast.error('비밀번호는 8자 이상이어야 합니다.');
       return;
     }
     if (!BIRTH_DATE_PATTERN.test(birthDate) || Number.isNaN(new Date(birthDate).getTime())) {
-      setError('생년월일을 올바르게 입력해주세요.');
+      toast.error('생년월일을 올바르게 입력해주세요.');
       return;
     }
     signupMutation.mutate({ name, email, password, birthDate });
@@ -177,7 +178,6 @@ export default function SignupScreen() {
           onMonthChange={setBirthMonth}
           onDayChange={setBirthDay}
         />
-        {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
         <Button title="회원가입" onPress={handleSubmit} loading={signupMutation.isPending} />
       </View>
 

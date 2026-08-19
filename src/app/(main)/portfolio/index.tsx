@@ -1,12 +1,12 @@
+import { Link } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
-import { DonutChart } from '@/components/charts/DonutChart';
 import { TrendLineChart } from '@/components/charts/TrendLineChart';
 import { Screen } from '@/components/Screen';
 import { useAssets, useAssetSummary, useAssetTrend, useRefreshAssetPrices } from '@/features/asset/api';
 import { AssetFormModal } from '@/features/asset/AssetFormModal';
-import { formatKrw } from '@/lib/format';
+import { formatCompactKrw, formatKrw } from '@/lib/format';
 import { ASSET_TYPE_META, CASH_CATEGORY_META, LOAN_REPAYMENT_TYPE_META, REAL_ESTATE_CATEGORY_META } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
 import type { Asset, AssetType } from '@/lib/types';
@@ -145,6 +145,56 @@ function LiveCashInterest({ asset }: { asset: Asset }) {
   );
 }
 
+type Change = { amount: number; rate: number };
+
+function computeChange(from: number, to: number): Change | null {
+  if (from === 0) return null;
+  return { amount: to - from, rate: ((to - from) / from) * 100 };
+}
+
+function ChangeLabel({ change, caption }: { change: Change | null; caption: string }) {
+  if (!change) {
+    return <Text className="text-xs text-slate-400">데이터가 더 쌓이면 표시돼요</Text>;
+  }
+  if (change.rate === 0) {
+    return (
+      <Text className="text-xs font-semibold text-slate-400">
+        변동 없음 <Text className="text-xs font-normal text-slate-400">{caption}</Text>
+      </Text>
+    );
+  }
+  const positive = change.rate > 0;
+  return (
+    <Text className={`text-xs font-semibold ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
+      {positive ? '▲' : '▼'} {positive ? '+' : ''}
+      {change.rate.toFixed(2)}%{' '}
+      <Text className="text-xs font-normal text-slate-400">{caption}</Text>
+    </Text>
+  );
+}
+
+function CompositionBar({ type, pct, amount, wide }: { type: AssetType; pct: number; amount: number; wide?: boolean }) {
+  const meta = ASSET_TYPE_META[type];
+  return (
+    <Link href={{ pathname: '/portfolio/[type]', params: { type } }} asChild>
+      <Pressable className={`grow gap-1.5 ${wide ? 'basis-[18%]' : 'basis-[45%]'}`}>
+        <View className="flex-row items-baseline justify-between gap-1">
+          <Text className="text-xs font-medium text-slate-500 dark:text-slate-400" numberOfLines={1}>
+            {meta.icon} {meta.label}
+          </Text>
+          <Text className="text-xs font-medium text-slate-400" numberOfLines={1}>
+            {formatCompactKrw(amount)}원
+          </Text>
+        </View>
+        <Text className="text-lg font-bold text-slate-900 dark:text-white">{Math.round(pct)}%</Text>
+        <View className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <View className="h-full rounded-full" style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: meta.color }} />
+        </View>
+      </Pressable>
+    </Link>
+  );
+}
+
 export default function AssetsScreen() {
   const { data: assets = [], isLoading } = useAssets();
   const { data: summary } = useAssetSummary();
@@ -273,17 +323,7 @@ export default function AssetsScreen() {
     );
   };
 
-  const totalGain = useMemo(() => {
-    let gain = 0;
-    let costBasis = 0;
-    for (const asset of assets) {
-      const detail = computeGainDetail(asset);
-      if (!detail) continue;
-      gain += detail.gain;
-      costBasis += detail.costBasis;
-    }
-    return costBasis === 0 ? null : { gain, rate: (gain / costBasis) * 100 };
-  }, [assets]);
+  const currentTotal = summary?.totalValue ?? 0;
 
   const trendPoints = useMemo(
     () =>
@@ -294,13 +334,27 @@ export default function AssetsScreen() {
     [trend],
   );
 
-  const donutData = useMemo(
-    () =>
-      (summary?.byType ?? [])
-        .filter((item) => item.amount > 0)
-        .map((item) => ({ key: item.type, value: item.amount, color: ASSET_TYPE_META[item.type].color })),
-    [summary],
+  // "오늘"은 가장 최근 스냅샷(전날 자정 기준) 대비 지금 이 순간의 실시간 총액 변화,
+  // "최근 30일"은 조회 기간 중 가장 오래된 스냅샷 대비 변화 — 스냅샷이 1개뿐이면 아직 기간
+  // 비교를 할 수 없으므로 null.
+  const todayChange = useMemo(
+    () => (trend.length > 0 ? computeChange(trend[trend.length - 1].totalValue, currentTotal) : null),
+    [trend, currentTotal],
   );
+  const periodChange = useMemo(
+    () => (trend.length > 1 ? computeChange(trend[0].totalValue, currentTotal) : null),
+    [trend, currentTotal],
+  );
+
+  // 자산 구성 비율은 보유 중인 자산(양수)만 대상으로 한다 — 대출은 빚이지 보유 구성이 아니라서 제외.
+  const compositionData = useMemo(() => {
+    const positive = (summary?.byType ?? []).filter((item) => item.type !== 'LOAN' && item.amount > 0);
+    const positiveTotal = positive.reduce((sum, item) => sum + item.amount, 0);
+    if (positiveTotal === 0) return [];
+    return positive
+      .map((item) => ({ type: item.type, pct: (item.amount / positiveTotal) * 100, amount: item.amount }))
+      .sort((a, b) => b.pct - a.pct);
+  }, [summary]);
 
   const householdGroups = useMemo(
     () => buildTypeGroups(assets.filter((asset) => HOUSEHOLD_TYPES.includes(asset.type)), HOUSEHOLD_TYPES),
@@ -327,55 +381,17 @@ export default function AssetsScreen() {
       .sort((a, b) => (a.ownerUserId ?? Infinity) - (b.ownerUserId ?? Infinity));
   }, [assets]);
 
-  const summaryColumn = (
-    <View className="gap-5">
-      <View className="gap-1">
-        <Text className="text-2xl font-bold text-slate-900 dark:text-white">자산</Text>
-        <Text className="text-3xl font-bold text-primary">{formatKrw(summary?.totalValue ?? 0)}</Text>
-        {totalGain ? (
-          <Text className={`text-sm font-semibold ${totalGain.gain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-            {totalGain.gain >= 0 ? '▲' : '▼'} {totalGain.gain >= 0 ? '+' : ''}
-            {formatKrw(Math.round(totalGain.gain))} ({totalGain.rate >= 0 ? '+' : ''}
-            {totalGain.rate.toFixed(1)}%)
-          </Text>
-        ) : null}
-      </View>
-
-      <View
-        className="gap-2 rounded-xl bg-white p-4 dark:bg-slate-900"
-        onLayout={(e) => setTrendChartWidth(e.nativeEvent.layout.width - 32)}>
-        <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">최근 30일 자산 추이</Text>
-        {trendPoints.length > 1 && trendChartWidth > 0 ? (
-          <TrendLineChart data={trendPoints} width={trendChartWidth} formatValue={formatKrw} />
-        ) : (
-          <Text className="text-xs text-slate-400">
-            매일 자정에 자산 스냅샷을 기록해요. 며칠 지나면 여기에 추이 그래프가 나타나요.
-          </Text>
-        )}
-      </View>
-
-      {donutData.length > 0 ? (
-        <View className="items-center gap-3">
-          <DonutChart data={donutData}>
-            <Text className="text-xs text-slate-400">총 자산</Text>
-          </DonutChart>
-          <View className="flex-row flex-wrap justify-center gap-3">
-            {donutData.map((d) => (
-              <View key={d.key} className="flex-row items-center gap-1.5">
-                <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                <Text className="text-xs text-slate-500 dark:text-slate-400">
-                  {ASSET_TYPE_META[d.key as AssetType].label}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      ) : null}
-
+  const overviewSection = (
+    <View className="gap-5 rounded-3xl bg-white p-5 dark:bg-slate-900">
       <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-slate-400">
-          {refreshError ? '시세 갱신에 실패했어요. 다시 시도해주세요.' : (minutesAgoLabel(lastRefreshedAt) ?? '시세 갱신 전')}
-        </Text>
+        <View className="gap-0.5">
+          <Text className="text-lg font-bold text-slate-900 dark:text-white">포트폴리오 개요</Text>
+          <Text className="text-xs text-slate-400">
+            {refreshError
+              ? '시세 갱신에 실패했어요. 다시 시도해주세요.'
+              : (minutesAgoLabel(lastRefreshedAt) ?? '시세 갱신 전')}
+          </Text>
+        </View>
         <Pressable
           onPress={handleRefresh}
           disabled={refreshPrices.isPending}
@@ -385,11 +401,46 @@ export default function AssetsScreen() {
         </Pressable>
       </View>
 
-      {isDesktop ? (
-        <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
-          <Text className="font-semibold text-white">+ 자산 추가</Text>
-        </Pressable>
+      <View className="flex-row gap-3">
+        <View className="flex-1 gap-1 rounded-2xl bg-cream p-4 dark:bg-slate-800">
+          <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">총 자산</Text>
+          <Text className="text-2xl font-bold text-slate-900 dark:text-white" numberOfLines={1} adjustsFontSizeToFit>
+            {formatKrw(currentTotal)}
+          </Text>
+          <ChangeLabel change={todayChange} caption="오늘" />
+        </View>
+        <View className="flex-1 gap-1 rounded-2xl bg-cream p-4 dark:bg-slate-800">
+          <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">최근 30일</Text>
+          <Text className="text-2xl font-bold text-slate-900 dark:text-white" numberOfLines={1} adjustsFontSizeToFit>
+            {periodChange
+              ? `${periodChange.amount >= 0 ? '+' : ''}${formatKrw(Math.round(periodChange.amount))}`
+              : '-'}
+          </Text>
+          <ChangeLabel change={periodChange} caption="30일 전 대비" />
+        </View>
+      </View>
+
+      {compositionData.length > 0 ? (
+        <View className="gap-3">
+          <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">자산 구성</Text>
+          <View className="flex-row flex-wrap gap-4">
+            {compositionData.map((item) => (
+              <CompositionBar key={item.type} type={item.type} pct={item.pct} amount={item.amount} wide={isDesktop} />
+            ))}
+          </View>
+        </View>
       ) : null}
+
+      <View className="gap-2" onLayout={(e) => setTrendChartWidth(e.nativeEvent.layout.width)}>
+        <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">최근 30일 자산 추이</Text>
+        {trendPoints.length > 1 && trendChartWidth > 0 ? (
+          <TrendLineChart data={trendPoints} width={trendChartWidth} formatValue={formatKrw} />
+        ) : (
+          <Text className="text-xs text-slate-400">
+            매일 자정에 자산 스냅샷을 기록해요. 며칠 지나면 여기에 추이 그래프가 나타나요.
+          </Text>
+        )}
+      </View>
     </View>
   );
 
@@ -450,28 +501,18 @@ export default function AssetsScreen() {
           ) : null}
         </>
       )}
-
-      {!isDesktop ? (
-        <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
-          <Text className="font-semibold text-white">+ 자산 추가</Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 
   return (
-    <Screen maxWidthClassName={isDesktop ? 'max-w-[1600px]' : 'max-w-[480px]'}>
-      {isDesktop ? (
-        <View className="flex-row items-start gap-6">
-          <View className="w-[360px]">{summaryColumn}</View>
-          <View className="flex-1">{listColumn}</View>
-        </View>
-      ) : (
-        <>
-          {summaryColumn}
-          {listColumn}
-        </>
-      )}
+    <Screen maxWidthClassName={isDesktop ? 'max-w-[1100px]' : 'max-w-[480px]'}>
+      {overviewSection}
+
+      <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
+        <Text className="font-semibold text-white">+ 자산 추가</Text>
+      </Pressable>
+
+      {listColumn}
 
       <AssetFormModal visible={editing !== undefined} onClose={() => setEditing(undefined)} asset={editing} />
     </Screen>

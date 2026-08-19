@@ -1,5 +1,5 @@
 export type TransactionType = 'INCOME' | 'EXPENSE';
-export type ImportProvider = 'SAMSUNG_CARD' | 'GYEONGGI_LOCAL_CURRENCY' | 'COUPANG';
+export type ImportProvider = 'SAMSUNG_CARD' | 'GYEONGGI_LOCAL_CURRENCY' | 'COUPANG' | 'KBANK';
 export type CardType = 'CREDIT' | 'DEBIT' | 'CASH';
 export type HouseholdRole = 'OWNER' | 'MEMBER';
 
@@ -101,7 +101,6 @@ export type CategoryBudget = {
   type: TransactionType;
   targetAmount: number;
   spentAmount: number;
-  monthOverride: boolean;
 };
 
 export type CategoryMemo = {
@@ -181,6 +180,7 @@ export type Asset = {
   currentMonthlyPayment: number | null;
   realEstateCategory: RealEstateCategory | null;
   monthlyRent: number | null;
+  includeInStats: boolean;
 };
 
 export type AssetTypeBreakdown = { type: AssetType; amount: number };

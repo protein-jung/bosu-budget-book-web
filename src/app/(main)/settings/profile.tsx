@@ -10,6 +10,7 @@ import { getErrorMessage } from '@/lib/apiClient';
 import { queryClient } from '@/lib/queryClient';
 import { useIsDesktop } from '@/lib/responsive';
 import { useAuthStore } from '@/store/authStore';
+import { toast } from '@/store/toastStore';
 
 const DATE_INPUT_CLASSNAME =
   'min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-2 py-3 text-center text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white';
@@ -57,23 +58,19 @@ function ProfileEditForm({ me }: { me: UserProfile }) {
   const [birthYear, setBirthYear] = useState(birthYearInit);
   const [birthMonth, setBirthMonth] = useState(birthMonthInit);
   const [birthDay, setBirthDay] = useState(birthDayInit);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   const handleSubmit = () => {
-    setError(null);
-    setSaved(false);
     if (!name.trim()) {
-      setError('이름을 입력해주세요.');
+      toast.error('이름을 입력해주세요.');
       return;
     }
     if (birthYear.length !== 4 || !birthMonth || !birthDay) {
-      setError('생년월일을 모두 입력해주세요.');
+      toast.error('생년월일을 모두 입력해주세요.');
       return;
     }
     const birthDate = `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`;
     if (Number.isNaN(new Date(birthDate).getTime())) {
-      setError('생년월일을 다시 확인해주세요.');
+      toast.error('생년월일을 다시 확인해주세요.');
       return;
     }
     updateMeMutation.mutate(
@@ -83,9 +80,9 @@ function ProfileEditForm({ me }: { me: UserProfile }) {
           if (authUser) {
             await updateUser({ ...authUser, name: updated.name, birthDate: updated.birthDate });
           }
-          setSaved(true);
+          toast.success('정보를 저장했어요.');
         },
-        onError: (err) => setError(getErrorMessage(err, '정보 수정에 실패했습니다.')),
+        onError: (err) => toast.error(getErrorMessage(err, '정보 수정에 실패했습니다.')),
       },
     );
   };
@@ -129,8 +126,6 @@ function ProfileEditForm({ me }: { me: UserProfile }) {
           <Text className="text-xs text-slate-400">일</Text>
         </View>
       </View>
-      {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
-      {saved && !error ? <Text className="text-sm text-emerald-600 dark:text-emerald-400">저장되었어요.</Text> : null}
       <Button title="저장" onPress={handleSubmit} loading={updateMeMutation.isPending} />
     </View>
   );
@@ -142,22 +137,18 @@ function PasswordChangeForm() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   const handleSubmit = () => {
-    setError(null);
-    setSaved(false);
     if (!currentPassword) {
-      setError('현재 비밀번호를 입력해주세요.');
+      toast.error('현재 비밀번호를 입력해주세요.');
       return;
     }
     if (newPassword.length < 8) {
-      setError('새 비밀번호는 8자 이상이어야 해요.');
+      toast.error('새 비밀번호는 8자 이상이어야 해요.');
       return;
     }
     if (newPassword !== newPasswordConfirm) {
-      setError('새 비밀번호가 일치하지 않아요.');
+      toast.error('새 비밀번호가 일치하지 않아요.');
       return;
     }
     changePasswordMutation.mutate(
@@ -167,9 +158,9 @@ function PasswordChangeForm() {
           setCurrentPassword('');
           setNewPassword('');
           setNewPasswordConfirm('');
-          setSaved(true);
+          toast.success('비밀번호가 변경되었어요.');
         },
-        onError: (err) => setError(getErrorMessage(err, '비밀번호 변경에 실패했습니다.')),
+        onError: (err) => toast.error(getErrorMessage(err, '비밀번호 변경에 실패했습니다.')),
       },
     );
   };
@@ -198,10 +189,6 @@ function PasswordChangeForm() {
         secureTextEntry
         placeholder="새 비밀번호 다시 입력"
       />
-      {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
-      {saved && !error ? (
-        <Text className="text-sm text-emerald-600 dark:text-emerald-400">비밀번호가 변경되었어요.</Text>
-      ) : null}
       <Button title="비밀번호 변경" onPress={handleSubmit} loading={changePasswordMutation.isPending} />
     </View>
   );
@@ -212,7 +199,6 @@ function AccountActions() {
   const deleteAccountMutation = useDeleteAccount();
 
   const [deletePassword, setDeletePassword] = useState('');
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -221,9 +207,8 @@ function AccountActions() {
   };
 
   const handleDeleteAccount = () => {
-    setDeleteError(null);
     if (!deletePassword) {
-      setDeleteError('비밀번호를 입력해주세요.');
+      toast.error('비밀번호를 입력해주세요.');
       return;
     }
     deleteAccountMutation.mutate(
@@ -234,7 +219,7 @@ function AccountActions() {
           queryClient.clear();
           router.replace('/login');
         },
-        onError: (err) => setDeleteError(getErrorMessage(err, '회원 탈퇴에 실패했습니다.')),
+        onError: (err) => toast.error(getErrorMessage(err, '회원 탈퇴에 실패했습니다.')),
       },
     );
   };
@@ -263,7 +248,6 @@ function AccountActions() {
           secureTextEntry
           placeholder="현재 비밀번호"
         />
-        {deleteError ? <Text className="text-sm text-red-600 dark:text-red-400">{deleteError}</Text> : null}
         <Button
           title="탈퇴하기"
           variant="danger"

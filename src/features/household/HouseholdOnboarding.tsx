@@ -5,6 +5,7 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { getErrorMessage } from '@/lib/apiClient';
+import { toast } from '@/store/toastStore';
 
 import { useCreateHousehold, useJoinHousehold } from './api';
 
@@ -12,32 +13,35 @@ export function HouseholdOnboarding() {
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [name, setName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   const createHousehold = useCreateHousehold();
   const joinHousehold = useJoinHousehold();
 
   const handleCreate = () => {
-    setError(null);
     if (!name.trim()) {
-      setError('가계부 이름을 입력해주세요.');
+      toast.error('가계부 이름을 입력해주세요.');
       return;
     }
     createHousehold.mutate(
       { name: name.trim() },
-      { onError: (err) => setError(getErrorMessage(err, '가계부 생성에 실패했습니다.')) },
+      {
+        onSuccess: () => toast.success('가계부를 만들었어요.'),
+        onError: (err) => toast.error(getErrorMessage(err, '가계부 생성에 실패했습니다.')),
+      },
     );
   };
 
   const handleJoin = () => {
-    setError(null);
     if (!inviteCode.trim()) {
-      setError('초대 코드를 입력해주세요.');
+      toast.error('초대 코드를 입력해주세요.');
       return;
     }
     joinHousehold.mutate(
       { inviteCode: inviteCode.trim().toUpperCase() },
-      { onError: (err) => setError(getErrorMessage(err, '가계부 참여에 실패했습니다.')) },
+      {
+        onSuccess: () => toast.success('가계부에 참여했어요.'),
+        onError: (err) => toast.error(getErrorMessage(err, '가계부 참여에 실패했습니다.')),
+      },
     );
   };
 
@@ -75,7 +79,6 @@ export function HouseholdOnboarding() {
             onChangeText={setName}
             placeholder="예) 보수부부 가계부"
           />
-          {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
           <Button title="만들기" onPress={handleCreate} loading={createHousehold.isPending} />
         </View>
       ) : (
@@ -87,7 +90,6 @@ export function HouseholdOnboarding() {
             autoCapitalize="characters"
             placeholder="예) JZ3YZWMH"
           />
-          {error ? <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text> : null}
           <Button title="참여하기" onPress={handleJoin} loading={joinHousehold.isPending} />
         </View>
       )}
