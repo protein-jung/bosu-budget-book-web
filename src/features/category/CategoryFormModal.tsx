@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { TextField } from '@/components/TextField';
 import { getErrorMessage } from '@/lib/apiClient';
-import { formatAmountInput } from '@/lib/format';
 import { CATEGORY_COLOR_PALETTE, CATEGORY_ICON_PALETTE } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
 import type { Category, TransactionType } from '@/lib/types';
@@ -236,11 +236,10 @@ export function CategoryFormModal({
                 </View>
               </View>
 
-              <TextField
+              <AmountField
                 label="월 목표 금액 (선택)"
-                value={formatAmountInput(targetAmount)}
-                onChangeText={(text) => setTargetAmount(text.replace(/[^0-9]/g, ''))}
-                keyboardType="numeric"
+                value={targetAmount}
+                onChangeText={setTargetAmount}
                 placeholder="예) 200,000"
               />
             </View>

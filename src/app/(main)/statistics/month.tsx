@@ -7,9 +7,10 @@ import { DonutChart, type DonutDatum } from '@/components/charts/DonutChart';
 import { GroupedBarChart } from '@/components/charts/GroupedBarChart';
 import { Screen } from '@/components/Screen';
 import { useCategories } from '@/features/category/api';
-import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { BudgetTargetModal } from '@/features/statistics/BudgetTargetModal';
 import { useMonthlyStatistics, useRangeStatistics } from '@/features/statistics/api';
+import { type MemoTarget } from '@/features/statistics/CategoryMemoModal';
+import { CategorySpendingDetailModal } from '@/features/statistics/CategorySpendingDetailModal';
 import { addMonths, formatMonthLabel } from '@/lib/calendar';
 import { formatCompactKrw, formatKrw } from '@/lib/format';
 import type { Category, CategoryBudget, CategoryStat } from '@/lib/types';
@@ -99,13 +100,9 @@ export default function StatisticsMonthScreen() {
   const [month, setMonth] = useState(() => (params.month ? Number(params.month) : today.getMonth() + 1));
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [editingBudgetCategory, setEditingBudgetCategory] = useState<Category | null>(null);
-  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [viewingSpending, setViewingSpending] = useState<MemoTarget | null>(null);
 
   const { data: categories = [] } = useCategories();
-  const editingCategory = useMemo(
-    () => categories.find((c) => c.id === editingCategoryId) ?? null,
-    [categories, editingCategoryId],
-  );
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const { data: summary, isLoading } = useMonthlyStatistics(year, month);
@@ -352,7 +349,16 @@ export default function StatisticsMonthScreen() {
                         key={item.key}
                         disabled={item.categoryId <= 0}
                         onPress={() =>
-                          canDrill ? setSelectedParentId(item.categoryId) : setEditingCategoryId(item.categoryId)
+                          canDrill
+                            ? setSelectedParentId(item.categoryId)
+                            : setViewingSpending({
+                                categoryId: item.categoryId,
+                                categoryName: item.label,
+                                icon: categoryById.get(item.categoryId)?.icon ?? null,
+                                year,
+                                month,
+                                memo: null,
+                              })
                         }
                         className="flex-row items-center gap-2.5">
                         <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -379,7 +385,16 @@ export default function StatisticsMonthScreen() {
                 {incomeParents.map((item) => (
                   <Pressable
                     key={item.categoryId}
-                    onPress={() => setEditingCategoryId(item.categoryId)}
+                    onPress={() =>
+                      setViewingSpending({
+                        categoryId: item.categoryId,
+                        categoryName: item.categoryName,
+                        icon: categoryById.get(item.categoryId)?.icon ?? null,
+                        year,
+                        month,
+                        memo: null,
+                      })
+                    }
                     className="flex-row items-center gap-2.5">
                     <View
                       className="h-2.5 w-2.5 rounded-full"
@@ -468,10 +483,10 @@ export default function StatisticsMonthScreen() {
         category={editingBudgetCategory}
       />
 
-      <CategoryFormModal
-        visible={editingCategory !== null}
-        category={editingCategory}
-        onClose={() => setEditingCategoryId(null)}
+      <CategorySpendingDetailModal
+        visible={viewingSpending !== null}
+        target={viewingSpending}
+        onClose={() => setViewingSpending(null)}
       />
     </Screen>
   );

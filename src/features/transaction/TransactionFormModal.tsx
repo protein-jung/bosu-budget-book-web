@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { TextField } from '@/components/TextField';
@@ -8,7 +9,6 @@ import { useCards } from '@/features/card/api';
 import { useCategories } from '@/features/category/api';
 import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { getErrorMessage } from '@/lib/apiClient';
-import { formatAmountInput } from '@/lib/format';
 import { useIsDesktop } from '@/lib/responsive';
 import type { Category, Transaction, TransactionType } from '@/lib/types';
 import { toast } from '@/store/toastStore';
@@ -148,13 +148,7 @@ export function TransactionFormModal({
               <Chip label="수입" selected={type === 'INCOME'} onPress={() => setType('INCOME')} />
             </View>
 
-            <TextField
-              label="금액"
-              value={formatAmountInput(amount)}
-              onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
-              keyboardType="numeric"
-              placeholder="0"
-            />
+            <AmountField label="금액" value={amount} onChangeText={setAmount} />
 
             <View className="gap-2">
               <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">카테고리</Text>

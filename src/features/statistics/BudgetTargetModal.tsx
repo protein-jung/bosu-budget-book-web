@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Modal, Text, View } from 'react-native';
 
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
-import { TextField } from '@/components/TextField';
 import { useUpdateCategory } from '@/features/category/api';
 import { getErrorMessage } from '@/lib/apiClient';
 import { CATEGORY_COLOR_PALETTE } from '@/lib/palette';
@@ -73,13 +73,7 @@ export function BudgetTargetModal({
           </Text>
           <Text className="text-sm text-slate-500 dark:text-slate-400">월 목표 금액</Text>
 
-          <TextField
-            label="목표 금액"
-            value={amount}
-            onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
-            keyboardType="numeric"
-            placeholder="0"
-          />
+          <AmountField label="목표 금액" value={amount} onChangeText={setAmount} />
 
           <View className="gap-2">
             <Button title="저장" onPress={handleSave} loading={updateCategory.isPending} />

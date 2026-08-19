@@ -104,6 +104,19 @@ export type CategoryBudget = {
   spentAmount: number;
 };
 
+export type RecurringExpense = {
+  id: number;
+  categoryId: number;
+  categoryName: string;
+  categoryColor: string | null;
+  categoryIcon: string | null;
+  name: string;
+  amount: number;
+  dayOfMonth: number;
+  active: boolean;
+  memo: string | null;
+};
+
 export type CategoryMemo = {
   categoryId: number;
   year: number;

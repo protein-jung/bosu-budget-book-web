@@ -12,6 +12,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="profile" options={{ title: '마이페이지' }} />
       <Stack.Screen name="categories" options={{ title: '카테고리 관리' }} />
       <Stack.Screen name="cards" options={{ title: '카드 관리' }} />
+      <Stack.Screen name="recurring-expenses" options={{ title: '고정비 지출' }} />
       <Stack.Screen name="household" options={{ title: '가계부 정보' }} />
       <Stack.Screen name="import" options={{ title: '명세서 가져오기' }} />
     </Stack>

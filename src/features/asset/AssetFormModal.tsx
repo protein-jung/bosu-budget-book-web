@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { DayPickerModal } from '@/components/DayPickerModal';
@@ -923,12 +924,10 @@ export function AssetFormModal({
                             onChangeText={(text) => updateStockRow(index, { name: text })}
                             placeholder="예) 현금 잔고, 원리금보장형 상품"
                           />
-                          <TextField
+                          <AmountField
                             label="평가금액"
-                            value={formatAmountInput(row.manualValue)}
-                            onChangeText={(text) => updateStockRow(index, { manualValue: text.replace(/[^0-9]/g, '') })}
-                            keyboardType="numeric"
-                            placeholder="0"
+                            value={row.manualValue}
+                            onChangeText={(text) => updateStockRow(index, { manualValue: text })}
                           />
                         </>
                       ) : (
@@ -1039,13 +1038,7 @@ export function AssetFormModal({
                     </View>
                   ) : null}
                   {type === 'STOCK' && stockHoldingType === 'MANUAL' ? (
-                    <TextField
-                      label="평가금액"
-                      value={formatAmountInput(manualValue)}
-                      onChangeText={(text) => setManualValue(text.replace(/[^0-9]/g, ''))}
-                      keyboardType="numeric"
-                      placeholder="0"
-                    />
+                    <AmountField label="평가금액" value={manualValue} onChangeText={setManualValue} />
                   ) : (
                     <>
                       {type === 'STOCK' ? (
@@ -1122,13 +1115,7 @@ export function AssetFormModal({
                 </>
               ) : type === 'LOAN' ? (
                 <>
-                  <TextField
-                    label="원금"
-                    value={formatAmountInput(loanPrincipal)}
-                    onChangeText={(text) => setLoanPrincipal(text.replace(/[^0-9]/g, ''))}
-                    keyboardType="numeric"
-                    placeholder="0"
-                  />
+                  <AmountField label="원금" value={loanPrincipal} onChangeText={setLoanPrincipal} />
                   <View className="gap-1.5">
                     <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">시작년월</Text>
                     <Pressable
@@ -1208,7 +1195,7 @@ export function AssetFormModal({
                 </>
               ) : (
                 <>
-                  <TextField
+                  <AmountField
                     label={
                       type === 'VEHICLE'
                         ? '구매 가격'
@@ -1216,19 +1203,11 @@ export function AssetFormModal({
                           ? REAL_ESTATE_CATEGORY_META[realEstateCategory].valueLabel
                           : '평가금액'
                     }
-                    value={formatAmountInput(manualValue)}
-                    onChangeText={(text) => setManualValue(text.replace(/[^0-9]/g, ''))}
-                    keyboardType="numeric"
-                    placeholder="0"
+                    value={manualValue}
+                    onChangeText={setManualValue}
                   />
                   {type === 'REAL_ESTATE' && realEstateCategory === 'WOLSE' ? (
-                    <TextField
-                      label="월세"
-                      value={formatAmountInput(monthlyRent)}
-                      onChangeText={(text) => setMonthlyRent(text.replace(/[^0-9]/g, ''))}
-                      keyboardType="numeric"
-                      placeholder="0"
-                    />
+                    <AmountField label="월세" value={monthlyRent} onChangeText={setMonthlyRent} />
                   ) : null}
                   {type === 'VEHICLE' && purchaseDate ? (
                     <Text className="text-xs text-slate-400">

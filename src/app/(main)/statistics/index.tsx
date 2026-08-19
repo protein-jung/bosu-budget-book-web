@@ -10,10 +10,10 @@ import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { useFullHistoryStatistics } from '@/features/statistics/api';
 import { CategoryMemoModal, type MemoTarget } from '@/features/statistics/CategoryMemoModal';
 import { CategorySpendingDetailModal } from '@/features/statistics/CategorySpendingDetailModal';
-import { formatKrw } from '@/lib/format';
+import { formatCompactKrw, formatKrw } from '@/lib/format';
 import type { Category, MonthlyTrendPoint, TransactionType } from '@/lib/types';
 
-const LABEL_WIDTH = 132;
+const LABEL_WIDTH = 182;
 const COL_WIDTH = 96;
 const HEADER_HEIGHT = 36;
 const ROW_HEIGHT = 34;
@@ -29,6 +29,8 @@ type Row = {
   parentCategoryId: number | null;
   /** kind가 'section'일 때만 사용. 수입/지출 중 어느 섹션인지 — 해당 월 합계 표시에 쓴다. */
   totalType?: TransactionType;
+  /** 소분류는 자신의 예산, 대분류는 하위 소분류 예산의 합. 0원이거나 없으면 null. */
+  budget: number | null;
 };
 
 function sortBySortOrder(items: Category[]) {
@@ -37,12 +39,17 @@ function sortBySortOrder(items: Category[]) {
 
 const INCOME_SECTION_ROW: Row = {
   key: 'section-income', label: '수입', icon: null, categoryId: null, kind: 'section', indent: false,
-  parentCategoryId: null, totalType: 'INCOME',
+  parentCategoryId: null, totalType: 'INCOME', budget: null,
 };
 const EXPENSE_SECTION_ROW: Row = {
   key: 'section-expense', label: '지출', icon: null, categoryId: null, kind: 'section', indent: false,
-  parentCategoryId: null, totalType: 'EXPENSE',
+  parentCategoryId: null, totalType: 'EXPENSE', budget: null,
 };
+
+function sumBudget(items: Category[]): number | null {
+  const sum = items.reduce((total, c) => total + (c.targetAmount ?? 0), 0);
+  return sum > 0 ? sum : null;
+}
 
 /** 대분류(루트) 하나와 그 하위 소분류들을 한 덩어리로 묶는다 — 이 덩어리 단위로
  * 드래그해서 대분류 순서를 바꿀 수 있게 하기 위함. */
@@ -60,6 +67,7 @@ function buildRootBlocks(categories: Category[], type: TransactionType): Row[][]
         kind: 'leaf' as const,
         indent: false,
         parentCategoryId: null,
+        budget: sumBudget([root]),
       }];
     }
     const rootRow: Row = {
@@ -70,6 +78,7 @@ function buildRootBlocks(categories: Category[], type: TransactionType): Row[][]
       kind: 'group',
       indent: false,
       parentCategoryId: null,
+      budget: sumBudget(children),
     };
     const childRows: Row[] = children.map((child) => ({
       key: `c${child.id}`,
@@ -79,6 +88,7 @@ function buildRootBlocks(categories: Category[], type: TransactionType): Row[][]
       kind: 'leaf',
       indent: true,
       parentCategoryId: root.id,
+      budget: sumBudget([child]),
     }));
     return [rootRow, ...childRows];
   });
@@ -147,9 +157,14 @@ function StatCell({
   const onHoverOut = useCallback(() => {
     setHoveredMemoKey((current) => (current === cellKey ? null : current));
   }, [cellKey, setHoveredMemoKey]);
+  // 셀을 누르면 바로 지출 내역 팝업을 연다. 메모 추가/수정은 데스크톱에서 hover 시 나타나는
+  // 📝 아이콘으로, 모바일(hover 없음)에서는 길게 눌러서 한다.
   const onPress = useCallback(() => {
-    if (cellKey != null) setHoveredMemoKey(cellKey);
-  }, [cellKey, setHoveredMemoKey]);
+    if (cellTarget != null) onViewSpending(cellTarget);
+  }, [cellTarget, onViewSpending]);
+  const onLongPress = useCallback(() => {
+    if (cellTarget != null) onEditMemo(cellTarget);
+  }, [cellTarget, onEditMemo]);
 
   const showActions = cellTarget != null && hovered;
 
@@ -158,6 +173,7 @@ function StatCell({
       style={{ width: COL_WIDTH, position: 'relative' }}
       className="items-end justify-center pr-2"
       onPress={onPress}
+      onLongPress={onLongPress}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}>
       <Text
@@ -196,17 +212,6 @@ function StatCell({
             className="items-center justify-center rounded-md bg-slate-100 active:bg-slate-200 dark:bg-slate-700 dark:active:bg-slate-600">
             <Text className="text-xs">📝</Text>
           </Pressable>
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              onViewSpending(cellTarget);
-              setHoveredMemoKey(null);
-            }}
-            hitSlop={4}
-            style={{ minWidth: 30, minHeight: 26 }}
-            className="items-center justify-center rounded-md bg-slate-100 active:bg-slate-200 dark:bg-slate-700 dark:active:bg-slate-600">
-            <Text className="text-xs">🧾</Text>
-          </Pressable>
         </View>
       ) : null}
     </Pressable>
@@ -242,6 +247,12 @@ function LabelRow({
       {row.kind === 'group' ? (isCollapsed ? '▸ ' : '▾ ') : ''}
       {row.icon ? `${row.icon} ` : ''}
       {row.label}
+      {row.budget != null ? (
+        <Text className="text-[10px] font-normal text-slate-400 dark:text-slate-500">
+          {' '}
+          ({formatCompactKrw(row.budget)}원)
+        </Text>
+      ) : null}
     </Text>
   );
 
