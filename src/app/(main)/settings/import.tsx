@@ -121,7 +121,9 @@ export default function ImportScreen() {
         ) : null}
         {provider === 'KBANK' ? (
           <Text className="text-xs text-slate-400">
-            케이뱅크 앱에서 이용대금명세서(PDF)를 다운로드해서 그대로 올리면 돼요.
+            케이뱅크 앱에서 받은 이용대금명세서(PDF) 또는 계좌 거래내역(엑셀)을 그대로 올리면 돼요.
+            거래내역 엑셀은 입금금액은 수입으로, 출금금액은 지출로 등록되고 적요내용이 메모로 들어가요.
+            암호가 걸린 엑셀도 그대로 올리면 돼요 — 마이페이지에 등록된 생년월일로 자동으로 풀어요.
           </Text>
         ) : null}
         {provider === 'NAVER_PAY' ? (

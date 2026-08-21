@@ -81,7 +81,7 @@ export function MonthSummaryPanel({
         {parentExpenses.length === 0 ? (
           <Text className="text-xs text-slate-400">내역이 없어요.</Text>
         ) : (
-          parentExpenses.slice(0, 6).map((item) => (
+          parentExpenses.map((item) => (
             <Pressable
               key={item.categoryId}
               onPress={() =>
@@ -132,7 +132,7 @@ export function MonthSummaryPanel({
         {summary.byCard.length === 0 ? (
           <Text className="text-xs text-slate-400">내역이 없어요.</Text>
         ) : (
-          summary.byCard.slice(0, 6).map((item) => (
+          summary.byCard.map((item) => (
             <Pressable
               key={item.cardId}
               onPress={() => onSelectCard?.(item.cardId)}
