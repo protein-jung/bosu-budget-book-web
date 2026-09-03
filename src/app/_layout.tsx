@@ -20,10 +20,9 @@ import { useAuthStore } from '@/store/authStore';
 const isStaticWebExport = Platform.OS === 'web' && typeof document === 'undefined';
 
 const SITE_URL = 'https://bosuledger.com';
-const DEFAULT_TITLE = '보수가계부 - 부부와 가족이 함께 쓰는 무료 가계부 앱 | BOSU Ledger';
+const DEFAULT_TITLE = '보수가계부 - 부부와 가족이 함께 쓰는 무료 가계부 앱';
 const DEFAULT_DESCRIPTION =
-  '지출·수입 기록부터 통계, 부동산·차량·주식·예적금·대출까지 자산 관리를 한 곳에서. ' +
-  '카드 명세서 자동 입력으로 기록 시간을 줄여주는 부부·가족 공유 가계부 앱, 보수가계부(BOSU Ledger).';
+  '부부·가족이 함께 쓰는 무료 공유 가계부. 지출·수입 기록, 통계, 부동산·차량·주식 자산 관리까지 한 곳에서.';
 const KEYWORDS =
   '가계부, 부부 가계부, 가족 가계부, 공유 가계부, 무료 가계부 앱, 지출 관리, 예산 관리, ' +
   '자산 관리, 순자산 관리, 카드 명세서 자동입력, 보수가계부, BOSU Ledger';

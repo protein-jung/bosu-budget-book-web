@@ -141,10 +141,10 @@ export default function WelcomeScreen() {
   return (
     <>
       <Head>
-        <title>보수가계부 - 부부와 가족이 함께 쓰는 무료 가계부 앱 | BOSU Ledger</title>
+        <title>보수가계부 - 부부와 가족이 함께 쓰는 무료 가계부 앱</title>
         <meta
           name="description"
-          content="달력에서 바로 수입·지출을 기록하고, 부동산·차량·주식·예적금·대출까지 자산을 한눈에 관리하세요. 카드 명세서 자동 입력을 지원하는 부부·가족 공유 가계부, 보수가계부."
+          content="달력에서 수입·지출을 기록하고 부동산·차량·주식 등 자산까지 한눈에 관리하세요. 카드 명세서 자동 입력도 지원해요."
         />
       </Head>
       <SafeAreaView className="flex-1 bg-cream" edges={['top', 'bottom']}>
