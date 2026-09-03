@@ -148,20 +148,13 @@ export default function WelcomeScreen() {
         <View className={`w-full gap-14 ${isDesktop ? 'max-w-[880px]' : 'max-w-[520px]'}`}>
           <PreviewCarousel />
 
-          <View className="items-center gap-4">
-            <View className="items-center gap-1">
-              <Text className="max-w-[420px] text-center text-2xl font-bold text-slate-900 dark:text-white">
-                덜 쓰고, 더 남기고.
-              </Text>
-              <Text className="max-w-[420px] text-center text-base font-medium text-slate-400 dark:text-slate-500">
-                Spend less. Keep more.
-              </Text>
-            </View>
-            <View className="flex-row items-center gap-1.5 rounded-full bg-secondary-light px-4 py-2 dark:bg-secondary-dark/20">
-              <Text className="text-sm font-semibold text-secondary-dark dark:text-secondary">
-                📱 iOS·Android 앱도 준비 중입니다
-              </Text>
-            </View>
+          <View className="items-center gap-1">
+            <Text className="max-w-[420px] text-center text-2xl font-bold text-slate-900 dark:text-white">
+              덜 쓰고, 더 남기고.
+            </Text>
+            <Text className="max-w-[420px] text-center text-xl font-semibold text-slate-400 dark:text-slate-500">
+              Spend less. Keep more.
+            </Text>
           </View>
 
           <View className="items-center gap-3 border-t border-primary-light pt-8 dark:border-slate-800">
@@ -176,6 +169,7 @@ export default function WelcomeScreen() {
                 로그인
               </Link>
             </View>
+            <Text className="text-xs text-slate-400 dark:text-slate-500">📱 iOS·Android 앱도 준비 중입니다</Text>
           </View>
 
           <Footer />

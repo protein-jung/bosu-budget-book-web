@@ -41,6 +41,7 @@ export function TopNav() {
                 <Text className="text-2xl font-light text-primary/55">Ledger</Text>
               </View>
               <Text className="mt-1 text-[11px] tracking-widest text-primary/40">보수가계부</Text>
+              <Text className="text-[11px] tracking-widest text-primary/30">Spend less. Keep more.</Text>
             </Pressable>
           </Link>
 
