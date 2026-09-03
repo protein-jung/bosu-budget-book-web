@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { Link, router } from 'expo-router';
+import Head from 'expo-router/head';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -50,42 +51,50 @@ export default function LoginScreen() {
   };
 
   return (
-    <Screen footer>
-      <View className="mt-16 gap-1">
-        <Pressable onPress={goHome} className="self-start">
-          <Text className="font-brand text-3xl text-primary dark:text-secondary">BOSU Ledger</Text>
-        </Pressable>
-        <Text className="text-base text-slate-500 dark:text-slate-400">덜 쓰고, 더 남기고.</Text>
-        <Text className="text-base font-medium text-slate-400 dark:text-slate-500">Spend less. Keep more.</Text>
-      </View>
+    <>
+      <Head>
+        <title>로그인 | 보수가계부 (BOSU Ledger)</title>
+        <meta name="description" content="보수가계부에 로그인하고 배우자·가족과 함께 가계부를 관리하세요." />
+      </Head>
+      <Screen footer>
+        <View className="mt-16 gap-1">
+          <Pressable onPress={goHome} className="self-start">
+            <Text className="font-brand text-3xl text-primary dark:text-secondary">BOSU Ledger</Text>
+          </Pressable>
+          <Text className="text-base text-slate-500 dark:text-slate-400">덜 쓰고, 더 남기고.</Text>
+          <Text className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/50 dark:text-secondary/60">
+            Spend less · Keep more
+          </Text>
+        </View>
 
-      <View className="gap-4">
-        <TextField
-          label="이메일"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="you@example.com"
-        />
-        <TextField
-          label="비밀번호"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder="8자 이상"
-          returnKeyType="done"
-          onSubmitEditing={handleSubmit}
-        />
-        <Button title="로그인" onPress={handleSubmit} loading={loginMutation.isPending} />
-      </View>
+        <View className="gap-4">
+          <TextField
+            label="이메일"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="you@example.com"
+          />
+          <TextField
+            label="비밀번호"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="8자 이상"
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
+          <Button title="로그인" onPress={handleSubmit} loading={loginMutation.isPending} />
+        </View>
 
-      <View className="flex-row justify-center gap-1">
-        <Text className="text-slate-500 dark:text-slate-400">계정이 없으신가요?</Text>
-        <Link href="/signup" className="font-semibold text-primary dark:text-secondary">
-          회원가입
-        </Link>
-      </View>
-    </Screen>
+        <View className="flex-row justify-center gap-1">
+          <Text className="text-slate-500 dark:text-slate-400">계정이 없으신가요?</Text>
+          <Link href="/signup" className="font-semibold text-primary dark:text-secondary">
+            회원가입
+          </Link>
+        </View>
+      </Screen>
+    </>
   );
 }

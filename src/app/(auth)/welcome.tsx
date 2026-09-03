@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
+import Head from 'expo-router/head';
 import { useRef, useState } from 'react';
 import { Animated, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,14 +11,14 @@ import { useGoHome } from '@/lib/useGoHome';
 
 const PREVIEWS = [
   {
-    image: require('../../../assets/marketing/preview-calendar.png'),
+    image: require('../../../assets/marketing/preview-calendar.gif'),
     title: '하루하루, 한눈에',
-    caption: '달력에서 바로 수입·지출을 기록하고 대분류별·사람별·카드별로 자동 정리돼요.',
+    caption: '날짜를 누르면 그날의 수입·지출이, 대분류를 누르면 이번 달 전체 내역이 바로 정리돼요.',
   },
   {
-    image: require('../../../assets/marketing/preview-statistics.png'),
+    image: require('../../../assets/marketing/preview-statistics.gif'),
     title: '몇 달치를 나란히',
-    caption: '거래를 처음 기록한 달부터 이번 달까지, 카테고리별 흐름을 표로 한눈에 볼 수 있어요.',
+    caption: '금액을 누르면 그 카테고리·그 달에 실제로 쓴 내역이 목록으로 바로 열려요.',
   },
   {
     image: require('../../../assets/marketing/preview-portfolio.gif'),
@@ -138,43 +139,52 @@ export default function WelcomeScreen() {
   const goHome = useGoHome();
 
   return (
-    <SafeAreaView className="flex-1 bg-cream" edges={['top', 'bottom']}>
-      <ScrollView contentContainerClassName="items-center gap-10 px-5 pb-16 pt-8" className="flex-1">
-        <Pressable onPress={goHome} className="items-center gap-0.5">
-          <Text className="font-brand text-lg text-primary dark:text-secondary">🏠 BOSU Ledger</Text>
-          <Text className="text-xs text-slate-400">보수가계부</Text>
-        </Pressable>
+    <>
+      <Head>
+        <title>보수가계부 - 부부와 가족이 함께 쓰는 무료 가계부 앱 | BOSU Ledger</title>
+        <meta
+          name="description"
+          content="달력에서 바로 수입·지출을 기록하고, 부동산·차량·주식·예적금·대출까지 자산을 한눈에 관리하세요. 카드 명세서 자동 입력을 지원하는 부부·가족 공유 가계부, 보수가계부."
+        />
+      </Head>
+      <SafeAreaView className="flex-1 bg-cream" edges={['top', 'bottom']}>
+        <ScrollView contentContainerClassName="items-center gap-10 px-5 pb-16 pt-8" className="flex-1">
+          <Pressable onPress={goHome} className="items-center gap-0.5">
+            <Text className="font-brand text-lg text-primary dark:text-secondary">🏠 BOSU Ledger</Text>
+            <Text className="text-xs text-slate-400">보수가계부</Text>
+          </Pressable>
 
-        <View className={`w-full gap-14 ${isDesktop ? 'max-w-[880px]' : 'max-w-[520px]'}`}>
-          <PreviewCarousel />
+          <View className={`w-full gap-14 ${isDesktop ? 'max-w-[880px]' : 'max-w-[520px]'}`}>
+            <PreviewCarousel />
 
-          <View className="items-center gap-1">
-            <Text className="max-w-[420px] text-center text-2xl font-bold text-slate-900 dark:text-white">
-              덜 쓰고, 더 남기고.
-            </Text>
-            <Text className="max-w-[420px] text-center text-xl font-semibold text-slate-400 dark:text-slate-500">
-              Spend less. Keep more.
-            </Text>
-          </View>
-
-          <View className="items-center gap-3 border-t border-primary-light pt-8 dark:border-slate-800">
-            <Pressable
-              onPress={() => router.push('/signup')}
-              className="w-full max-w-[320px] items-center rounded-xl bg-primary px-4 py-3.5 active:bg-primary-dark">
-              <Text className="text-base font-semibold text-white">무료로 시작하기</Text>
-            </Pressable>
-            <View className="flex-row gap-1">
-              <Text className="text-sm text-slate-500 dark:text-slate-400">이미 계정이 있으신가요?</Text>
-              <Link href="/login" className="text-sm font-semibold text-primary dark:text-secondary">
-                로그인
-              </Link>
+            <View className="items-center gap-2">
+              <Text className="max-w-[420px] text-center text-2xl font-bold text-slate-900 dark:text-white">
+                덜 쓰고, 더 남기고.
+              </Text>
+              <Text className="max-w-[420px] text-center text-base font-semibold uppercase tracking-[0.2em] text-primary/50 dark:text-secondary/60">
+                Spend less · Keep more
+              </Text>
             </View>
-            <Text className="text-xs text-slate-400 dark:text-slate-500">📱 iOS·Android 앱도 준비 중입니다</Text>
-          </View>
 
-          <Footer />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            <View className="items-center gap-3 border-t border-primary-light pt-8 dark:border-slate-800">
+              <Pressable
+                onPress={() => router.push('/signup')}
+                className="w-full max-w-[320px] items-center rounded-xl bg-primary px-4 py-3.5 active:bg-primary-dark">
+                <Text className="text-base font-semibold text-white">무료로 시작하기</Text>
+              </Pressable>
+              <View className="flex-row gap-1">
+                <Text className="text-sm text-slate-500 dark:text-slate-400">이미 계정이 있으신가요?</Text>
+                <Link href="/login" className="text-sm font-semibold text-primary dark:text-secondary">
+                  로그인
+                </Link>
+              </View>
+              <Text className="text-xs text-slate-400 dark:text-slate-500">📱 iOS·Android 앱도 준비 중입니다</Text>
+            </View>
+
+            <Footer />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
