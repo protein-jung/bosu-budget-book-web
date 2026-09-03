@@ -56,6 +56,7 @@ export default function LoginScreen() {
           <Text className="font-brand text-3xl text-primary dark:text-secondary">BOSU Ledger</Text>
         </Pressable>
         <Text className="text-base text-slate-500 dark:text-slate-400">덜 쓰고, 더 남기고.</Text>
+        <Text className="text-sm text-slate-400 dark:text-slate-500">Spend less. Keep more.</Text>
       </View>
 
       <View className="gap-4">
