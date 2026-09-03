@@ -15,7 +15,7 @@ import { toast } from '@/store/toastStore';
 const DATE_INPUT_CLASSNAME =
   'min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-2 py-3 text-center text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white';
 
-const SECTION_CLASSNAME = 'gap-4 border-t border-slate-100 pt-5 dark:border-slate-800';
+const CARD_CLASSNAME = 'gap-4 rounded-xl bg-white p-5 dark:bg-slate-900';
 
 function onlyDigits(text: string, maxLength: number) {
   return text.replace(/[^0-9]/g, '').slice(0, maxLength);
@@ -34,16 +34,10 @@ function ProfileForm({ me }: { me: UserProfile }) {
 
   return (
     <Screen maxWidthClassName={isDesktop ? 'max-w-[520px]' : 'max-w-[480px]'}>
-      <View className="gap-5 rounded-xl bg-white p-5 dark:bg-slate-900">
-        <View className="gap-1">
-          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">이메일</Text>
-          <Text className="text-base text-slate-700 dark:text-slate-300">{me.email}</Text>
-        </View>
-
-        <ProfileEditForm me={me} />
-        <PasswordChangeForm />
-        <AccountActions />
-      </View>
+      <ProfileEditForm me={me} />
+      <PasswordChangeForm />
+      <AccountSection />
+      <DeleteAccountSection />
     </Screen>
   );
 }
@@ -88,8 +82,12 @@ function ProfileEditForm({ me }: { me: UserProfile }) {
   };
 
   return (
-    <View className={SECTION_CLASSNAME}>
+    <View className={CARD_CLASSNAME}>
       <Text className="text-base font-semibold text-slate-900 dark:text-white">내 정보</Text>
+      <View className="gap-1">
+        <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">이메일</Text>
+        <Text className="text-base text-slate-700 dark:text-slate-300">{me.email}</Text>
+      </View>
       <TextField label="이름" value={name} onChangeText={setName} placeholder="이름" />
       <View className="gap-1.5">
         <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">생년월일</Text>
@@ -166,7 +164,7 @@ function PasswordChangeForm() {
   };
 
   return (
-    <View className={SECTION_CLASSNAME}>
+    <View className={CARD_CLASSNAME}>
       <Text className="text-base font-semibold text-slate-900 dark:text-white">비밀번호 변경</Text>
       <TextField
         label="현재 비밀번호"
@@ -194,17 +192,32 @@ function PasswordChangeForm() {
   );
 }
 
-function AccountActions() {
+function AccountSection() {
   const logout = useAuthStore((state) => state.logout);
-  const deleteAccountMutation = useDeleteAccount();
-
-  const [deletePassword, setDeletePassword] = useState('');
 
   const handleLogout = async () => {
     await logout();
     queryClient.clear();
     router.replace('/login');
   };
+
+  return (
+    <View className={`${CARD_CLASSNAME} flex-row items-center justify-between`}>
+      <Text className="text-base font-semibold text-slate-900 dark:text-white">계정</Text>
+      <Pressable
+        onPress={handleLogout}
+        className="rounded-lg bg-slate-100 px-3 py-2 active:bg-slate-200 dark:bg-slate-800 dark:active:bg-slate-700">
+        <Text className="text-xs font-medium text-slate-600 dark:text-slate-300">로그아웃</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function DeleteAccountSection() {
+  const logout = useAuthStore((state) => state.logout);
+  const deleteAccountMutation = useDeleteAccount();
+
+  const [deletePassword, setDeletePassword] = useState('');
 
   const handleDeleteAccount = () => {
     if (!deletePassword) {
@@ -225,36 +238,25 @@ function AccountActions() {
   };
 
   return (
-    <View className={SECTION_CLASSNAME}>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-base font-semibold text-slate-900 dark:text-white">계정</Text>
-        <Pressable
-          onPress={handleLogout}
-          className="rounded-lg bg-slate-100 px-3 py-2 active:bg-slate-200 dark:bg-slate-800 dark:active:bg-slate-700">
-          <Text className="text-xs font-medium text-slate-600 dark:text-slate-300">로그아웃</Text>
-        </Pressable>
-      </View>
-
-      <View className="gap-3">
-        <Text className="text-sm font-semibold text-red-600 dark:text-red-400">회원 탈퇴</Text>
-        <Text className="text-xs text-slate-400">
-          탈퇴하면 다시 로그인할 수 없어요. 작성한 거래는 가계부에 남고 작성자만 '탈퇴한 사용자'로
-          표시돼요.
-        </Text>
-        <TextField
-          label="비밀번호 확인"
-          value={deletePassword}
-          onChangeText={setDeletePassword}
-          secureTextEntry
-          placeholder="현재 비밀번호"
-        />
-        <Button
-          title="탈퇴하기"
-          variant="danger"
-          onPress={handleDeleteAccount}
-          loading={deleteAccountMutation.isPending}
-        />
-      </View>
+    <View className={`${CARD_CLASSNAME} border border-red-100 dark:border-red-900/40`}>
+      <Text className="text-sm font-semibold text-red-600 dark:text-red-400">회원 탈퇴</Text>
+      <Text className="text-xs text-slate-400">
+        탈퇴하면 다시 로그인할 수 없어요. 작성한 거래는 가계부에 남고 작성자만 '탈퇴한 사용자'로
+        표시돼요.
+      </Text>
+      <TextField
+        label="비밀번호 확인"
+        value={deletePassword}
+        onChangeText={setDeletePassword}
+        secureTextEntry
+        placeholder="현재 비밀번호"
+      />
+      <Button
+        title="탈퇴하기"
+        variant="danger"
+        onPress={handleDeleteAccount}
+        loading={deleteAccountMutation.isPending}
+      />
     </View>
   );
 }

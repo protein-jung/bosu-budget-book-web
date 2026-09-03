@@ -124,6 +124,49 @@ export type CategoryMemo = {
   memo: string;
 };
 
+export type MerchantCategoryRule = {
+  id: number;
+  categoryId: number;
+  categoryName: string;
+  icon: string | null;
+  color: string | null;
+  keywords: string[];
+  sortOrder: number;
+};
+
+export type UncategorizedMerchant = {
+  merchantName: string;
+  type: TransactionType;
+  count: number;
+  totalAmount: number;
+};
+
+export type FeatureRequest = {
+  id: number;
+  authorName: string;
+  title: string;
+  content: string;
+  adminReply: string | null;
+  createdAt: string;
+  repliedAt: string | null;
+};
+
+export type AdminFeatureRequest = FeatureRequest & {
+  authorEmail: string | null;
+};
+
+export type NotificationType = 'FEATURE_REQUEST_REPLY' | 'TRANSACTION_CREATED';
+
+export type NotificationItem = {
+  id: number;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+};
+
 export type MonthlySummary = {
   totalIncome: number;
   totalExpense: number;

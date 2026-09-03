@@ -392,13 +392,20 @@ export default function AssetsScreen() {
               : (minutesAgoLabel(lastRefreshedAt) ?? '시세 갱신 전')}
           </Text>
         </View>
-        <Pressable
-          onPress={handleRefresh}
-          disabled={refreshPrices.isPending}
-          className="flex-row items-center gap-2 rounded-full bg-slate-200 px-4 py-2 dark:bg-slate-800">
-          {refreshPrices.isPending ? <ActivityIndicator size="small" /> : null}
-          <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">새로고침</Text>
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={handleRefresh}
+            disabled={refreshPrices.isPending}
+            className="flex-row items-center gap-2 rounded-full bg-slate-200 px-4 py-2 dark:bg-slate-800">
+            {refreshPrices.isPending ? <ActivityIndicator size="small" /> : null}
+            <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">새로고침</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setEditing(null)}
+            className="flex-row items-center gap-1 rounded-full bg-primary px-4 py-2">
+            <Text className="text-sm font-medium text-white">+ 자산 추가</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View className="flex-row gap-3">
@@ -507,10 +514,6 @@ export default function AssetsScreen() {
   return (
     <Screen maxWidthClassName={isDesktop ? 'max-w-[1100px]' : 'max-w-[480px]'}>
       {overviewSection}
-
-      <Pressable onPress={() => setEditing(null)} className="items-center rounded-xl bg-primary p-4">
-        <Text className="font-semibold text-white">+ 자산 추가</Text>
-      </Pressable>
 
       {listColumn}
 

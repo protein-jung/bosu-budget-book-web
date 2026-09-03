@@ -36,7 +36,9 @@ export default function AdminLoginScreen() {
     <View className="flex-1 items-center justify-center bg-slate-950 p-5">
       <View className="w-full max-w-[380px] gap-6">
         <View className="gap-1">
-          <Text className="text-2xl font-bold text-white">보수가계부 관리자</Text>
+          <Text className="text-2xl font-bold text-white">
+            <Text className="font-brand">BOSU Ledger</Text> 관리자
+          </Text>
           <Text className="text-sm text-slate-400">관리자 계정으로 로그인하세요</Text>
         </View>
 

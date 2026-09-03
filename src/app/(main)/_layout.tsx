@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
+import { MobileHeader } from '@/components/MobileHeader';
 import { TopNav } from '@/components/TopNav';
 import { useMyHousehold } from '@/features/household/api';
 import { HouseholdOnboarding } from '@/features/household/HouseholdOnboarding';
@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/authStore';
 
 export default function MainLayout() {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const isAdmin = useAuthStore((state) => state.user?.isAdmin ?? false);
   const householdQuery = useMyHousehold();
   const isDesktop = useIsDesktop();
 
@@ -31,48 +32,14 @@ export default function MainLayout() {
 
   return (
     <View className="flex-1">
-      {isDesktop ? <TopNav /> : null}
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: '#1F6F5C',
-          tabBarStyle: isDesktop ? { display: 'none' } : undefined,
-        }}>
-        <Tabs.Screen
-          name="calendar"
-          options={{
-            title: '달력',
-            tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="statistics"
-          options={{
-            title: '통계',
-            tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart-outline" size={size} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="budget"
-          options={{
-            title: '예산',
-            tabBarIcon: ({ color, size }) => <Ionicons name="calculator-outline" size={size} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="portfolio"
-          options={{
-            title: '자산',
-            tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="settings"
-          options={{
-            title: '설정',
-            tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
-          }}
-        />
+      {isDesktop ? <TopNav /> : <MobileHeader />}
+      <Tabs screenOptions={{ headerShown: false, tabBarStyle: { display: 'none' } }}>
+        <Tabs.Screen name="calendar" options={{ title: '달력' }} />
+        <Tabs.Screen name="statistics" options={{ title: '통계' }} />
+        <Tabs.Screen name="budget" options={{ title: '예산' }} />
+        <Tabs.Screen name="portfolio" options={{ title: '자산' }} />
+        <Tabs.Screen name="settings" options={{ title: '설정' }} />
+        {isAdmin ? <Tabs.Screen name="admin" options={{ title: '관리자' }} /> : null}
       </Tabs>
     </View>
   );

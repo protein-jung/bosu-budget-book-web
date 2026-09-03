@@ -7,6 +7,7 @@ export type AuthUser = {
   email: string;
   name: string;
   birthDate: string | null;
+  isAdmin: boolean;
 };
 
 type AuthState = {

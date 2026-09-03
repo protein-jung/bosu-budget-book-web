@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
 import { Link, router } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -8,6 +9,8 @@ import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { authApi } from '@/features/auth/api';
 import { getErrorMessage } from '@/lib/apiClient';
+import { useGoHome } from '@/lib/useGoHome';
+import { useAdminAuthStore } from '@/store/adminAuthStore';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from '@/store/toastStore';
 
@@ -107,7 +110,9 @@ export default function SignupScreen() {
   const [birthYear, setBirthYear] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthDay, setBirthDay] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const setSession = useAuthStore((state) => state.setSession);
+  const goHome = useGoHome();
 
   const signupMutation = useMutation({
     mutationFn: authApi.signup,
@@ -117,7 +122,11 @@ export default function SignupScreen() {
         email: data.email,
         name: data.name,
         birthDate: data.birthDate,
+        isAdmin: data.isAdmin,
       });
+      if (data.isAdmin) {
+        await useAdminAuthStore.getState().setToken(data.accessToken);
+      }
       router.replace('/calendar');
     },
     onError: (err) => toast.error(getErrorMessage(err, '회원가입에 실패했습니다.')),
@@ -140,17 +149,21 @@ export default function SignupScreen() {
       toast.error('생년월일을 올바르게 입력해주세요.');
       return;
     }
+    if (!agreedToTerms) {
+      toast.error('이용약관 및 개인정보처리방침에 동의해주세요.');
+      return;
+    }
     signupMutation.mutate({ name, email, password, birthDate });
   };
 
   return (
-    <Screen>
+    <Screen footer>
       <View className="mt-16 gap-1">
-        <Pressable onPress={() => router.push('/welcome')} className="mb-1 self-start">
-          <Text className="text-sm font-semibold text-primary dark:text-secondary">보수가계부</Text>
+        <Pressable onPress={goHome} className="mb-1 self-start">
+          <Text className="font-brand text-sm text-primary dark:text-secondary">BOSU Ledger</Text>
         </Pressable>
         <Text className="text-3xl font-bold text-slate-900 dark:text-white">회원가입</Text>
-        <Text className="text-base text-slate-500 dark:text-slate-400">보수가계부를 시작해보세요</Text>
+        <Text className="text-base text-slate-500 dark:text-slate-400">BOSU Ledger를 시작해보세요</Text>
       </View>
 
       <View className="gap-4">
@@ -178,6 +191,38 @@ export default function SignupScreen() {
           onMonthChange={setBirthMonth}
           onDayChange={setBirthDay}
         />
+        <Pressable
+          onPress={() => setAgreedToTerms((v) => !v)}
+          className="flex-row items-start gap-2.5"
+          hitSlop={4}>
+          <View
+            className={`mt-0.5 h-5 w-5 items-center justify-center rounded border ${
+              agreedToTerms ? 'border-primary bg-primary' : 'border-slate-300'
+            }`}>
+            {agreedToTerms ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+          </View>
+          <Text className="flex-1 text-sm text-slate-600 dark:text-slate-400">
+            <Text
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push('/terms');
+              }}
+              className="font-medium text-primary dark:text-secondary">
+              이용약관
+            </Text>
+            {' 및 '}
+            <Text
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push('/privacy');
+              }}
+              className="font-medium text-primary dark:text-secondary">
+              개인정보처리방침
+            </Text>
+            {'에 동의합니다'}
+          </Text>
+        </Pressable>
+
         <Button title="회원가입" onPress={handleSubmit} loading={signupMutation.isPending} />
       </View>
 

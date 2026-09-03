@@ -12,7 +12,8 @@ const MENU: {
     | '/settings/cards'
     | '/settings/recurring-expenses'
     | '/settings/household'
-    | '/settings/import';
+    | '/settings/import'
+    | '/settings/feature-requests';
   label: string;
   description: string;
 }[] = [
@@ -22,10 +23,12 @@ const MENU: {
   { href: '/settings/recurring-expenses', label: '고정비 지출', description: '매달 자동으로 추가할 고정비를 등록해요' },
   { href: '/settings/household', label: '가계부 정보', description: '초대 코드와 구성원을 확인해요' },
   { href: '/settings/import', label: '명세서 가져오기', description: '카드사 엑셀 명세서로 거래를 한 번에 등록해요' },
+  { href: '/settings/feature-requests', label: '개발자에게 기능 요청하기', description: '원하는 기능이나 불편한 점을 자유롭게 남겨요' },
 ];
 
 export default function SettingsScreen() {
   const user = useAuthStore((state) => state.user);
+  const isAdmin = useAuthStore((state) => state.user?.isAdmin ?? false);
   const isDesktop = useIsDesktop();
 
   return (
@@ -46,6 +49,15 @@ export default function SettingsScreen() {
             </Pressable>
           </Link>
         ))}
+        {isAdmin ? (
+          <Link href="/admin" asChild>
+            <Pressable
+              className={`gap-1.5 rounded-xl bg-white p-4 dark:bg-slate-900 ${isDesktop ? 'w-[48%] p-5' : ''}`}>
+              <Text className="text-base font-semibold text-slate-900 dark:text-white">관리자</Text>
+              <Text className="text-sm text-slate-500 dark:text-slate-400">전체 회원/가계부 현황을 봐요</Text>
+            </Pressable>
+          </Link>
+        ) : null}
       </View>
     </Screen>
   );

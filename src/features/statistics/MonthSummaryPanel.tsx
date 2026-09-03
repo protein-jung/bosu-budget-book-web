@@ -42,7 +42,7 @@ export function MonthSummaryPanel({
 
   if (isLoading || !summary) {
     return (
-      <View className="w-[320px] items-center rounded-2xl bg-white p-6">
+      <View className="w-[320px] items-center rounded-2xl bg-white p-6 shadow-sm shadow-slate-200">
         <ActivityIndicator />
       </View>
     );
@@ -53,25 +53,25 @@ export function MonthSummaryPanel({
   const maxCard = Math.max(1, ...summary.byCard.map((c) => c.amount));
 
   return (
-    <View className="w-[320px] gap-5 rounded-2xl bg-white p-5">
+    <View className="w-[320px] gap-5 rounded-2xl bg-white p-5 shadow-sm shadow-slate-200">
       <View className="gap-2">
         <Text className="text-sm font-semibold text-slate-500">전체</Text>
         <View className="flex-row gap-2">
           <Pressable
             onPress={() => onSelectType?.('INCOME')}
             className={`flex-1 gap-0.5 rounded-xl p-3 ${
-              selectedType === 'INCOME' ? 'bg-emerald-100' : 'bg-cream'
+              selectedType === 'INCOME' ? 'bg-income/10' : 'bg-slate-50'
             }`}>
             <Text className="text-xs text-slate-500">수입</Text>
-            <Text className="text-base font-bold text-emerald-600">{formatKrw(summary.totalIncome)}</Text>
+            <Text className="text-lg font-bold text-primary">{formatKrw(summary.totalIncome)}</Text>
           </Pressable>
           <Pressable
             onPress={() => onSelectType?.('EXPENSE')}
             className={`flex-1 gap-0.5 rounded-xl p-3 ${
-              selectedType === 'EXPENSE' ? 'bg-red-100' : 'bg-cream'
+              selectedType === 'EXPENSE' ? 'bg-expense/10' : 'bg-slate-50'
             }`}>
             <Text className="text-xs text-slate-500">지출</Text>
-            <Text className="text-base font-bold text-red-500">{formatKrw(summary.totalExpense)}</Text>
+            <Text className="text-lg font-bold text-secondary">{formatKrw(summary.totalExpense)}</Text>
           </Pressable>
         </View>
       </View>
@@ -97,7 +97,7 @@ export function MonthSummaryPanel({
                 </Text>
                 <Text className="text-xs font-medium text-slate-900">{formatKrw(item.amount)}</Text>
               </View>
-              <Bar amount={item.amount} max={maxCategory} color={item.color ?? '#1F6F5C'} />
+              <Bar amount={item.amount} max={maxCategory} color={item.color ?? '#02007D'} />
             </Pressable>
           ))
         )}
@@ -115,12 +115,12 @@ export function MonthSummaryPanel({
                 if (item.userId != null) onSelectMember?.(item.userId);
               }}
               className={`flex-row items-center justify-between rounded-xl px-3 py-2 ${
-                selectedMemberUserId === item.userId ? 'bg-primary-light' : 'bg-cream'
+                selectedMemberUserId === item.userId ? 'bg-primary-light' : 'bg-slate-50'
               }`}>
               <Text className="text-xs font-medium text-slate-900">{item.userName}</Text>
               <View className="items-end">
-                <Text className="text-xs text-emerald-600">+{formatKrw(item.income)}</Text>
-                <Text className="text-xs text-red-500">-{formatKrw(item.expense)}</Text>
+                <Text className="text-xs text-primary">+{formatKrw(item.income)}</Text>
+                <Text className="text-xs text-secondary">-{formatKrw(item.expense)}</Text>
               </View>
             </Pressable>
           ))

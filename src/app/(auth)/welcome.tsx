@@ -4,7 +4,9 @@ import { useRef, useState } from 'react';
 import { Animated, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Footer } from '@/components/Footer';
 import { useIsDesktop } from '@/lib/responsive';
+import { useGoHome } from '@/lib/useGoHome';
 
 const PREVIEWS = [
   {
@@ -16,11 +18,6 @@ const PREVIEWS = [
     image: require('../../../assets/marketing/preview-statistics.png'),
     title: '몇 달치를 나란히',
     caption: '거래를 처음 기록한 달부터 이번 달까지, 카테고리별 흐름을 표로 한눈에 볼 수 있어요.',
-  },
-  {
-    image: require('../../../assets/marketing/preview-statistics-month.png'),
-    title: '예산도 자동으로',
-    caption: '카테고리마다 예산을 정해두면 이번 달 얼마나 썼는지 진행률로 보여드려요.',
   },
   {
     image: require('../../../assets/marketing/preview-portfolio.png'),
@@ -128,17 +125,21 @@ function PreviewCarousel() {
 
 export default function WelcomeScreen() {
   const isDesktop = useIsDesktop();
+  const goHome = useGoHome();
 
   return (
     <SafeAreaView className="flex-1 bg-cream" edges={['top', 'bottom']}>
       <ScrollView contentContainerClassName="items-center gap-10 px-5 pb-16 pt-8" className="flex-1">
-        <Text className="text-lg font-bold text-primary dark:text-secondary">🏠 보수가계부</Text>
+        <Pressable onPress={goHome} className="items-center gap-0.5">
+          <Text className="font-brand text-lg text-primary dark:text-secondary">🏠 BOSU Ledger</Text>
+          <Text className="text-xs text-slate-400">보수가계부</Text>
+        </Pressable>
 
         <View className={`w-full gap-14 ${isDesktop ? 'max-w-[880px]' : 'max-w-[520px]'}`}>
           <PreviewCarousel />
 
-          <Text className="max-w-[420px] self-center text-center text-lg font-bold text-slate-900 dark:text-white">
-            부부가, 가족이 함께 쓰는 가계부.{'\n'}달력부터 자산까지 한 곳에서 정리해요.
+          <Text className="max-w-[420px] self-center text-center text-2xl font-bold text-slate-900 dark:text-white">
+            덜 쓰고, 더 남기고.
           </Text>
 
           <View className="items-center gap-3 border-t border-primary-light pt-8 dark:border-slate-800">
@@ -154,6 +155,8 @@ export default function WelcomeScreen() {
               </Link>
             </View>
           </View>
+
+          <Footer />
         </View>
       </ScrollView>
     </SafeAreaView>

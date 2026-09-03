@@ -6,6 +6,7 @@ export type TokenResponse = {
   email: string;
   name: string;
   birthDate: string | null;
+  isAdmin: boolean;
 };
 
 export const authApi = {

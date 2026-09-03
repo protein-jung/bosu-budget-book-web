@@ -7,13 +7,17 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      fontFamily: {
+        // 워드마크("BOSU Ledger")에만 쓰는 서체 — 로딩은 src/app/_layout.tsx의 useFonts에서.
+        brand: ['SpaceMono_700Bold'],
+      },
       colors: {
         income: '#2f9e44',
         expense: '#e03131',
         primary: {
-          DEFAULT: '#1F6F5C',
-          light: '#DCEEE9',
-          dark: '#154C40',
+          DEFAULT: '#02007D',
+          light: '#E3E2F8',
+          dark: '#01003D',
         },
         secondary: {
           DEFAULT: '#E07A5F',

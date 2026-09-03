@@ -13,6 +13,10 @@ export function getMonthMatrix(year: number, month: number): (Date | null)[][] {
   return weeks;
 }
 
+export function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
 export function toDateKey(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');

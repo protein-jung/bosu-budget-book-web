@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { useRecurringExpenses, useSetRecurringExpenseActive } from '@/features/recurringExpense/api';
@@ -9,6 +9,17 @@ import { formatKrw } from '@/lib/format';
 import { useIsDesktop } from '@/lib/responsive';
 import type { RecurringExpense } from '@/lib/types';
 import { toast } from '@/store/toastStore';
+
+function ToggleSwitch({ value, onChange }: { value: boolean; onChange: (next: boolean) => void }) {
+  return (
+    <Pressable
+      onPress={() => onChange(!value)}
+      hitSlop={8}
+      className={`h-6 w-11 justify-center rounded-full px-0.5 ${value ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}>
+      <View className={`h-5 w-5 rounded-full bg-white ${value ? 'ml-auto' : ''}`} />
+    </Pressable>
+  );
+}
 
 export default function RecurringExpensesScreen() {
   const { data: recurringExpenses = [] } = useRecurringExpenses();
@@ -37,26 +48,36 @@ export default function RecurringExpensesScreen() {
             <View
               key={item.id}
               className="flex-row items-center gap-3 rounded-xl bg-white p-4 dark:bg-slate-900">
-              <Pressable className="min-w-0 flex-1 gap-1" onPress={() => setEditing(item)}>
+              <Pressable className="min-w-0 flex-1 gap-1.5" onPress={() => setEditing(item)}>
                 <Text className="text-base font-semibold text-slate-900 dark:text-white" numberOfLines={1}>
-                  {item.categoryIcon ? `${item.categoryIcon} ` : ''}
                   {item.name}
                 </Text>
-                <Text className="text-sm text-slate-500 dark:text-slate-400" numberOfLines={1}>
-                  {item.categoryName} · 매달 {item.dayOfMonth}일 · {formatKrw(item.amount)}
-                </Text>
+                <View className="flex-row flex-wrap items-center gap-1.5">
+                  <View
+                    style={
+                      item.categoryColor
+                        ? { backgroundColor: `${item.categoryColor}1a`, borderColor: `${item.categoryColor}66` }
+                        : undefined
+                    }
+                    className={`flex-row items-center gap-1 rounded-full border px-2.5 py-1 ${
+                      item.categoryColor ? '' : 'border-slate-300 dark:border-slate-600'
+                    }`}>
+                    {item.categoryIcon ? <Text className="text-xs">{item.categoryIcon}</Text> : null}
+                    <Text className="text-xs font-medium text-slate-700 dark:text-slate-200">
+                      {item.categoryName}
+                    </Text>
+                  </View>
+                  <Text className="text-sm text-slate-500 dark:text-slate-400" numberOfLines={1}>
+                    매달 {item.dayOfMonth}일 · {formatKrw(item.amount)}
+                  </Text>
+                </View>
                 {item.memo ? (
                   <Text className="text-xs text-slate-400" numberOfLines={1}>
                     {item.memo}
                   </Text>
                 ) : null}
               </Pressable>
-              <Switch
-                value={item.active}
-                onValueChange={(next) => handleToggle(item, next)}
-                trackColor={{ false: '#cbd5e1', true: '#1F6F5C' }}
-                thumbColor="#ffffff"
-              />
+              <ToggleSwitch value={item.active} onChange={(next) => handleToggle(item, next)} />
             </View>
           ))
         )}

@@ -8,6 +8,8 @@ import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { authApi } from '@/features/auth/api';
 import { getErrorMessage } from '@/lib/apiClient';
+import { useGoHome } from '@/lib/useGoHome';
+import { useAdminAuthStore } from '@/store/adminAuthStore';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from '@/store/toastStore';
 
@@ -15,6 +17,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const setSession = useAuthStore((state) => state.setSession);
+  const goHome = useGoHome();
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
@@ -24,7 +27,15 @@ export default function LoginScreen() {
         email: data.email,
         name: data.name,
         birthDate: data.birthDate,
+        isAdmin: data.isAdmin,
       });
+      if (data.isAdmin) {
+        // 이 계정은 admin.user-email로 지정돼 있어서, 발급받은 토큰에 이미 ROLE_ADMIN 권한이
+        // 같이 실려있다 — 그 토큰을 어드민 화면 쪽 스토어에도 그대로 넣어두면, 메뉴의 "관리자"
+        // 버튼을 눌렀을 때 별도 로그인 없이 바로 /admin API를 쓸 수 있다. 로그인 자체는 다른
+        // 계정과 똑같이 평소 화면(달력)으로 간다.
+        await useAdminAuthStore.getState().setToken(data.accessToken);
+      }
       router.replace('/calendar');
     },
     onError: (err) => toast.error(getErrorMessage(err, '로그인에 실패했습니다.')),
@@ -39,12 +50,12 @@ export default function LoginScreen() {
   };
 
   return (
-    <Screen>
+    <Screen footer>
       <View className="mt-16 gap-1">
-        <Pressable onPress={() => router.push('/welcome')} className="self-start">
-          <Text className="text-3xl font-bold text-primary dark:text-secondary">보수가계부</Text>
+        <Pressable onPress={goHome} className="self-start">
+          <Text className="font-brand text-3xl text-primary dark:text-secondary">BOSU Ledger</Text>
         </Pressable>
-        <Text className="text-base text-slate-500 dark:text-slate-400">보수부부의 월급날 정산 프로그램</Text>
+        <Text className="text-base text-slate-500 dark:text-slate-400">덜 쓰고, 더 남기고.</Text>
       </View>
 
       <View className="gap-4">

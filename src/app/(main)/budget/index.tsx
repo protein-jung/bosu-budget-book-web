@@ -155,7 +155,7 @@ export default function BudgetScreen() {
               setAddParentId(null);
             }}
             className="flex-row items-center gap-1 px-2 py-1">
-            <Ionicons name={isAddOpen ? 'remove-circle-outline' : 'add-circle-outline'} size={16} color="#1F6F5C" />
+            <Ionicons name={isAddOpen ? 'remove-circle-outline' : 'add-circle-outline'} size={16} color="#02007D" />
             <Text className="text-sm font-medium text-primary">{isAddOpen ? '닫기' : '카테고리 추가'}</Text>
           </Pressable>
         </View>
@@ -191,7 +191,7 @@ export default function BudgetScreen() {
               <>
                 <View className="flex-row items-center gap-1">
                   <Pressable onPress={() => setAddParentId(null)} className="py-1 pr-1">
-                    <Ionicons name="chevron-back" size={16} color="#1F6F5C" />
+                    <Ionicons name="chevron-back" size={16} color="#02007D" />
                   </Pressable>
                   <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     {parent.name}의 하위 카테고리를 선택하세요

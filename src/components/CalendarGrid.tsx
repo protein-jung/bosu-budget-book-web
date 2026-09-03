@@ -24,7 +24,7 @@ export function CalendarGrid({ year, month, summaries, selectedDateKey, onSelect
       <View className="flex-row">
         {WEEKDAYS.map((weekday) => (
           <View key={weekday} className="flex-1 items-center py-2">
-            <Text className="text-xs font-medium text-slate-400">{weekday}</Text>
+            <Text className="text-xs font-semibold text-slate-400">{weekday}</Text>
           </View>
         ))}
       </View>
@@ -40,27 +40,29 @@ export function CalendarGrid({ year, month, summaries, selectedDateKey, onSelect
             const isSelected = dateKey === selectedDateKey;
 
             return (
-              <Pressable
-                key={dayIndex}
-                onPress={() => onSelectDate(dateKey)}
-                className={`aspect-square flex-1 items-center gap-0.5 rounded-lg p-1 pt-1.5 ${
-                  isSelected ? 'bg-primary-light dark:bg-primary-dark' : isToday ? 'bg-primary-light/50 dark:bg-primary-dark/40' : ''
-                }`}>
-                <Text
-                  className={`text-sm ${
-                    isToday
-                      ? 'font-bold text-primary dark:text-secondary'
-                      : 'text-slate-700 dark:text-slate-200'
+              <Pressable key={dayIndex} onPress={() => onSelectDate(dateKey)} className="aspect-square flex-1 items-center gap-0.5 pt-1">
+                <View
+                  className={`h-7 w-7 items-center justify-center rounded-full ${
+                    isSelected ? 'bg-primary' : isToday ? 'border border-primary' : ''
                   }`}>
-                  {date.getDate()}
-                </Text>
+                  <Text
+                    className={`text-sm ${
+                      isSelected
+                        ? 'font-bold text-white'
+                        : isToday
+                          ? 'font-bold text-primary'
+                          : 'text-slate-700'
+                    }`}>
+                    {date.getDate()}
+                  </Text>
+                </View>
                 {summary?.expense ? (
-                  <Text className="text-[10px] text-red-500" numberOfLines={1}>
+                  <Text className="text-[10px] font-medium text-secondary" numberOfLines={1}>
                     -{formatCompactKrw(summary.expense)}
                   </Text>
                 ) : null}
                 {summary?.income ? (
-                  <Text className="text-[10px] text-emerald-600" numberOfLines={1}>
+                  <Text className="text-[10px] font-medium text-primary" numberOfLines={1}>
                     +{formatCompactKrw(summary.income)}
                   </Text>
                 ) : null}
