@@ -205,6 +205,7 @@ export function UncategorizedReviewTab() {
   const [categoryId, setCategoryId] = useState<number | null>(null);
 
   const ruleKeywords = rules.map((rule) => rule.keywords);
+  const visibleMerchants = merchants.filter((merchant) => !hasMatchingRule(merchant, ruleKeywords));
 
   const handleExpand = (merchant: UncategorizedMerchant) => {
     const key = merchantKey(merchant);
@@ -252,13 +253,12 @@ export function UncategorizedReviewTab() {
 
       {rules.length > 0 ? <RuleListSection rules={rules} /> : null}
 
-      {merchants.length === 0 ? (
+      {visibleMerchants.length === 0 ? (
         <Text className="text-sm text-slate-400">미분류로 남은 가맹점이 없어요.</Text>
       ) : (
-        merchants.map((merchant) => {
+        visibleMerchants.map((merchant) => {
           const key = merchantKey(merchant);
           const expanded = expandedKey === key;
-          const matched = hasMatchingRule(merchant, ruleKeywords);
           const categoryOptions = categories.filter((category) => category.type === merchant.type && !category.isGroup);
 
           return (
@@ -270,9 +270,6 @@ export function UncategorizedReviewTab() {
                     {merchant.count}건 · {formatKrw(merchant.totalAmount)}
                   </Text>
                 </View>
-                {matched ? (
-                  <Text className="text-xs font-medium text-emerald-600 dark:text-emerald-400">규칙 등록됨</Text>
-                ) : null}
               </Pressable>
 
               {expanded ? (
