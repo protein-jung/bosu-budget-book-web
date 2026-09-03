@@ -5,8 +5,9 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { useCategories } from '@/features/category/api';
 import { getErrorMessage } from '@/lib/apiClient';
+import { childCategories, topLevelCategories } from '@/lib/categoryTree';
 import { formatKrw } from '@/lib/format';
-import type { MerchantCategoryRule, UncategorizedMerchant } from '@/lib/types';
+import type { Category, MerchantCategoryRule, TransactionType, UncategorizedMerchant } from '@/lib/types';
 import { toast } from '@/store/toastStore';
 
 import {
@@ -27,7 +28,8 @@ function hasMatchingRule(merchant: UncategorizedMerchant, keywordsAcrossRules: s
 }
 
 function RuleEditor({
-  categoryOptions,
+  categories,
+  categoryType,
   categoryId,
   onSelectCategory,
   keywordInput,
@@ -37,9 +39,10 @@ function RuleEditor({
   onDelete,
   deleting,
 }: {
-  categoryOptions: { id: number; name: string; icon: string | null; color: string | null }[];
+  categories: Category[];
+  categoryType: TransactionType;
   categoryId: number | null;
-  onSelectCategory: (id: number) => void;
+  onSelectCategory: (id: number | null) => void;
   keywordInput: string;
   onChangeKeywordInput: (text: string) => void;
   onSave: () => void;
@@ -47,23 +50,60 @@ function RuleEditor({
   onDelete?: () => void;
   deleting?: boolean;
 }) {
+  // 캘린더 상세 내역의 카테고리 선택과 동일한 방식 — 대분류를 먼저 고르고, 소분류가 있으면
+  // 그 안에서 다시 고른다. 소분류가 없는 단독 대분류는 그 자체가 최종 선택이 된다.
+  const [activeGroupId, setActiveGroupId] = useState<number | null>(() => {
+    if (categoryId == null) return null;
+    return categories.find((c) => c.id === categoryId)?.parentId ?? categoryId;
+  });
+
+  const topGroups = topLevelCategories(categories, categoryType);
+  const activeChildren = activeGroupId == null ? [] : childCategories(categories, categoryType, activeGroupId);
+
+  const handleSelectGroup = (group: Category) => {
+    setActiveGroupId(group.id);
+    const children = childCategories(categories, categoryType, group.id);
+    if (children.length === 0) {
+      onSelectCategory(group.id);
+    } else if (!children.some((c) => c.id === categoryId)) {
+      onSelectCategory(null);
+    }
+  };
+
   return (
     <View className="gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
       <View className="gap-2">
-        <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">카테고리</Text>
+        <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">대분류</Text>
         <View className="flex-row flex-wrap gap-2">
-          {categoryOptions.map((category) => (
+          {topGroups.map((group) => (
             <Chip
-              key={category.id}
-              label={category.name}
-              icon={category.icon}
-              color={category.color}
-              selected={categoryId === category.id}
-              onPress={() => onSelectCategory(category.id)}
+              key={group.id}
+              label={group.name}
+              icon={group.icon}
+              color={group.color}
+              selected={activeGroupId === group.id}
+              onPress={() => handleSelectGroup(group)}
             />
           ))}
         </View>
       </View>
+      {activeChildren.length > 0 ? (
+        <View className="gap-2">
+          <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">소분류</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {activeChildren.map((category) => (
+              <Chip
+                key={category.id}
+                label={category.name}
+                icon={category.icon}
+                color={category.color}
+                selected={categoryId === category.id}
+                onPress={() => onSelectCategory(category.id)}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
       <View className="gap-2">
         <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">키워드</Text>
         <TextInput
@@ -159,7 +199,7 @@ function RuleListSection({ rules }: { rules: MerchantCategoryRule[] }) {
         <View className="gap-2 border-t border-slate-100 pt-2 dark:border-slate-800">
           {rules.map((rule) => {
             const editing = editingRuleId === rule.id;
-            const categoryOptions = categories.filter((c) => c.type === 'EXPENSE' && !c.isGroup);
+            const ruleCategoryType = categories.find((c) => c.id === rule.categoryId)?.type ?? 'EXPENSE';
             return (
               <View key={rule.id} className="gap-2">
                 <Pressable className="flex-row items-center justify-between" onPress={() => handleExpandRule(rule)}>
@@ -174,7 +214,8 @@ function RuleListSection({ rules }: { rules: MerchantCategoryRule[] }) {
 
                 {editing ? (
                   <RuleEditor
-                    categoryOptions={categoryOptions}
+                    categories={categories}
+                    categoryType={ruleCategoryType}
                     categoryId={categoryId}
                     onSelectCategory={setCategoryId}
                     keywordInput={keywordInput}
@@ -259,7 +300,6 @@ export function UncategorizedReviewTab() {
         visibleMerchants.map((merchant) => {
           const key = merchantKey(merchant);
           const expanded = expandedKey === key;
-          const categoryOptions = categories.filter((category) => category.type === merchant.type && !category.isGroup);
 
           return (
             <View key={key} className="gap-2 rounded-xl bg-white p-4 dark:bg-slate-900">
@@ -274,7 +314,8 @@ export function UncategorizedReviewTab() {
 
               {expanded ? (
                 <RuleEditor
-                  categoryOptions={categoryOptions}
+                  categories={categories}
+                  categoryType={merchant.type}
                   categoryId={categoryId}
                   onSelectCategory={setCategoryId}
                   keywordInput={keywordInput}
