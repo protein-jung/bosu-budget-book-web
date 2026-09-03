@@ -73,6 +73,8 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
           placeholder="8자 이상"
+          returnKeyType="done"
+          onSubmitEditing={handleSubmit}
         />
         <Button title="로그인" onPress={handleSubmit} loading={loginMutation.isPending} />
       </View>
