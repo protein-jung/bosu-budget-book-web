@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import Head from 'expo-router/head';
 import { Pressable, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
@@ -14,7 +15,12 @@ function Section({ title, children }: { title: string; children: string }) {
 
 export default function TermsScreen() {
   return (
-    <Screen backgroundClassName="bg-white">
+    <>
+      <Head>
+        <title>이용약관 | 보수가계부 (BOSU Ledger)</title>
+        <meta name="description" content="보수가계부(BOSU Ledger) 서비스 이용약관입니다." />
+      </Head>
+      <Screen backgroundClassName="bg-white">
       <View className="gap-1">
         <Pressable onPress={() => router.back()} className="mb-1 self-start">
           <Text className="text-sm font-medium text-primary">‹ 뒤로</Text>
@@ -77,6 +83,7 @@ export default function TermsScreen() {
           대한민국 법령에 따라 해석돼요.
         </Section>
       </View>
-    </Screen>
+      </Screen>
+    </>
   );
 }

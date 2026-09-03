@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /calendar
+Disallow: /statistics
+Disallow: /budget
+Disallow: /portfolio
+Disallow: /settings
+Disallow: /admin
+Disallow: /logout
+
+Sitemap: https://bosuledger.com/sitemap.xml

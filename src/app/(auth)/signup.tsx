@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
 import { Link, router } from 'expo-router';
+import Head from 'expo-router/head';
 import { useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
@@ -157,81 +158,87 @@ export default function SignupScreen() {
   };
 
   return (
-    <Screen footer>
-      <View className="mt-16 gap-1">
-        <Pressable onPress={goHome} className="mb-1 self-start">
-          <Text className="font-brand text-sm text-primary dark:text-secondary">BOSU Ledger</Text>
-        </Pressable>
-        <Text className="text-3xl font-bold text-slate-900 dark:text-white">회원가입</Text>
-        <Text className="text-base text-slate-500 dark:text-slate-400">BOSU Ledger를 시작해보세요</Text>
-      </View>
+    <>
+      <Head>
+        <title>회원가입 | 보수가계부 (BOSU Ledger)</title>
+        <meta name="description" content="무료로 보수가계부에 가입하고 배우자·가족과 함께 지출과 자산을 관리해보세요." />
+      </Head>
+      <Screen footer>
+        <View className="mt-16 gap-1">
+          <Pressable onPress={goHome} className="mb-1 self-start">
+            <Text className="font-brand text-sm text-primary dark:text-secondary">BOSU Ledger</Text>
+          </Pressable>
+          <Text className="text-3xl font-bold text-slate-900 dark:text-white">회원가입</Text>
+          <Text className="text-base text-slate-500 dark:text-slate-400">BOSU Ledger를 시작해보세요</Text>
+        </View>
 
-      <View className="gap-4">
-        <TextField label="이름" value={name} onChangeText={setName} placeholder="홍길동" />
-        <TextField
-          label="이메일"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="you@example.com"
-        />
-        <TextField
-          label="비밀번호"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder="8자 이상"
-        />
-        <BirthDateInput
-          year={birthYear}
-          month={birthMonth}
-          day={birthDay}
-          onYearChange={setBirthYear}
-          onMonthChange={setBirthMonth}
-          onDayChange={setBirthDay}
-        />
-        <Pressable
-          onPress={() => setAgreedToTerms((v) => !v)}
-          className="flex-row items-start gap-2.5"
-          hitSlop={4}>
-          <View
-            className={`mt-0.5 h-5 w-5 items-center justify-center rounded border ${
-              agreedToTerms ? 'border-primary bg-primary' : 'border-slate-300'
-            }`}>
-            {agreedToTerms ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
-          </View>
-          <Text className="flex-1 text-sm text-slate-600 dark:text-slate-400">
-            <Text
-              onPress={(e) => {
-                e.stopPropagation();
-                router.push('/terms');
-              }}
-              className="font-medium text-primary dark:text-secondary">
-              이용약관
+        <View className="gap-4">
+          <TextField label="이름" value={name} onChangeText={setName} placeholder="홍길동" />
+          <TextField
+            label="이메일"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="you@example.com"
+          />
+          <TextField
+            label="비밀번호"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="8자 이상"
+          />
+          <BirthDateInput
+            year={birthYear}
+            month={birthMonth}
+            day={birthDay}
+            onYearChange={setBirthYear}
+            onMonthChange={setBirthMonth}
+            onDayChange={setBirthDay}
+          />
+          <Pressable
+            onPress={() => setAgreedToTerms((v) => !v)}
+            className="flex-row items-start gap-2.5"
+            hitSlop={4}>
+            <View
+              className={`mt-0.5 h-5 w-5 items-center justify-center rounded border ${
+                agreedToTerms ? 'border-primary bg-primary' : 'border-slate-300'
+              }`}>
+              {agreedToTerms ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+            </View>
+            <Text className="flex-1 text-sm text-slate-600 dark:text-slate-400">
+              <Text
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push('/terms');
+                }}
+                className="font-medium text-primary dark:text-secondary">
+                이용약관
+              </Text>
+              {' 및 '}
+              <Text
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push('/privacy');
+                }}
+                className="font-medium text-primary dark:text-secondary">
+                개인정보처리방침
+              </Text>
+              {'에 동의합니다'}
             </Text>
-            {' 및 '}
-            <Text
-              onPress={(e) => {
-                e.stopPropagation();
-                router.push('/privacy');
-              }}
-              className="font-medium text-primary dark:text-secondary">
-              개인정보처리방침
-            </Text>
-            {'에 동의합니다'}
-          </Text>
-        </Pressable>
+          </Pressable>
 
-        <Button title="회원가입" onPress={handleSubmit} loading={signupMutation.isPending} />
-      </View>
+          <Button title="회원가입" onPress={handleSubmit} loading={signupMutation.isPending} />
+        </View>
 
-      <View className="flex-row justify-center gap-1">
-        <Text className="text-slate-500 dark:text-slate-400">이미 계정이 있으신가요?</Text>
-        <Link href="/login" className="font-semibold text-primary dark:text-secondary">
-          로그인
-        </Link>
-      </View>
-    </Screen>
+        <View className="flex-row justify-center gap-1">
+          <Text className="text-slate-500 dark:text-slate-400">이미 계정이 있으신가요?</Text>
+          <Link href="/login" className="font-semibold text-primary dark:text-secondary">
+            로그인
+          </Link>
+        </View>
+      </Screen>
+    </>
   );
 }

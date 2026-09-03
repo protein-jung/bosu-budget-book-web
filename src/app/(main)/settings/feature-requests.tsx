@@ -47,7 +47,7 @@ export default function FeatureRequestsScreen() {
         <Text className="text-2xl font-bold text-slate-900 dark:text-white">기능 요청</Text>
         <Text className="text-base text-slate-500 dark:text-slate-400">
           있었으면 하는 기능이나 불편한 점을 자유롭게 남겨주세요. 개발자가 확인하고 답변을 남기면
-          이메일로 알려드려요.
+          이메일로 알려드려요. 반영 가능한 요청이면 2일 이내로 반영돼요.
         </Text>
       </View>
 

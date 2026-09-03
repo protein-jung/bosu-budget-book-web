@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import Head from 'expo-router/head';
 import { Pressable, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
@@ -14,7 +15,12 @@ function Section({ title, children }: { title: string; children: string }) {
 
 export default function PrivacyScreen() {
   return (
-    <Screen backgroundClassName="bg-white">
+    <>
+      <Head>
+        <title>개인정보처리방침 | 보수가계부 (BOSU Ledger)</title>
+        <meta name="description" content="보수가계부(BOSU Ledger)가 개인정보를 어떻게 수집·이용·보관하는지 안내합니다." />
+      </Head>
+      <Screen backgroundClassName="bg-white">
       <View className="gap-1">
         <Pressable onPress={() => router.back()} className="mb-1 self-start">
           <Text className="text-sm font-medium text-primary">‹ 뒤로</Text>
@@ -75,6 +81,7 @@ export default function PrivacyScreen() {
           이 방침의 내용이 바뀌면 시행일을 갱신하고, 앱 내 공지를 통해 미리 알려드릴게요.
         </Section>
       </View>
-    </Screen>
+      </Screen>
+    </>
   );
 }
