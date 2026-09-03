@@ -353,6 +353,7 @@ export default function CalendarScreen() {
         categoryId: newCategoryId,
         cardId: transaction.cardId,
         memo: transaction.memo,
+        note: transaction.note,
       },
     });
   };
@@ -478,6 +479,11 @@ export default function CalendarScreen() {
                       {transaction.cardName ? ` · ${transaction.cardName}` : ''}
                       {transaction.memo ? ` · ${transaction.memo}` : ''}
                     </Text>
+                    {transaction.note ? (
+                      <Text className="text-xs italic text-slate-400" numberOfLines={1}>
+                        {transaction.note}
+                      </Text>
+                    ) : null}
                   </View>
                   <Text className={`font-semibold ${transaction.type === 'INCOME' ? 'text-primary' : 'text-secondary'}`}>
                     {formatSignedKrw(transaction.amount, transaction.type)}

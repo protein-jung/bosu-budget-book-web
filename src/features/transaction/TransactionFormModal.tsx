@@ -48,6 +48,7 @@ export function TransactionFormModal({
   const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
   const [cardId, setCardId] = useState<number | null>(null);
   const [memo, setMemo] = useState('');
+  const [note, setNote] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
 
   const createTransaction = useCreateTransaction();
@@ -64,6 +65,7 @@ export function TransactionFormModal({
       setActiveGroupId(category?.parentId ?? transaction.categoryId);
       setCardId(transaction.cardId);
       setMemo(transaction.memo ?? '');
+      setNote(transaction.note ?? '');
     } else {
       setType(initialType ?? 'EXPENSE');
       setAmount('');
@@ -71,6 +73,7 @@ export function TransactionFormModal({
       setActiveGroupId(null);
       setCardId(null);
       setMemo('');
+      setNote('');
     }
   }, [visible, transaction, initialType, categories]);
 
@@ -124,6 +127,7 @@ export function TransactionFormModal({
       categoryId,
       cardId,
       memo: title,
+      note: note.trim() || null,
     };
 
     if (isEdit && transaction) {
@@ -238,6 +242,16 @@ export function TransactionFormModal({
                 ))}
               </View>
             </View>
+
+            <TextField
+              label="메모 (선택)"
+              value={note}
+              onChangeText={setNote}
+              placeholder="이 내역에 대해 남기고 싶은 메모"
+              multiline
+              numberOfLines={3}
+              style={{ minHeight: 72, textAlignVertical: 'top' }}
+            />
 
             <View className="gap-2">
               <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />

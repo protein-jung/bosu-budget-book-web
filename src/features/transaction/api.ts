@@ -10,6 +10,7 @@ export type TransactionInput = {
   categoryId: number;
   cardId: number | null;
   memo: string | null;
+  note: string | null;
 };
 
 const transactionApi = {

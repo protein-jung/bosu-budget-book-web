@@ -52,6 +52,7 @@ export type Transaction = {
   userId: number | null;
   userName: string;
   memo: string | null;
+  note: string | null;
 };
 
 export type CategoryStat = {
