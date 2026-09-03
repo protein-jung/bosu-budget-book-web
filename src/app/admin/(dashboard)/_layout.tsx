@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { useGoHome } from '@/lib/useGoHome';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
 import { useAuthStore } from '@/store/authStore';
 
@@ -38,6 +39,7 @@ export default function AdminDashboardLayout() {
   const logout = useAdminAuthStore((state) => state.logout);
   const mainLogout = useAuthStore((state) => state.logout);
   const pathname = usePathname();
+  const goHome = useGoHome();
   const [hydrationStarted, setHydrationStarted] = useState(false);
 
   useEffect(() => {
@@ -99,10 +101,16 @@ export default function AdminDashboardLayout() {
               })}
             </View>
           </View>
-          <Pressable onPress={handleLogout} className="flex-row items-center gap-1.5 px-2 py-2">
-            <Ionicons name="log-out-outline" size={16} color="#ffffffb3" />
-            <Text className="text-sm font-medium text-white/70">로그아웃</Text>
-          </Pressable>
+          <View className="flex-row items-center gap-1">
+            <Pressable onPress={goHome} className="flex-row items-center gap-1.5 px-2 py-2">
+              <Ionicons name="arrow-back-outline" size={16} color="#ffffffb3" />
+              <Text className="text-sm font-medium text-white/70">앱으로 돌아가기</Text>
+            </Pressable>
+            <Pressable onPress={handleLogout} className="flex-row items-center gap-1.5 px-2 py-2">
+              <Ionicons name="log-out-outline" size={16} color="#ffffffb3" />
+              <Text className="text-sm font-medium text-white/70">로그아웃</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
       <Slot />

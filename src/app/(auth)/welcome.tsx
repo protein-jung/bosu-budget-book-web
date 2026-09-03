@@ -20,9 +20,19 @@ const PREVIEWS = [
     caption: '거래를 처음 기록한 달부터 이번 달까지, 카테고리별 흐름을 표로 한눈에 볼 수 있어요.',
   },
   {
-    image: require('../../../assets/marketing/preview-portfolio.png'),
+    image: require('../../../assets/marketing/preview-portfolio.gif'),
     title: '자산은 모두 한 곳에',
-    caption: '부동산·차량·주식·코인·대출까지, 실시간 시세와 손익률을 함께 확인하세요.',
+    caption: '부동산·차량·주식·코인·금·은·대출까지, 실시간 시세와 1년 추이를 함께 확인하세요.',
+  },
+  {
+    image: require('../../../assets/marketing/preview-categories.png'),
+    title: '내 손에 맞게 정리',
+    caption: '대분류·소분류에 아이콘과 색을 입혀서, 우리 가계부만의 방식으로 정리할 수 있어요.',
+  },
+  {
+    image: require('../../../assets/marketing/preview-import.gif'),
+    title: '명세서는 올리기만',
+    caption: '카드 명세서 파일을 올리면 가맹점 이름을 보고 카테고리까지 자동으로 분류돼요.',
   },
 ];
 
