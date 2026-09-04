@@ -16,6 +16,18 @@ import { useAuthStore } from '@/store/authStore';
 import { toast } from '@/store/toastStore';
 
 const BIRTH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MIN_SIGNUP_AGE = 14;
+
+function getAge(birthDate: string): number {
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
 
 const DATE_BOX_BASE_CLASS =
   'min-w-0 rounded-xl border border-slate-300 bg-white px-2 py-3 text-center text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white';
@@ -148,6 +160,10 @@ export default function SignupScreen() {
     }
     if (!BIRTH_DATE_PATTERN.test(birthDate) || Number.isNaN(new Date(birthDate).getTime())) {
       toast.error('생년월일을 올바르게 입력해주세요.');
+      return;
+    }
+    if (getAge(birthDate) < MIN_SIGNUP_AGE) {
+      toast.error('만 14세 미만은 가입할 수 없습니다.');
       return;
     }
     if (!agreedToTerms) {

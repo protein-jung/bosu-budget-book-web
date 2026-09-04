@@ -86,6 +86,9 @@ export default function LoginScreen() {
             onSubmitEditing={handleSubmit}
           />
           <Button title="로그인" onPress={handleSubmit} loading={loginMutation.isPending} />
+          <Link href="/forgot-password" className="self-center text-sm text-slate-500 dark:text-slate-400">
+            비밀번호를 잊으셨나요?
+          </Link>
         </View>
 
         <View className="flex-row justify-center gap-1">

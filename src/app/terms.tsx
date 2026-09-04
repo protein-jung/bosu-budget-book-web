@@ -26,7 +26,7 @@ export default function TermsScreen() {
           <Text className="text-sm font-medium text-primary">‹ 뒤로</Text>
         </Pressable>
         <Text className="text-2xl font-bold text-slate-900">이용약관</Text>
-        <Text className="text-sm text-slate-400">시행일: 2026년 9월 3일</Text>
+        <Text className="text-sm text-slate-400">시행일: 2026년 9월 4일</Text>
       </View>
 
       <View className="gap-5">
@@ -37,9 +37,10 @@ export default function TermsScreen() {
           doslxk@gmail.com으로 받고 있어요.
         </Section>
         <Section title="2. 계정 및 가입">
-          이메일로 회원가입하고, 하나의 계정으로 하나의 가계부에만 속할 수 있어요. 계정 정보는
-          본인이 직접 관리하고, 비밀번호가 새어나가지 않도록 주의해주세요. 타인의 이메일이나
-          정보를 도용해 가입하거나, 계정을 무단으로 대여·양도하는 행위는 금지돼요.
+          이메일로 회원가입하고, 하나의 계정으로 하나의 가계부에만 속할 수 있어요. 만 14세
+          미만은 가입할 수 없어요. 계정 정보는 본인이 직접 관리하고, 비밀번호가 새어나가지
+          않도록 주의해주세요. 타인의 이메일이나 정보를 도용해 가입하거나, 계정을 무단으로
+          대여·양도하는 행위는 금지돼요.
         </Section>
         <Section title="3. 이용자의 의무">
           서비스를 부정한 목적으로 이용하거나, 시스템에 비정상적으로 접근·부하를 주는 행위,
