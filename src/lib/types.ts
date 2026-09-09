@@ -55,6 +55,14 @@ export type Transaction = {
   note: string | null;
 };
 
+export type TransactionComment = {
+  id: number;
+  userId: number | null;
+  authorName: string;
+  body: string;
+  createdAt: string;
+};
+
 export type CategoryStat = {
   categoryId: number;
   categoryName: string;

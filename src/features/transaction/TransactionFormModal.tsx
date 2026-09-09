@@ -16,6 +16,7 @@ import type { Category, Transaction, TransactionType } from '@/lib/types';
 import { toast } from '@/store/toastStore';
 
 import { useCreateTransaction, useDeleteTransaction, useUpdateTransaction } from './api';
+import { TransactionCommentsSection } from './TransactionCommentsSection';
 
 type TransactionFormModalProps = {
   visible: boolean;
@@ -252,6 +253,8 @@ export function TransactionFormModal({
               numberOfLines={3}
               style={{ minHeight: 72, textAlignVertical: 'top' }}
             />
+
+            {isEdit && transaction ? <TransactionCommentsSection transactionId={transaction.id} /> : null}
 
             <View className="gap-2">
               <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />
