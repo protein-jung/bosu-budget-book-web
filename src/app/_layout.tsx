@@ -28,6 +28,25 @@ const KEYWORDS =
   '자산 관리, 순자산 관리, 카드 명세서 자동입력, 보수가계부, BOSU Ledger';
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
+// 구조화 데이터(JSON-LD) — 검색엔진이 "보수가계부가 어떤 종류의 서비스인지"를 텍스트 파싱 없이
+// 바로 이해하도록 돕는다. 사이트 전체에 하나만 있으면 되므로 페이지별이 아니라 여기 둔다.
+const STRUCTURED_DATA = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: '보수가계부',
+  alternateName: 'BOSU Ledger',
+  url: SITE_URL,
+  description: DEFAULT_DESCRIPTION,
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web, iOS, Android',
+  inLanguage: 'ko',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'KRW',
+  },
+};
+
 // 사이트 전역 기본 메타 — 페이지별 <Head>(welcome/login/signup/terms/privacy 등)가 렌더되면
 // react-helmet-async가 태그 단위로 이 기본값을 덮어쓴다. 모든 라우트를 감싸는 이 레이아웃에
 // 두어야 <Head> 없는 화면(캘린더 등)에도 최소한의 title/description이 항상 적용된다.
@@ -48,6 +67,7 @@ function DefaultSeoHead() {
       <meta name="twitter:title" content={DEFAULT_TITLE} />
       <meta name="twitter:description" content={DEFAULT_DESCRIPTION} />
       <meta name="twitter:image" content={OG_IMAGE} />
+      <script type="application/ld+json">{JSON.stringify(STRUCTURED_DATA)}</script>
     </Head>
   );
 }
