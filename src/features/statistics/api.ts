@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/apiClient';
 import { addMonths } from '@/lib/calendar';
-import type { MonthlySummary, RangeSummary } from '@/lib/types';
+import type { MonthComment, MonthlySummary, RangeSummary } from '@/lib/types';
 
 const statisticsApi = {
   getMonthly: (year: number, month: number) =>
@@ -17,6 +17,13 @@ const statisticsApi = {
       .then((res) => res.data),
   getFullHistory: () =>
     apiClient.get<RangeSummary>('/api/statistics/full-history').then((res) => res.data),
+  getMonthComments: (year: number, month: number) =>
+    apiClient
+      .get<MonthComment[]>('/api/statistics/month-comments', { params: { year, month } })
+      .then((res) => res.data),
+  addMonthComment: (data: { year: number; month: number; body: string }) =>
+    apiClient.post<MonthComment>('/api/statistics/month-comments', data).then((res) => res.data),
+  deleteMonthComment: (id: number) => apiClient.delete(`/api/statistics/month-comments/${id}`),
 };
 
 export function useMonthlyStatistics(year: number, month: number) {
@@ -40,5 +47,30 @@ export function useFullHistoryStatistics() {
   return useQuery({
     queryKey: ['statistics', 'full-history'],
     queryFn: () => statisticsApi.getFullHistory(),
+  });
+}
+
+const MONTH_COMMENTS_QUERY_KEY = (year: number, month: number) => ['statistics', 'month-comments', year, month];
+
+export function useMonthComments(year: number, month: number) {
+  return useQuery({
+    queryKey: MONTH_COMMENTS_QUERY_KEY(year, month),
+    queryFn: () => statisticsApi.getMonthComments(year, month),
+  });
+}
+
+export function useAddMonthComment(year: number, month: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: string) => statisticsApi.addMonthComment({ year, month, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: MONTH_COMMENTS_QUERY_KEY(year, month) }),
+  });
+}
+
+export function useDeleteMonthComment(year: number, month: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => statisticsApi.deleteMonthComment(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: MONTH_COMMENTS_QUERY_KEY(year, month) }),
   });
 }

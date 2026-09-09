@@ -11,6 +11,7 @@ import { BudgetTargetModal } from '@/features/statistics/BudgetTargetModal';
 import { useMonthlyStatistics, useRangeStatistics } from '@/features/statistics/api';
 import { type MemoTarget } from '@/features/statistics/CategoryMemoModal';
 import { CategorySpendingDetailModal } from '@/features/statistics/CategorySpendingDetailModal';
+import { MonthCommentsSection } from '@/features/statistics/MonthCommentsSection';
 import { addMonths, formatMonthLabel } from '@/lib/calendar';
 import { formatCompactKrw, formatKrw } from '@/lib/format';
 import type { Category, CategoryBudget, CategoryStat } from '@/lib/types';
@@ -252,6 +253,8 @@ export default function StatisticsMonthScreen() {
 
   return (
     <Screen>
+      <MonthCommentsSection year={year} month={month} />
+
       <View className="flex-row items-center justify-between">
         <Pressable onPress={() => changeMonth(-1)} className="px-3 py-2">
           <Text className="text-xl text-slate-600 dark:text-slate-300">‹</Text>

@@ -201,6 +201,14 @@ export type RangeSummary = {
   months: MonthlyTrendPoint[];
 };
 
+export type MonthComment = {
+  id: number;
+  userId: number | null;
+  authorName: string;
+  body: string;
+  createdAt: string;
+};
+
 export type AssetType = 'REAL_ESTATE' | 'VEHICLE' | 'STOCK' | 'CRYPTO' | 'GOLD' | 'SILVER' | 'CASH' | 'LOAN' | 'OTHER';
 export type AccountCategory = 'GENERAL' | 'PENSION';
 export type PriceCurrency = 'KRW' | 'USD';
