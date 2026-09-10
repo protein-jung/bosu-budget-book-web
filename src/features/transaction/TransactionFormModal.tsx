@@ -185,23 +185,22 @@ export function TransactionFormModal({
           className={`max-h-[85%] overflow-hidden bg-white dark:bg-slate-900 ${
             isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
           }`}>
-          <View className="gap-3 border-b border-slate-100 p-5 dark:border-slate-800">
-            <View className="flex-row items-center justify-between">
-              {onBack ? (
-                <Pressable onPress={onBack} hitSlop={8} className="flex-row items-center gap-1">
-                  <Ionicons name="chevron-back" size={18} color="#64748b" />
-                  <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">뒤로</Text>
-                </Pressable>
-              ) : (
-                <View />
-              )}
+          <View className="gap-2 border-b border-slate-100 p-5 dark:border-slate-800">
+            {onBack ? (
+              <Pressable onPress={onBack} hitSlop={8} className="flex-row items-center gap-1 self-start">
+                <Ionicons name="chevron-back" size={18} color="#64748b" />
+                <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">뒤로</Text>
+              </Pressable>
+            ) : null}
+            <View className="flex-row items-center justify-between gap-2">
+              <Pressable onPress={() => setDatePickerOpen(true)} className="flex-row items-center gap-1.5">
+                <Text className="text-xl font-bold text-slate-900 dark:text-white">
+                  {formatDateDisplay(transactionDate)}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#94a3b8" />
+              </Pressable>
               <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />
             </View>
-            <Pressable onPress={() => setDatePickerOpen(true)} className="flex-row items-center gap-1.5 self-start">
-              <Text className="text-xl font-bold text-slate-900 dark:text-white">{formatDateDisplay(transactionDate)}</Text>
-              <Ionicons name="chevron-down" size={16} color="#94a3b8" />
-              <Text className="ml-1 text-sm text-slate-400">{isEdit ? '내역 수정' : '내역 추가'}</Text>
-            </Pressable>
           </View>
 
           <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5" showsVerticalScrollIndicator={false}>
