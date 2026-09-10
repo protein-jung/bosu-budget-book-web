@@ -1,142 +1,233 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import Head from 'expo-router/head';
-import { useRef, useState } from 'react';
-import { Animated, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AnimatedStat } from '@/components/welcome/AnimatedStat';
+import { HouseholdConnect } from '@/components/welcome/HouseholdConnect';
+import { Reveal } from '@/components/welcome/Reveal';
+import { Stamp } from '@/components/welcome/Stamp';
 import { Footer } from '@/components/Footer';
 import { useIsDesktop } from '@/lib/responsive';
 import { useGoHome } from '@/lib/useGoHome';
 
-const PREVIEWS = [
+type Feature = {
+  key: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  image: number;
+  stamp: string;
+  stat?: { label: string; value: number; prefix?: string };
+  showConnect?: boolean;
+};
+
+const FEATURES: Feature[] = [
   {
+    key: 'household',
+    eyebrow: '작성자',
+    title: '초대코드 하나로, 우리 둘의 가계부',
+    body: '배우자에게 초대코드만 보내면 같은 가계부에 들어와서 함께 기록해요. 누가 얼마를 썼는지 더 이상 카톡으로 캡처해서 보낼 필요 없어요.',
+    image: require('../../../assets/marketing/preview-household.png'),
+    stamp: '연결완료',
+    showConnect: true,
+  },
+  {
+    key: 'calendar',
+    eyebrow: '날짜',
+    title: '날짜를 누르면, 그날의 전부가 보여요',
+    body: '캘린더에서 하루하루 수입·지출을 기록하고, 대분류를 누르면 이번 달 전체 내역이 한 번에 정리돼요.',
     image: require('../../../assets/marketing/preview-calendar.gif'),
-    title: '하루하루, 한눈에',
-    caption: '날짜를 누르면 그날의 수입·지출이, 대분류를 누르면 이번 달 전체 내역이 바로 정리돼요.',
+    stamp: '기록완료',
   },
   {
+    key: 'statistics',
+    eyebrow: '집계',
+    title: '숫자로 보면, 새는 곳이 보여요',
+    body: '카테고리·카드·가족 구성원별로 얼마나 썼는지 도넛·막대 차트로 한눈에 보고, 예산을 정해두면 초과했을 때 바로 표시돼요.',
     image: require('../../../assets/marketing/preview-statistics.gif'),
-    title: '몇 달치를 나란히',
-    caption: '금액을 누르면 그 카테고리·그 달에 실제로 쓴 내역이 목록으로 바로 열려요.',
+    stamp: '집계완료',
+    stat: { label: '예시 화면 속 이번 달 지출', value: 4088698, prefix: '₩' },
   },
   {
+    key: 'assets',
+    eyebrow: '잔고',
+    title: '자산은, 흩어지지 않게',
+    body: '부동산·차량·주식·코인·예적금·대출까지 한 곳에서. 매일 자정 스냅샷을 남겨서 최근 자산 변동 추이도 보여줘요.',
     image: require('../../../assets/marketing/preview-portfolio.gif'),
-    title: '자산은 모두 한 곳에',
-    caption: '부동산·차량·주식·코인·금·은·대출까지, 실시간 시세와 1년 추이를 함께 확인하세요.',
+    stamp: '조회완료',
+    stat: { label: '예시 화면 속 순자산', value: 762453434, prefix: '₩' },
   },
   {
+    key: 'categories',
+    eyebrow: '항목',
+    title: '우리 집 방식대로, 항목을 정리해요',
+    body: '대분류·소분류에 아이콘과 색을 입혀서, 우리 가계부만의 방식으로 정리할 수 있어요.',
     image: require('../../../assets/marketing/preview-categories.png'),
-    title: '내 손에 맞게 정리',
-    caption: '대분류·소분류에 아이콘과 색을 입혀서, 우리 가계부만의 방식으로 정리할 수 있어요.',
+    stamp: '분류완료',
   },
   {
+    key: 'import',
+    eyebrow: '증빙',
+    title: '명세서는, 올리기만 하면 끝',
+    body: '삼성카드·경기지역화폐·쿠팡 내역을 올리면 가맹점 이름을 보고 카테고리까지 자동으로 분류돼요.',
     image: require('../../../assets/marketing/preview-import.gif'),
-    title: '명세서는 올리기만',
-    caption: '카드 명세서 파일을 올리면 가맹점 이름을 보고 카테고리까지 자동으로 분류돼요.',
+    stamp: '자동분류',
   },
 ];
 
-const SLIDE_DURATION_MS = 320;
-
-// 양 끝에 반대쪽 이미지를 하나씩 더 붙여서(마지막-앞, 처음-뒤), 끝에서 다음/이전으로 넘겨도
-// 항상 같은 방향으로 자연스럽게 슬라이드된 다음 애니메이션 없이 순간적으로 진짜 위치로 복귀시킨다.
-const SLIDE_STRIP = [PREVIEWS[PREVIEWS.length - 1], ...PREVIEWS, PREVIEWS[0]];
-const START_POS = 1;
-
-function PreviewCarousel() {
-  const [realIndex, setRealIndex] = useState(0);
-  const posRef = useRef(START_POS);
-  const [isAnimating, setIsAnimating] = useState(false);
+function ScreenshotFrame({
+  image,
+  alt,
+  stampLabel,
+  delay = 0,
+}: {
+  image: number;
+  alt: string;
+  stampLabel?: string;
+  delay?: number;
+}) {
+  const isDesktop = useIsDesktop();
   const { width: winWidth } = useWindowDimensions();
-  const cardWidth = Math.min(winWidth - 40, 800);
-  const cardHeight = cardWidth * 0.75;
-  const [translateX] = useState(() => new Animated.Value(-START_POS * cardWidth));
-
-  const goTo = (direction: 1 | -1) => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    const nextPos = posRef.current + direction;
-    posRef.current = nextPos;
-    setRealIndex((nextPos - 1 + PREVIEWS.length) % PREVIEWS.length);
-    Animated.timing(translateX, {
-      toValue: -nextPos * cardWidth,
-      duration: SLIDE_DURATION_MS,
-      useNativeDriver: true,
-    }).start(() => {
-      if (nextPos === SLIDE_STRIP.length - 1) {
-        posRef.current = START_POS;
-        translateX.setValue(-START_POS * cardWidth);
-      } else if (nextPos === 0) {
-        posRef.current = PREVIEWS.length;
-        translateX.setValue(-PREVIEWS.length * cardWidth);
-      }
-      setIsAnimating(false);
-    });
-  };
-
-  const current = PREVIEWS[realIndex];
+  const frameWidth = isDesktop ? 440 : Math.min(winWidth - 64, 380);
+  const frameHeight = frameWidth * 0.8;
 
   return (
-    <View className="items-center gap-4">
+    <View style={{ width: frameWidth }}>
       <View
-        style={{ width: cardWidth }}
-        className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-        <View className="flex-row items-center gap-1.5 px-4 py-3">
-          <View className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-          <View className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-          <View className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-        </View>
-        <View style={{ width: cardWidth, height: cardHeight }} className="overflow-hidden bg-white dark:bg-slate-900">
-          <Animated.View
-            style={{ flexDirection: 'row', width: cardWidth * SLIDE_STRIP.length, transform: [{ translateX }] }}>
-            {SLIDE_STRIP.map((p, i) => (
-              <Image
-                key={`${p.title}-${i}`}
-                source={p.image}
-                style={{ width: cardWidth, height: cardHeight }}
-                resizeMode="contain"
-              />
-            ))}
-          </Animated.View>
+        className="overflow-hidden rounded-3xl border border-primary-light bg-white shadow-lg"
+        style={{ width: frameWidth, height: frameHeight }}>
+        <Image
+          source={image}
+          accessibilityLabel={alt}
+          style={{ width: frameWidth, height: frameHeight }}
+          resizeMode="contain"
+          fadeDuration={0}
+        />
+      </View>
+      {stampLabel ? <Stamp label={stampLabel} delay={delay + 260} /> : null}
+    </View>
+  );
+}
 
-          <Pressable
-            onPress={() => goTo(-1)}
-            hitSlop={8}
-            style={{ top: cardHeight / 2 - 20 }}
-            className="absolute left-3 h-10 w-10 items-center justify-center rounded-full bg-black/45 active:bg-black/60">
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </Pressable>
-          <Pressable
-            onPress={() => goTo(1)}
-            hitSlop={8}
-            style={{ top: cardHeight / 2 - 20 }}
-            className="absolute right-3 h-10 w-10 items-center justify-center rounded-full bg-black/45 active:bg-black/60">
-            <Ionicons name="chevron-forward" size={22} color="#fff" />
-          </Pressable>
-        </View>
-      </View>
-      <View className="items-center gap-1 px-4">
-        <Text className="text-base font-bold text-slate-900 dark:text-white">{current.title}</Text>
-        <Text className="max-w-[440px] text-center text-sm text-slate-500 dark:text-slate-400">
-          {current.caption}
-        </Text>
-      </View>
-      <View className="flex-row gap-1.5">
-        {PREVIEWS.map((p, i) => (
-          <View
-            key={p.title}
-            className={`h-1.5 rounded-full ${i === realIndex ? 'w-5 bg-primary' : 'w-1.5 bg-primary/35'}`}
-          />
-        ))}
+function FeatureSection({
+  feature,
+  index,
+  onLayout,
+}: {
+  feature: Feature;
+  index: number;
+  onLayout: (y: number) => void;
+}) {
+  const isDesktop = useIsDesktop();
+  const reverse = isDesktop && index % 2 === 1;
+  const isLast = index === FEATURES.length - 1;
+
+  return (
+    <View
+      onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
+      className={`${isLast ? '' : 'border-b border-primary-light/60'} ${isDesktop ? 'py-20' : 'py-14'}`}>
+      <View className={isDesktop ? `flex-row items-center gap-16 ${reverse ? 'flex-row-reverse' : ''}` : 'gap-8'}>
+        <Reveal from={isDesktop ? (reverse ? 'right' : 'left') : 'up'} style={{ flex: isDesktop ? 1 : undefined }}>
+          <View className="flex-row items-center gap-3">
+            <Text className="font-brand text-xs tracking-[0.3em] text-secondary">{feature.eyebrow}</Text>
+            {feature.showConnect ? <HouseholdConnect /> : null}
+          </View>
+          <Text
+            className={`mt-3 font-bold text-slate-900 ${isDesktop ? 'text-4xl' : 'text-2xl'}`}
+            style={{ maxWidth: isDesktop ? 460 : undefined }}>
+            {feature.title}
+          </Text>
+          <Text
+            className={`mt-4 text-slate-600 ${isDesktop ? 'text-base' : 'text-sm'} leading-6`}
+            style={{ maxWidth: isDesktop ? 420 : undefined }}>
+            {feature.body}
+          </Text>
+          {feature.stat ? (
+            <View className="mt-6">
+              <AnimatedStat label={feature.stat.label} value={feature.stat.value} prefix={feature.stat.prefix} />
+            </View>
+          ) : null}
+        </Reveal>
+        <Reveal
+          from={isDesktop ? (reverse ? 'left' : 'right') : 'scale'}
+          delay={100}
+          style={{ alignSelf: isDesktop ? 'auto' : 'center' }}>
+          <ScreenshotFrame image={feature.image} alt={feature.title} stampLabel={feature.stamp} />
+        </Reveal>
       </View>
     </View>
   );
 }
 
+function IndexRail({ activeIndex, onSelect }: { activeIndex: number; onSelect: (index: number) => void }) {
+  return (
+    <View pointerEvents="box-none" className="absolute bottom-0 right-6 top-0 z-40 items-end justify-center">
+      <View className="gap-5">
+        {FEATURES.map((f, i) => {
+          const active = i === activeIndex;
+          return (
+            <Pressable key={f.key} onPress={() => onSelect(i)} className="flex-row items-center gap-2 py-0.5">
+              <Text className={`font-brand text-[11px] tracking-widest ${active ? 'text-secondary' : 'text-slate-300'}`}>
+                {f.eyebrow}
+              </Text>
+              <View className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-secondary' : 'bg-primary/15'}`} />
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+/** 마운트 직후 한 프레임 뒤에 true — hero 진입 CSS transition을 트리거하기 위한 상태. */
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return mounted;
+}
+
 export default function WelcomeScreen() {
   const isDesktop = useIsDesktop();
   const goHome = useGoHome();
+  const mounted = useMounted();
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const sectionOffsets = useRef<number[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [scrollMeta, setScrollMeta] = useState({ content: 1, viewport: 1 });
+
+  const handleScroll = (y: number) => {
+    setScrollTop(y);
+    const offsets = sectionOffsets.current;
+    let idx = 0;
+    for (let i = 0; i < offsets.length; i++) {
+      if (offsets[i] != null && y + 160 >= offsets[i]) idx = i;
+    }
+    setActiveIndex((prev) => (prev === idx ? prev : idx));
+  };
+
+  const heroStyle = (index: number) => ({
+    opacity: mounted ? 1 : 0,
+    transform: [{ translateY: mounted ? 0 : 16 }],
+    transitionProperty: 'opacity, transform',
+    transitionDuration: '600ms',
+    transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+    transitionDelay: `${index * 140}ms`,
+  });
+
+  const scrollToIndex = (i: number) => {
+    const y = sectionOffsets.current[i];
+    if (y != null) scrollViewRef.current?.scrollTo({ y: Math.max(y - 32, 0), animated: true });
+  };
+
+  const maxScroll = Math.max(scrollMeta.content - scrollMeta.viewport, 1);
+  const progressPct = Math.min(Math.max((scrollTop / maxScroll) * 100, 0), 100);
 
   return (
     <>
@@ -147,38 +238,74 @@ export default function WelcomeScreen() {
           content="달력에서 수입·지출을 기록하고 부동산·차량·주식 등 자산까지 한눈에 관리하세요. 카드 명세서 자동 입력도 지원해요."
         />
       </Head>
-      <SafeAreaView className="flex-1 bg-cream" edges={['top', 'bottom']}>
-        <ScrollView contentContainerClassName="items-center gap-10 px-5 pb-16 pt-8" className="flex-1">
-          <Pressable onPress={goHome} className="items-center gap-0.5">
-            <Text className="font-brand text-lg text-primary dark:text-secondary">🏠 BOSU Ledger</Text>
-            <Text className="text-xs text-slate-400">보수가계부</Text>
-          </Pressable>
+      <SafeAreaView className="relative flex-1 bg-cream" edges={['top', 'bottom']}>
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            height: 3,
+            width: `${progressPct}%`,
+            backgroundColor: '#E07A5F',
+            zIndex: 50,
+          }}
+        />
+        {isDesktop ? <IndexRail activeIndex={activeIndex} onSelect={scrollToIndex} /> : null}
 
-          <View className={`w-full gap-14 ${isDesktop ? 'max-w-[880px]' : 'max-w-[520px]'}`}>
-            <PreviewCarousel />
+        <ScrollView
+          ref={scrollViewRef}
+          onScroll={(e) => handleScroll(e.nativeEvent.contentOffset.y)}
+          scrollEventThrottle={16}
+          onContentSizeChange={(_w, h) => setScrollMeta((m) => ({ ...m, content: h }))}
+          onLayout={(e) => setScrollMeta((m) => ({ ...m, viewport: e.nativeEvent.layout.height }))}
+          contentContainerClassName="items-center px-5 pb-16 pt-8"
+          className="flex-1">
+          <View style={heroStyle(0)}>
+            <Pressable onPress={goHome} className="items-center gap-0.5">
+              <Text className="font-brand text-lg text-primary">🏠 BOSU Ledger</Text>
+              <Text className="text-xs text-slate-400">보수가계부</Text>
+            </Pressable>
+          </View>
 
-            <View className="items-center gap-2">
-              <Text className="max-w-[420px] text-center text-2xl font-bold text-slate-900 dark:text-white">
-                덜 쓰고, 더 남기고.
-              </Text>
-              <Text className="max-w-[420px] text-center text-base font-semibold uppercase tracking-[0.2em] text-primary/50 dark:text-secondary/60">
-                Spend less · Keep more
-              </Text>
+          <View style={[heroStyle(1), { marginTop: 20 }]}>
+            <Text className="text-center text-xl font-bold text-slate-900">부부와 가족이 함께 쓰는 가계부</Text>
+          </View>
+
+          <View style={[heroStyle(2), { marginTop: 8 }]} className="items-center gap-1">
+            <Text className="text-sm text-slate-500">덜 쓰고, 더 남기고.</Text>
+            <Text className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/50">
+              Spend less · Keep more
+            </Text>
+          </View>
+
+          <View className={`w-full ${isDesktop ? 'max-w-[1040px]' : 'max-w-[520px]'}`}>
+            <View className="mt-4">
+              {FEATURES.map((feature, i) => (
+                <FeatureSection
+                  key={feature.key}
+                  feature={feature}
+                  index={i}
+                  onLayout={(y) => {
+                    sectionOffsets.current[i] = y;
+                  }}
+                />
+              ))}
             </View>
 
-            <View className="items-center gap-3 border-t border-primary-light pt-8 dark:border-slate-800">
+            <View style={heroStyle(3)} className="items-center gap-3 border-t border-primary-light pt-10">
               <Pressable
                 onPress={() => router.push('/signup')}
                 className="w-full max-w-[320px] items-center rounded-xl bg-primary px-4 py-3.5 active:bg-primary-dark">
                 <Text className="text-base font-semibold text-white">무료로 시작하기</Text>
               </Pressable>
               <View className="flex-row gap-1">
-                <Text className="text-sm text-slate-500 dark:text-slate-400">이미 계정이 있으신가요?</Text>
-                <Link href="/login" className="text-sm font-semibold text-primary dark:text-secondary">
+                <Text className="text-sm text-slate-500">이미 계정이 있으신가요?</Text>
+                <Link href="/login" className="text-sm font-semibold text-primary">
                   로그인
                 </Link>
               </View>
-              <Text className="text-xs text-slate-400 dark:text-slate-500">📱 iOS·Android 앱도 준비 중입니다</Text>
+              <Text className="text-xs text-slate-400">📱 iOS·Android 앱도 준비 중입니다</Text>
             </View>
 
             <Footer />

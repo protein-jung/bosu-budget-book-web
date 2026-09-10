@@ -171,10 +171,10 @@ export function TransactionFormModal({
         className={`flex-1 bg-black/40 ${isDesktop ? 'items-center justify-center' : 'justify-end'}`}>
         <Pressable
           onPress={(e) => e.stopPropagation()}
-          className={`max-h-[85%] bg-white p-5 dark:bg-slate-900 ${
+          className={`max-h-[85%] overflow-hidden bg-white dark:bg-slate-900 ${
             isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
           }`}>
-          <ScrollView contentContainerClassName="gap-4" showsVerticalScrollIndicator={false}>
+          <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5" showsVerticalScrollIndicator={false}>
             {onBack ? (
               <Pressable onPress={onBack} hitSlop={8} className="flex-row items-center gap-1 self-start">
                 <Ionicons name="chevron-back" size={18} color="#64748b" />
@@ -255,15 +255,15 @@ export function TransactionFormModal({
             />
 
             {isEdit && transaction ? <TransactionCommentsSection transactionId={transaction.id} /> : null}
-
-            <View className="gap-2">
-              <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />
-              {isEdit ? (
-                <Button title="삭제하기" variant="danger" onPress={handleDelete} loading={isPending} />
-              ) : null}
-              <Button title="취소" variant="secondary" onPress={finish} disabled={isPending} />
-            </View>
           </ScrollView>
+
+          <View className="gap-2 border-t border-slate-100 p-5 dark:border-slate-800">
+            <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />
+            {isEdit ? (
+              <Button title="삭제하기" variant="danger" onPress={handleDelete} loading={isPending} />
+            ) : null}
+            <Button title="취소" variant="secondary" onPress={finish} disabled={isPending} />
+          </View>
         </Pressable>
       </Pressable>
 
