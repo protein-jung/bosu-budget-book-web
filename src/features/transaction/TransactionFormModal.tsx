@@ -211,7 +211,7 @@ export function TransactionFormModal({
               <Chip label="수입" selected={type === 'INCOME'} onPress={() => handleTypeChange('INCOME')} />
             </View>
 
-            <AmountField label="금액" value={amount} onChangeText={setAmount} />
+            <AmountField label="금액" value={amount} onChangeText={setAmount} quickAdd={false} />
 
             <View className="gap-2">
               <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">대분류</Text>
