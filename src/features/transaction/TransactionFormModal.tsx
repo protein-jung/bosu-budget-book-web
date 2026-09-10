@@ -5,6 +5,7 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { DayPickerModal } from '@/components/DayPickerModal';
 import { TextField } from '@/components/TextField';
 import { useCards } from '@/features/card/api';
 import { useCategories } from '@/features/category/api';
@@ -17,6 +18,12 @@ import { toast } from '@/store/toastStore';
 
 import { useCreateTransaction, useDeleteTransaction, useUpdateTransaction } from './api';
 import { TransactionCommentsSection } from './TransactionCommentsSection';
+
+function formatDateDisplay(dateKey: string) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  if (!y || !m || !d) return dateKey;
+  return `${y}년 ${m}월 ${d}일`;
+}
 
 type TransactionFormModalProps = {
   visible: boolean;
@@ -42,6 +49,8 @@ export function TransactionFormModal({
   const { data: cards = [] } = useCards();
 
   const [type, setType] = useState<TransactionType>('EXPENSE');
+  const [transactionDate, setTransactionDate] = useState(dateKey);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
   /** 지금 펼쳐서 보고 있는 대분류. 소분류가 없는(=단독) 대분류를 고르면 categoryId도 곧바로
@@ -60,6 +69,7 @@ export function TransactionFormModal({
     if (!visible) return;
     if (transaction) {
       setType(transaction.type);
+      setTransactionDate(transaction.transactionDate);
       setAmount(String(transaction.amount));
       setCategoryId(transaction.categoryId);
       const category = categories.find((c) => c.id === transaction.categoryId);
@@ -69,6 +79,7 @@ export function TransactionFormModal({
       setNote(transaction.note ?? '');
     } else {
       setType(initialType ?? 'EXPENSE');
+      setTransactionDate(dateKey);
       setAmount('');
       setCategoryId(null);
       setActiveGroupId(null);
@@ -76,7 +87,7 @@ export function TransactionFormModal({
       setMemo('');
       setNote('');
     }
-  }, [visible, transaction, initialType, categories]);
+  }, [visible, transaction, initialType, categories, dateKey]);
 
   const handleTypeChange = (nextType: TransactionType) => {
     setType(nextType);
@@ -124,7 +135,7 @@ export function TransactionFormModal({
     const payload = {
       type,
       amount: numericAmount,
-      transactionDate: dateKey,
+      transactionDate,
       categoryId,
       cardId,
       memo: title,
@@ -174,17 +185,26 @@ export function TransactionFormModal({
           className={`max-h-[85%] overflow-hidden bg-white dark:bg-slate-900 ${
             isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
           }`}>
-          <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5" showsVerticalScrollIndicator={false}>
-            {onBack ? (
-              <Pressable onPress={onBack} hitSlop={8} className="flex-row items-center gap-1 self-start">
-                <Ionicons name="chevron-back" size={18} color="#64748b" />
-                <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">뒤로</Text>
-              </Pressable>
-            ) : null}
-            <Text className="text-xl font-bold text-slate-900 dark:text-white">
-              {dateKey} {isEdit ? '내역 수정' : '내역 추가'}
-            </Text>
+          <View className="gap-3 border-b border-slate-100 p-5 dark:border-slate-800">
+            <View className="flex-row items-center justify-between">
+              {onBack ? (
+                <Pressable onPress={onBack} hitSlop={8} className="flex-row items-center gap-1">
+                  <Ionicons name="chevron-back" size={18} color="#64748b" />
+                  <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">뒤로</Text>
+                </Pressable>
+              ) : (
+                <View />
+              )}
+              <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />
+            </View>
+            <Pressable onPress={() => setDatePickerOpen(true)} className="flex-row items-center gap-1.5 self-start">
+              <Text className="text-xl font-bold text-slate-900 dark:text-white">{formatDateDisplay(transactionDate)}</Text>
+              <Ionicons name="chevron-down" size={16} color="#94a3b8" />
+              <Text className="ml-1 text-sm text-slate-400">{isEdit ? '내역 수정' : '내역 추가'}</Text>
+            </Pressable>
+          </View>
 
+          <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5" showsVerticalScrollIndicator={false}>
             <TextField label="제목" value={memo} onChangeText={setMemo} placeholder="예) 스타벅스 강남점" />
 
             <View className="flex-row gap-2">
@@ -258,7 +278,6 @@ export function TransactionFormModal({
           </ScrollView>
 
           <View className="gap-2 border-t border-slate-100 p-5 dark:border-slate-800">
-            <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />
             {isEdit ? (
               <Button title="삭제하기" variant="danger" onPress={handleDelete} loading={isPending} />
             ) : null}
@@ -266,6 +285,13 @@ export function TransactionFormModal({
           </View>
         </Pressable>
       </Pressable>
+
+      <DayPickerModal
+        visible={datePickerOpen}
+        onClose={() => setDatePickerOpen(false)}
+        onSelectDate={setTransactionDate}
+        initialDateKey={transactionDate}
+      />
 
       <CategoryFormModal
         visible={addingCategory}
