@@ -8,90 +8,16 @@ import { YearPickerModal } from '@/components/YearPickerModal';
 import { useCategories } from '@/features/category/api';
 import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { useMonthlyTransactions, useUpdateTransaction } from '@/features/transaction/api';
-import { useRangeStatistics } from '@/features/statistics/api';
 import { CategoryBudgetSummary } from '@/features/statistics/CategoryBudgetSummary';
 import { MonthSummaryPanel, type ParentCategoryFilter } from '@/features/statistics/MonthSummaryPanel';
 import { TransactionFormModal } from '@/features/transaction/TransactionFormModal';
-import { addMonths, daysInMonth, formatMonthLabel, toDateKey } from '@/lib/calendar';
+import { addMonths, formatMonthLabel, toDateKey } from '@/lib/calendar';
 import { childCategories, topLevelCategories } from '@/lib/categoryTree';
-import { formatKrw, formatSignedKrw } from '@/lib/format';
+import { formatSignedKrw } from '@/lib/format';
 import { useIsDesktop } from '@/lib/responsive';
-import type { Category, MonthlyTrendPoint, Transaction, TransactionType } from '@/lib/types';
+import type { Category, Transaction, TransactionType } from '@/lib/types';
 
 const UNCATEGORIZED_NAME = '미분류';
-
-/** 지난달과 이번 달 지출을 비교해 "지난달보다 얼마 더/덜 썼는지" 한 줄로 보여준다. 이번 달
- * 데이터만 있고 지난달 데이터가 아직 없으면(가계부를 막 시작한 경우) 비교할 게 없으니 숨긴다. */
-function MonthComparisonCard({ months }: { months: MonthlyTrendPoint[] }) {
-  if (months.length < 2) return null;
-  const previous = months[months.length - 2];
-  const current = months[months.length - 1];
-  const diff = current.totalExpense - previous.totalExpense;
-  if (diff === 0) return null;
-  const spentMore = diff > 0;
-
-  return (
-    <View className="flex-row items-center gap-2 rounded-xl bg-white p-3.5 shadow-sm shadow-slate-200">
-      <View className="h-2.5 w-2.5 rounded-full bg-primary" />
-      <Text className="flex-1 text-sm text-slate-700">
-        지난달보다{' '}
-        <Text className={`font-semibold ${spentMore ? 'text-secondary' : 'text-primary'}`}>
-          {formatKrw(Math.abs(diff))}
-        </Text>
-        {spentMore ? ' 더 썼어요' : ' 덜 썼어요'}
-      </Text>
-    </View>
-  );
-}
-
-/** 이번 달 지금까지 쓴 속도(하루 평균 지출 × 이번 달 총 일수)로 이번 달 말 예상 지출을 추정하고,
- * 지금까지의 수입에서 빼서 예상 저축을 보여준다. 수입은 대개 월급날 한 번에 들어와서 이미 다
- * 들어온 걸로 보고 그대로 쓰고, 지출만 페이스를 추정한다. 지나간 달/미래 달을 보고 있을 땐(이미
- * 결과가 다 나왔거나 아직 시작 전이라) "예상"이 의미가 없으니 이번 달을 보고 있을 때만 보여준다. */
-function ProjectedSavingsCard({
-  transactions,
-  excludedFromExpenseCategoryIds,
-  year,
-  month,
-  today,
-}: {
-  transactions: Transaction[];
-  excludedFromExpenseCategoryIds: Set<number>;
-  year: number;
-  month: number;
-  today: Date;
-}) {
-  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1;
-  if (!isCurrentMonth) return null;
-
-  let income = 0;
-  let expense = 0;
-  for (const t of transactions) {
-    if (t.type === 'INCOME') income += t.amount;
-    else if (!excludedFromExpenseCategoryIds.has(t.categoryId)) expense += t.amount;
-  }
-
-  const dayOfMonth = today.getDate();
-  const totalDays = daysInMonth(year, month);
-  const projectedExpense = (expense / dayOfMonth) * totalDays;
-  const projectedSavings = income - projectedExpense;
-  const isPositive = projectedSavings >= 0;
-
-  return (
-    <View className="flex-row items-center gap-2 rounded-xl bg-white p-3.5 shadow-sm shadow-slate-200">
-      <View className="h-2.5 w-2.5 rounded-full bg-secondary" />
-      <View className="flex-1">
-        <Text className="text-sm text-slate-700">
-          이번 달 예상 저축{' '}
-          <Text className={`font-semibold ${isPositive ? 'text-primary' : 'text-secondary'}`}>
-            {formatKrw(projectedSavings)}
-          </Text>
-        </Text>
-        <Text className="text-xs text-slate-400">지금까지 쓴 속도를 기준으로 한 추정이에요</Text>
-      </View>
-    </View>
-  );
-}
 
 /** 미분류 거래를 다른 카테고리로 재분류하는 칩 — 내역 추가/수정 화면의 카테고리 선택과 똑같이
  * 대분류를 먼저 고르고, 하위가 있으면 소분류에서 하나를 골라야 실제로 재분류된다. 하위가 없는
@@ -177,7 +103,6 @@ export default function CalendarScreen() {
   const isDesktop = useIsDesktop();
   const { data: transactions = [], isLoading } = useMonthlyTransactions(year, month);
   const { data: allCategories = [] } = useCategories();
-  const { data: rangeSummary } = useRangeStatistics(year, month, 2);
   const updateTransaction = useUpdateTransaction();
 
   const excludedFromExpenseCategoryIds = useMemo(
@@ -389,15 +314,6 @@ export default function CalendarScreen() {
         </View>
         <View className="w-11" />
       </View>
-
-      {rangeSummary ? <MonthComparisonCard months={rangeSummary.months} /> : null}
-      <ProjectedSavingsCard
-        transactions={transactions}
-        excludedFromExpenseCategoryIds={excludedFromExpenseCategoryIds}
-        year={year}
-        month={month}
-        today={today}
-      />
 
       {isLoading ? (
         <ActivityIndicator />

@@ -1,24 +1,15 @@
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { NotificationBell } from '@/components/NotificationBell';
-import { useGoHome } from '@/lib/useGoHome';
 
-/** 모바일 상단 바 — 로고와 알림뿐이다. 화면 이동은 하단 메뉴바(BottomNav)가 맡는다. */
+/** 모바일 상단 바를 없앴다 — 로고, 구분선, 배경 없이 알림 벨만 오른쪽 위에 남긴다. 화면 이동은
+ * 하단 메뉴바(BottomNav)가 맡는다. 화면 배경(bg-cream)과 같은 색이라 시각적으로는 헤더가
+ * 없는 것처럼 보이지만, 알림 벨이 놓일 자리만큼은 공간을 차지해서 각 화면 콘텐츠 맨 위 줄과
+ * 겹치지 않게 한다. */
 export function MobileHeader() {
-  const goHome = useGoHome();
-
   return (
-    <View className="bg-cream">
-      <View className="flex-row items-center justify-between border-b border-primary/10 px-4 pb-4 pt-5">
-        <View className="h-10 w-10" />
-        <Pressable onPress={goHome} hitSlop={8} className="items-center">
-          <View className="flex-row items-baseline gap-1">
-            <Text className="font-brand text-base tracking-wide text-primary">BOSU</Text>
-            <Text className="text-base font-light text-primary/55">Ledger</Text>
-          </View>
-        </Pressable>
-        <NotificationBell />
-      </View>
+    <View className="flex-row justify-end bg-cream px-4 pt-5">
+      <NotificationBell />
     </View>
   );
 }
