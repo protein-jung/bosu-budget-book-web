@@ -330,7 +330,24 @@ export default function StatisticsScreen() {
   const handleReorderRoots = (blocks: Row[][]) => {
     reorderCategories.mutate(blocks.map((block) => block[0].categoryId!));
   };
-  const months = useMemo(() => [...(range?.months ?? [])].reverse(), [range]);
+  const months = useMemo(() => {
+    const list = [...(range?.months ?? [])].reverse();
+    if (list.length > 0) return list;
+    // 아직 거래가 하나도 없으면 서버가 빈 배열을 준다 — 그래도 이번 달 열은 보여줘서
+    // 카테고리 구조(수입/지출, 대분류/소분류, 예산)를 처음부터 확인할 수 있게 한다.
+    const now = new Date();
+    return [
+      {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        totalIncome: 0,
+        totalExpense: 0,
+        netAmount: 0,
+        byCategory: [],
+        byParentCategory: [],
+      },
+    ];
+  }, [range]);
 
   return (
     <Screen maxWidthClassName="max-w-[1200px]">
@@ -340,8 +357,6 @@ export default function StatisticsScreen() {
 
       {isLoading ? (
         <ActivityIndicator />
-      ) : months.length === 0 ? (
-        <Text className="py-8 text-center text-slate-400">아직 등록된 거래가 없어요.</Text>
       ) : (
         <View className="flex-row overflow-hidden rounded-xl bg-white dark:bg-slate-900">
           <View style={{ width: LABEL_WIDTH }} className="border-r border-slate-200 dark:border-slate-700">

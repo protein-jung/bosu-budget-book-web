@@ -4,23 +4,12 @@ import { formatKrw } from '@/lib/format';
 import type { TransactionType } from '@/lib/types';
 
 import { useMonthlyStatistics } from './api';
+import { CategoryBudgetSummary } from './CategoryBudgetSummary';
 
 function Bar({ amount, max, color }: { amount: number; max: number; color: string }) {
   return (
     <View className="h-1.5 overflow-hidden rounded-full bg-slate-100">
       <View className="h-full rounded-full" style={{ width: `${(amount / max) * 100}%`, backgroundColor: color }} />
-    </View>
-  );
-}
-
-/** 예산이 잡혀있는 카테고리는 크기 비교용 막대 대신 예산 대비 사용률(과다 지출 시 빨간색)로 보여준다. */
-function BudgetBar({ spent, target }: { spent: number; target: number }) {
-  const pct = target > 0 ? Math.min(100, (spent / target) * 100) : 0;
-  const over = spent > target;
-  const color = over ? '#e03131' : pct >= 80 ? '#f08c00' : '#2f9e44';
-  return (
-    <View className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-      <View className="h-full rounded-full" style={{ width: `${Math.max(pct, spent > 0 ? 3 : 0)}%`, backgroundColor: color }} />
     </View>
   );
 }
@@ -60,10 +49,7 @@ export function MonthSummaryPanel({
     );
   }
 
-  const parentExpenses = summary.byParentCategory.filter((c) => c.type === 'EXPENSE');
-  const maxCategory = Math.max(1, ...parentExpenses.map((c) => c.amount));
   const maxCard = Math.max(1, ...summary.byCard.map((c) => c.amount));
-  const budgetByCategoryId = new Map(summary.budgets.map((b) => [b.categoryId, b]));
 
   return (
     <View className="w-[320px] gap-5 rounded-2xl bg-white p-5 shadow-sm shadow-slate-200">
@@ -89,44 +75,14 @@ export function MonthSummaryPanel({
         </View>
       </View>
 
-      <View className="gap-2">
-        <Text className="text-sm font-semibold text-slate-500">대분류별</Text>
-        {parentExpenses.length === 0 ? (
-          <Text className="text-xs text-slate-400">내역이 없어요.</Text>
-        ) : (
-          parentExpenses.map((item) => {
-            const budget = budgetByCategoryId.get(item.categoryId);
-            const over = !!budget && item.amount > budget.targetAmount;
-            return (
-              <Pressable
-                key={item.categoryId}
-                onPress={() =>
-                  onSelectParentCategory?.({ id: item.categoryId, name: item.categoryName, icon: item.icon })
-                }
-                className={`gap-1 rounded-lg p-1.5 ${
-                  selectedParentCategoryId === item.categoryId ? 'bg-primary-light' : ''
-                }`}>
-                <View className="flex-row justify-between">
-                  <Text className="text-xs text-slate-700" numberOfLines={1}>
-                    {item.icon ? `${item.icon} ` : ''}
-                    {item.categoryName}
-                  </Text>
-                  <Text className={`text-xs font-medium ${over ? 'text-red-500' : 'text-slate-900'}`}>
-                    {budget
-                      ? `${formatKrw(item.amount)} / ${formatKrw(budget.targetAmount)}`
-                      : formatKrw(item.amount)}
-                  </Text>
-                </View>
-                {budget ? (
-                  <BudgetBar spent={item.amount} target={budget.targetAmount} />
-                ) : (
-                  <Bar amount={item.amount} max={maxCategory} color={item.color ?? '#02007D'} />
-                )}
-              </Pressable>
-            );
-          })
-        )}
-      </View>
+      <CategoryBudgetSummary
+        year={year}
+        month={month}
+        title="대분류별"
+        card={false}
+        selectedParentCategoryId={selectedParentCategoryId}
+        onSelectParentCategory={onSelectParentCategory}
+      />
 
       <View className="gap-2">
         <Text className="text-sm font-semibold text-slate-500">사람별</Text>

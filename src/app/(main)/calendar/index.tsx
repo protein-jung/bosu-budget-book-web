@@ -9,6 +9,7 @@ import { useCategories } from '@/features/category/api';
 import { CategoryFormModal } from '@/features/category/CategoryFormModal';
 import { useMonthlyTransactions, useUpdateTransaction } from '@/features/transaction/api';
 import { useRangeStatistics } from '@/features/statistics/api';
+import { CategoryBudgetSummary } from '@/features/statistics/CategoryBudgetSummary';
 import { MonthSummaryPanel, type ParentCategoryFilter } from '@/features/statistics/MonthSummaryPanel';
 import { TransactionFormModal } from '@/features/transaction/TransactionFormModal';
 import { addMonths, daysInMonth, formatMonthLabel, toDateKey } from '@/lib/calendar';
@@ -409,6 +410,15 @@ export default function CalendarScreen() {
           onSelectDate={selectDate}
         />
       )}
+
+      {!isDesktop ? (
+        <CategoryBudgetSummary
+          year={year}
+          month={month}
+          selectedParentCategoryId={selectedParentCategory?.id ?? (isUncategorizedView ? selectedCategoryId : null)}
+          onSelectParentCategory={selectParentCategory}
+        />
+      ) : null}
 
       {monthCategories.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 pr-1">
