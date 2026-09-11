@@ -1,7 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Link, usePathname } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { NotificationBell } from '@/components/NotificationBell';
+import { TransactionSearchModal } from '@/features/transaction/TransactionSearchModal';
 import { useAuthStore } from '@/store/authStore';
 
 const NAV_ITEMS: { href: '/calendar' | '/statistics' | '/budget' | '/portfolio' | '/settings'; label: string }[] = [
@@ -29,6 +32,7 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
 export function TopNav() {
   const pathname = usePathname();
   const isAdmin = useAuthStore((state) => state.user?.isAdmin ?? false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <View className="bg-cream">
@@ -52,10 +56,18 @@ export function TopNav() {
             ))}
             {isAdmin ? <NavLink href="/admin" label="관리자" active={pathname.startsWith('/admin')} /> : null}
             <View className="ml-2 h-8 w-px bg-primary/10" />
+            <Pressable
+              onPress={() => setSearchOpen(true)}
+              hitSlop={8}
+              className="h-10 w-10 items-center justify-center">
+              <Ionicons name="search-outline" size={20} color="#02007D" />
+            </Pressable>
             <NotificationBell />
           </View>
         </View>
       </View>
+
+      <TransactionSearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} />
     </View>
   );
 }

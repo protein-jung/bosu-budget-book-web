@@ -18,8 +18,10 @@ const transactionApi = {
     apiClient
       .get<Transaction[]>('/api/transactions', { params: { year, month } })
       .then((res) => res.data),
-  search: (q: string) =>
-    apiClient.get<Transaction[]>('/api/transactions/search', { params: { q } }).then((res) => res.data),
+  search: (q: string, date: string | null) =>
+    apiClient
+      .get<Transaction[]>('/api/transactions/search', { params: { q: q || undefined, date: date ?? undefined } })
+      .then((res) => res.data),
   create: (data: TransactionInput) =>
     apiClient.post<Transaction>('/api/transactions', data).then((res) => res.data),
   update: (id: number, data: TransactionInput) =>
@@ -49,14 +51,15 @@ export function useMonthlyTransactions(year: number, month: number, enabled = tr
   });
 }
 
-/** 제목/메모/카테고리명으로 내역을 찾는 검색창에서 쓴다. 검색어가 비어있으면 요청을 보내지
- * 않고 빈 결과로 둔다 — 디바운스는 호출하는 쪽(SearchModal)에서 검색어 자체를 늦게 넘겨서 한다. */
-export function useSearchTransactions(query: string) {
+/** 제목/메모/카테고리명(query), 날짜(dateKey) 조건으로 내역을 찾는 검색창에서 쓴다. 둘 다
+ * 비어있으면 요청을 보내지 않는다 — 디바운스는 호출하는 쪽(SearchModal)에서 검색어 자체를
+ * 늦게 넘겨서 한다. */
+export function useSearchTransactions(query: string, dateKey: string | null) {
   const trimmed = query.trim();
   return useQuery({
-    queryKey: ['transactions', 'search', trimmed],
-    queryFn: () => transactionApi.search(trimmed),
-    enabled: trimmed.length > 0,
+    queryKey: ['transactions', 'search', trimmed, dateKey],
+    queryFn: () => transactionApi.search(trimmed, dateKey),
+    enabled: trimmed.length > 0 || dateKey != null,
   });
 }
 
