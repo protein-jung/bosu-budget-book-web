@@ -234,14 +234,12 @@ export function TransactionFormModal({
 
             <Pressable
               onPress={() => setDatePickerOpen(true)}
-              className="flex-row items-center justify-between rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
-              <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">날짜</Text>
-              <View className="flex-row items-center gap-1">
-                <Text className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {formatDateDisplay(transactionDate)}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color="#94a3b8" />
-              </View>
+              className="flex-row items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
+              <Ionicons name="calendar-outline" size={16} color="#64748b" />
+              <Text className="text-sm font-semibold text-slate-900 dark:text-white">
+                {formatDateDisplay(transactionDate)}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color="#94a3b8" />
             </Pressable>
 
             <TextField label="제목" value={memo} onChangeText={setMemo} placeholder="예) 스타벅스 강남점" />
