@@ -32,7 +32,7 @@ export function CalendarGrid({ year, month, summaries, selectedDateKey, onSelect
         <View key={weekIndex} className="flex-row">
           {week.map((date, dayIndex) => {
             if (!date) {
-              return <View key={dayIndex} className="aspect-square flex-1" />;
+              return <View key={dayIndex} className="min-h-16 flex-1" />;
             }
             const dateKey = toDateKey(date);
             const summary = summaries[dateKey];
@@ -40,7 +40,10 @@ export function CalendarGrid({ year, month, summaries, selectedDateKey, onSelect
             const isSelected = dateKey === selectedDateKey;
 
             return (
-              <Pressable key={dayIndex} onPress={() => onSelectDate(dateKey)} className="aspect-square flex-1 items-center gap-0.5 pt-1">
+              <Pressable
+                key={dayIndex}
+                onPress={() => onSelectDate(dateKey)}
+                className="min-h-16 flex-1 items-center gap-0.5 pt-1">
                 <View
                   className={`h-7 w-7 items-center justify-center rounded-full ${
                     isSelected ? 'bg-primary' : isToday ? 'border border-primary' : ''
