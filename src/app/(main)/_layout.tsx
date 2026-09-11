@@ -1,18 +1,24 @@
 import { Redirect, Tabs } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
+import { BottomNav } from '@/components/BottomNav';
 import { MobileHeader } from '@/components/MobileHeader';
 import { TopNav } from '@/components/TopNav';
+import { TransactionFormModal } from '@/features/transaction/TransactionFormModal';
 import { useMyHousehold } from '@/features/household/api';
 import { HouseholdOnboarding } from '@/features/household/HouseholdOnboarding';
 import { useIsDesktop } from '@/lib/responsive';
 import { useAuthStore } from '@/store/authStore';
+import { useTransactionModalStore } from '@/store/transactionModalStore';
 
 export default function MainLayout() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const isAdmin = useAuthStore((state) => state.user?.isAdmin ?? false);
   const householdQuery = useMyHousehold();
   const isDesktop = useIsDesktop();
+  const transactionModalVisible = useTransactionModalStore((state) => state.visible);
+  const transactionModalDateKey = useTransactionModalStore((state) => state.dateKey);
+  const closeTransactionModal = useTransactionModalStore((state) => state.close);
 
   if (!accessToken) {
     return <Redirect href="/login" />;
@@ -41,6 +47,13 @@ export default function MainLayout() {
         <Tabs.Screen name="settings" options={{ title: '설정' }} />
         {isAdmin ? <Tabs.Screen name="admin" options={{ title: '관리자' }} /> : null}
       </Tabs>
+      {!isDesktop ? <BottomNav /> : null}
+
+      <TransactionFormModal
+        visible={transactionModalVisible}
+        onClose={closeTransactionModal}
+        dateKey={transactionModalDateKey}
+      />
     </View>
   );
 }

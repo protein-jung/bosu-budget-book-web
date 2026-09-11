@@ -9,6 +9,7 @@ const MENU: {
   href:
     | '/settings/profile'
     | '/settings/categories'
+    | '/budget'
     | '/settings/cards'
     | '/settings/recurring-expenses'
     | '/settings/household'
@@ -19,6 +20,7 @@ const MENU: {
 }[] = [
   { href: '/settings/profile', label: '마이페이지', description: '생년월일 등 내 정보를 수정해요' },
   { href: '/settings/categories', label: '카테고리 관리', description: '수입/지출 카테고리를 추가하고 관리해요' },
+  { href: '/budget', label: '예산 관리', description: '카테고리별 이번 달 예산을 정해요' },
   { href: '/settings/cards', label: '카드 관리', description: '사용하는 카드/계좌를 등록해요' },
   { href: '/settings/recurring-expenses', label: '고정비 지출', description: '매달 자동으로 추가할 고정비를 등록해요' },
   { href: '/settings/household', label: '가계부 정보', description: '초대 코드와 구성원을 확인해요' },

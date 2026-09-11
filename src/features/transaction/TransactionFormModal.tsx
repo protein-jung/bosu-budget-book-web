@@ -185,33 +185,66 @@ export function TransactionFormModal({
           className={`max-h-[85%] overflow-hidden bg-white dark:bg-slate-900 ${
             isDesktop ? 'w-full max-w-[560px] rounded-3xl' : 'rounded-t-3xl'
           }`}>
-          <View className="gap-2 border-b border-slate-100 p-5 dark:border-slate-800">
+          <View className="flex-row items-center justify-between gap-2 border-b border-slate-100 p-5 dark:border-slate-800">
             {onBack ? (
-              <Pressable onPress={onBack} hitSlop={8} className="flex-row items-center gap-1 self-start">
+              <Pressable onPress={onBack} hitSlop={8} className="flex-row items-center gap-1">
                 <Ionicons name="chevron-back" size={18} color="#64748b" />
                 <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">뒤로</Text>
               </Pressable>
-            ) : null}
-            <View className="flex-row items-center justify-between gap-2">
-              <Pressable onPress={() => setDatePickerOpen(true)} className="flex-row items-center gap-1.5">
-                <Text className="text-xl font-bold text-slate-900 dark:text-white">
-                  {formatDateDisplay(transactionDate)}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color="#94a3b8" />
-              </Pressable>
-              <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />
-            </View>
+            ) : (
+              <View style={{ width: 24 }} />
+            )}
+            <Text className="text-base font-semibold text-slate-900 dark:text-white">
+              {isEdit ? '내역 수정' : '내역 추가'}
+            </Text>
+            <Pressable onPress={finish} hitSlop={8}>
+              <Ionicons name="close" size={22} color="#64748b" />
+            </Pressable>
           </View>
 
           <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5" showsVerticalScrollIndicator={false}>
-            <TextField label="제목" value={memo} onChangeText={setMemo} placeholder="예) 스타벅스 강남점" />
+            <AmountField label="금액" value={amount} onChangeText={setAmount} quickAdd={false} />
 
             <View className="flex-row gap-2">
-              <Chip label="지출" selected={type === 'EXPENSE'} onPress={() => handleTypeChange('EXPENSE')} />
-              <Chip label="수입" selected={type === 'INCOME'} onPress={() => handleTypeChange('INCOME')} />
+              <Pressable
+                onPress={() => handleTypeChange('EXPENSE')}
+                className={`flex-1 items-center rounded-xl border py-3 ${
+                  type === 'EXPENSE' ? 'border-secondary bg-secondary/10' : 'border-slate-200 dark:border-slate-700'
+                }`}>
+                <Text
+                  className={`text-sm font-semibold ${
+                    type === 'EXPENSE' ? 'text-secondary' : 'text-slate-500 dark:text-slate-400'
+                  }`}>
+                  지출
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleTypeChange('INCOME')}
+                className={`flex-1 items-center rounded-xl border py-3 ${
+                  type === 'INCOME' ? 'border-primary bg-primary/10' : 'border-slate-200 dark:border-slate-700'
+                }`}>
+                <Text
+                  className={`text-sm font-semibold ${
+                    type === 'INCOME' ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
+                  }`}>
+                  수입
+                </Text>
+              </Pressable>
             </View>
 
-            <AmountField label="금액" value={amount} onChangeText={setAmount} quickAdd={false} />
+            <Pressable
+              onPress={() => setDatePickerOpen(true)}
+              className="flex-row items-center justify-between rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
+              <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">날짜</Text>
+              <View className="flex-row items-center gap-1">
+                <Text className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {formatDateDisplay(transactionDate)}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#94a3b8" />
+              </View>
+            </Pressable>
+
+            <TextField label="제목" value={memo} onChangeText={setMemo} placeholder="예) 스타벅스 강남점" />
 
             <View className="gap-2">
               <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">대분류</Text>
@@ -254,7 +287,7 @@ export function TransactionFormModal({
             </Pressable>
 
             <View className="gap-2">
-              <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">카드 (선택)</Text>
+              <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">결제 수단 (선택)</Text>
               <View className="flex-row flex-wrap gap-2">
                 <Chip label="없음" selected={cardId === null} onPress={() => setCardId(null)} />
                 {cards.map((card) => (
@@ -277,10 +310,10 @@ export function TransactionFormModal({
           </ScrollView>
 
           <View className="gap-2 border-t border-slate-100 p-5 dark:border-slate-800">
+            <Button title={isEdit ? '수정하기' : '추가하기'} onPress={handleSubmit} loading={isPending} />
             {isEdit ? (
               <Button title="삭제하기" variant="danger" onPress={handleDelete} loading={isPending} />
             ) : null}
-            <Button title="취소" variant="secondary" onPress={finish} disabled={isPending} />
           </View>
         </Pressable>
       </Pressable>
