@@ -379,14 +379,16 @@ export default function CalendarScreen() {
                     ? `${selectedCategory.icon ? `${selectedCategory.icon} ` : ''}${selectedCategory.name} · ${listTransactions.length}건`
                     : selectedDateKey}
         </Text>
-        <View className="flex-row gap-1.5">
-          <Pressable onPress={() => openCreate('INCOME')} className="rounded-full bg-primary px-3.5 py-2">
-            <Text className="text-sm font-semibold text-white">+ 수입</Text>
-          </Pressable>
-          <Pressable onPress={() => openCreate('EXPENSE')} className="rounded-full bg-secondary px-3.5 py-2">
-            <Text className="text-sm font-semibold text-white">- 지출</Text>
-          </Pressable>
-        </View>
+        {isDesktop ? (
+          <View className="flex-row gap-1.5">
+            <Pressable onPress={() => openCreate('INCOME')} className="rounded-full bg-primary px-3.5 py-2">
+              <Text className="text-sm font-semibold text-white">+ 수입</Text>
+            </Pressable>
+            <Pressable onPress={() => openCreate('EXPENSE')} className="rounded-full bg-secondary px-3.5 py-2">
+              <Text className="text-sm font-semibold text-white">- 지출</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       {isDayView ? (
