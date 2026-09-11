@@ -1,19 +1,21 @@
-import { View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, Text, View } from 'react-native';
 
 import { NotificationBell } from '@/components/NotificationBell';
+import { useGoHome } from '@/lib/useGoHome';
 
-/** 모바일 헤더 영역 자체를 없앴다 — 레이아웃 공간을 차지하지 않도록 화면 위에 절대 위치로
- * 떠 있는 알림 벨만 남긴다. 화면 이동은 하단 메뉴바(BottomNav)가 맡는다. pointerEvents가
- * box-none이라 벨 버튼 바깥은 터치가 그대로 아래 콘텐츠로 전달된다. */
+/** 모바일 상단 바 — 왼쪽 로고, 오른쪽 알림 벨. 화면 이동은 하단 메뉴바(BottomNav)가 맡는다. */
 export function MobileHeader() {
+  const goHome = useGoHome();
+
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
-      <SafeAreaView edges={['top']}>
-        <View pointerEvents="box-none" className="flex-row justify-end px-3 pt-1">
-          <NotificationBell />
+    <View className="flex-row items-center justify-between border-b border-primary/10 bg-cream px-4 pb-4 pt-5">
+      <Pressable onPress={goHome} hitSlop={8}>
+        <View className="flex-row items-baseline gap-1">
+          <Text className="font-brand text-base tracking-wide text-primary">BOSU</Text>
+          <Text className="text-base font-light text-primary/55">Ledger</Text>
         </View>
-      </SafeAreaView>
+      </Pressable>
+      <NotificationBell />
     </View>
   );
 }
