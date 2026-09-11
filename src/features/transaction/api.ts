@@ -18,6 +18,8 @@ const transactionApi = {
     apiClient
       .get<Transaction[]>('/api/transactions', { params: { year, month } })
       .then((res) => res.data),
+  search: (q: string) =>
+    apiClient.get<Transaction[]>('/api/transactions/search', { params: { q } }).then((res) => res.data),
   create: (data: TransactionInput) =>
     apiClient.post<Transaction>('/api/transactions', data).then((res) => res.data),
   update: (id: number, data: TransactionInput) =>
@@ -44,6 +46,17 @@ export function useMonthlyTransactions(year: number, month: number, enabled = tr
     queryKey: monthlyTransactionsKey(year, month),
     queryFn: () => transactionApi.getMonthly(year, month),
     enabled,
+  });
+}
+
+/** 제목/메모/카테고리명으로 내역을 찾는 검색창에서 쓴다. 검색어가 비어있으면 요청을 보내지
+ * 않고 빈 결과로 둔다 — 디바운스는 호출하는 쪽(SearchModal)에서 검색어 자체를 늦게 넘겨서 한다. */
+export function useSearchTransactions(query: string) {
+  const trimmed = query.trim();
+  return useQuery({
+    queryKey: ['transactions', 'search', trimmed],
+    queryFn: () => transactionApi.search(trimmed),
+    enabled: trimmed.length > 0,
   });
 }
 
