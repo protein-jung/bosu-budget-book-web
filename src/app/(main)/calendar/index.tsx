@@ -89,6 +89,8 @@ export default function CalendarScreen() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [selectedDateKey, setSelectedDateKey] = useState(toDateKey(today));
+  /** 날짜를 눌러 그 날 내역을 볼 때만 쓰는 수입/지출 탭. null이면 전체. */
+  const [dayTypeFilter, setDayTypeFilter] = useState<TransactionType | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<TransactionType | null>(null);
   const [selectedParentCategory, setSelectedParentCategory] = useState<ParentCategoryFilter | null>(null);
@@ -143,6 +145,10 @@ export default function CalendarScreen() {
   const isUncategorizedView = selectedCategory?.name === UNCATEGORIZED_NAME;
 
   const dayTransactions = transactions.filter((t) => t.transactionDate === selectedDateKey);
+  const filteredDayTransactions = useMemo(
+    () => (dayTypeFilter === null ? dayTransactions : dayTransactions.filter((t) => t.type === dayTypeFilter)),
+    [dayTransactions, dayTypeFilter],
+  );
   const categoryTransactions = useMemo(
     () =>
       selectedCategoryId === null
@@ -199,11 +205,18 @@ export default function CalendarScreen() {
           : selectedType !== null
             ? typeTransactions
             : selectedCategoryId === null
-              ? dayTransactions
+              ? filteredDayTransactions
               : categoryTransactions;
+  const isDayView =
+    selectedCategoryId === null &&
+    selectedType === null &&
+    selectedParentCategory === null &&
+    selectedMemberUserId === null &&
+    selectedCardId === null;
 
   const selectDate = (dateKey: string) => {
     setSelectedDateKey(dateKey);
+    setDayTypeFilter(null);
     setSelectedCategoryId(null);
     setSelectedType(null);
     setSelectedParentCategory(null);
@@ -375,6 +388,14 @@ export default function CalendarScreen() {
           </Pressable>
         </View>
       </View>
+
+      {isDayView ? (
+        <View className="flex-row gap-1.5">
+          <Chip label="전체" selected={dayTypeFilter === null} onPress={() => setDayTypeFilter(null)} />
+          <Chip label="수입" selected={dayTypeFilter === 'INCOME'} onPress={() => setDayTypeFilter('INCOME')} />
+          <Chip label="지출" selected={dayTypeFilter === 'EXPENSE'} onPress={() => setDayTypeFilter('EXPENSE')} />
+        </View>
+      ) : null}
 
       <View className="gap-2">
         {listTransactions.length === 0 ? (
