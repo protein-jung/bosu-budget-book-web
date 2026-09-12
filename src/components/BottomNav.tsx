@@ -55,9 +55,11 @@ export function BottomNav() {
         {LEFT_ITEMS.map((item) => (
           <NavButton key={item.href} item={item} active={pathname.startsWith(item.href)} />
         ))}
-        <Pressable onPress={openTransactionModal} hitSlop={6} className="flex-1 items-center justify-center py-2">
-          <View className="h-11 w-11 items-center justify-center rounded-full bg-primary shadow-md shadow-primary/40">
-            <Ionicons name="add" size={24} color="#fff" />
+        <Pressable onPress={openTransactionModal} hitSlop={6} className="flex-1 items-center justify-center">
+          <View className="-mt-7 h-16 w-16 items-center justify-center rounded-full bg-cream shadow-md shadow-slate-300/70">
+            <View className="h-14 w-14 items-center justify-center rounded-full bg-primary">
+              <Ionicons name="add" size={28} color="#fff" />
+            </View>
           </View>
         </Pressable>
         {RIGHT_ITEMS.map((item) => (
