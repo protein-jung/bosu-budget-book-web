@@ -109,6 +109,8 @@ const adminApi = {
   unblockUser: (userId: number) =>
     adminApiClient.post<void>(`/api/admin/users/${userId}/unblock`).then((res) => res.data),
   deleteUser: (userId: number) => adminApiClient.delete<void>(`/api/admin/users/${userId}`).then((res) => res.data),
+  deleteHousehold: (householdId: number) =>
+    adminApiClient.delete<void>(`/api/admin/households/${householdId}`).then((res) => res.data),
   getFeatureRequests: () =>
     adminApiClient.get<AdminFeatureRequest[]>('/api/admin/feature-requests').then((res) => res.data),
   replyFeatureRequest: (requestId: number, reply: string) =>
@@ -118,6 +120,7 @@ const adminApi = {
 };
 
 const ADMIN_USERS_QUERY_KEY = ['admin', 'users'];
+const ADMIN_HOUSEHOLDS_QUERY_KEY = ['admin', 'households'];
 const ADMIN_FEATURE_REQUESTS_QUERY_KEY = ['admin', 'feature-requests'];
 
 export function useAdminLogin() {
@@ -141,7 +144,7 @@ export function useAdminUserDetail(userId: number) {
 }
 
 export function useAdminHouseholds() {
-  return useQuery({ queryKey: ['admin', 'households'], queryFn: adminApi.getHouseholds });
+  return useQuery({ queryKey: ADMIN_HOUSEHOLDS_QUERY_KEY, queryFn: adminApi.getHouseholds });
 }
 
 export function useAdminHouseholdDetail(householdId: number) {
@@ -179,6 +182,14 @@ export function useDeleteAdminUser() {
   return useMutation({
     mutationFn: adminApi.deleteUser,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ADMIN_USERS_QUERY_KEY }),
+  });
+}
+
+export function useDeleteAdminHousehold() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.deleteHousehold,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ADMIN_HOUSEHOLDS_QUERY_KEY }),
   });
 }
 
