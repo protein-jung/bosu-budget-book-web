@@ -85,7 +85,7 @@ export default function AdminDashboardLayout() {
           {isDesktop ? (
             <>
               <View className="flex-row items-center gap-8">
-                <View className="flex-row items-center gap-2.5">
+                <Pressable onPress={() => router.push('/admin')} className="flex-row items-center gap-2.5">
                   <BrandMark />
                   <View className="flex-row items-baseline gap-1">
                     <Text className="font-brand text-lg tracking-wide text-white">BOSU</Text>
@@ -94,7 +94,7 @@ export default function AdminDashboardLayout() {
                   <View className="rounded-full bg-white/15 px-2.5 py-1">
                     <Text className="text-xs font-semibold text-white/90">관리자</Text>
                   </View>
-                </View>
+                </Pressable>
                 <View className="flex-row gap-1.5">
                   {NAV.map((item) => {
                     const active = isActive(item.href);
@@ -125,7 +125,7 @@ export default function AdminDashboardLayout() {
             </>
           ) : (
             <>
-              <Pressable onPress={goHome} className="flex-row items-center gap-2" hitSlop={8}>
+              <Pressable onPress={() => router.push('/admin')} className="flex-row items-center gap-2" hitSlop={8}>
                 <BrandMark size={20} />
                 <Text className="text-sm font-semibold text-white" numberOfLines={1}>
                   {currentLabel ?? '관리자'}
