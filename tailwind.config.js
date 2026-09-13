@@ -15,9 +15,9 @@ module.exports = {
         income: '#2f9e44',
         expense: '#e03131',
         primary: {
-          DEFAULT: '#02007D',
-          light: '#E3E2F8',
-          dark: '#01003D',
+          DEFAULT: '#105753',
+          light: '#E2EBEA',
+          dark: '#082B29',
         },
         secondary: {
           DEFAULT: '#E07A5F',

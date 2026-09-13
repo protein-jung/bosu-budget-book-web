@@ -88,7 +88,7 @@ export function CategoryBudgetSummary({
               {budget ? (
                 <BudgetBar spent={item.amount} target={budget.targetAmount} />
               ) : (
-                <Bar amount={item.amount} max={maxCategory} color={item.color ?? '#02007D'} />
+                <Bar amount={item.amount} max={maxCategory} color={item.color ?? '#105753'} />
               )}
             </Pressable>
           );

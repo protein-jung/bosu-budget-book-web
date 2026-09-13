@@ -34,7 +34,7 @@ function buildLegend(categories: CategoryStat[]): LegendDatum[] {
       label: c.categoryName,
       amount: c.amount,
       value: c.amount,
-      color: c.color ?? '#02007D',
+      color: c.color ?? '#105753',
     }));
   }
   const top = sorted.slice(0, DONUT_SLICE_LIMIT);
@@ -46,7 +46,7 @@ function buildLegend(categories: CategoryStat[]): LegendDatum[] {
       label: c.categoryName,
       amount: c.amount,
       value: c.amount,
-      color: c.color ?? '#02007D',
+      color: c.color ?? '#105753',
     })),
     { key: 'other', categoryId: -1, label: '기타', amount: restAmount, value: restAmount, color: OTHER_COLOR },
   ];
@@ -213,7 +213,7 @@ export default function StatisticsMonthScreen() {
     for (const point of range?.months ?? []) {
       for (const cat of point.byParentCategory.filter((c) => c.type === 'EXPENSE')) {
         if (!names.has(cat.categoryId)) {
-          names.set(cat.categoryId, { name: cat.categoryName, color: cat.color ?? '#02007D' });
+          names.set(cat.categoryId, { name: cat.categoryName, color: cat.color ?? '#105753' });
         }
       }
     }
@@ -401,7 +401,7 @@ export default function StatisticsMonthScreen() {
                     className="flex-row items-center gap-2.5">
                     <View
                       className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: item.color ?? '#02007D' }}
+                      style={{ backgroundColor: item.color ?? '#105753' }}
                     />
                     <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200" numberOfLines={1}>
                       {item.categoryName}

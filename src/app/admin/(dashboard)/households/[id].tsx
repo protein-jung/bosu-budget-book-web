@@ -14,7 +14,7 @@ import { addMonths, formatMonthLabel, toDateKey } from '@/lib/calendar';
 import { formatKrw, formatSignedKrw } from '@/lib/format';
 
 const ROLE_LABEL: Record<string, string> = { OWNER: '오너', MEMBER: '멤버' };
-const AVATAR_PALETTE = ['#02007D', '#E07A5F', '#2f9e44', '#3b82f6', '#a855f7', '#f59e0b'];
+const AVATAR_PALETTE = ['#105753', '#E07A5F', '#2f9e44', '#3b82f6', '#a855f7', '#f59e0b'];
 
 function avatarColor(seed: number) {
   return AVATAR_PALETTE[seed % AVATAR_PALETTE.length];
@@ -22,7 +22,7 @@ function avatarColor(seed: number) {
 
 function CategoryBar({ item, max }: { item: AdminCategoryTotal; max: number }) {
   const pct = max > 0 ? (item.total / max) * 100 : 0;
-  const barColor = item.categoryColor ?? (item.type === 'INCOME' ? '#2f9e44' : '#02007D');
+  const barColor = item.categoryColor ?? (item.type === 'INCOME' ? '#2f9e44' : '#105753');
   return (
     <View className="gap-1.5">
       <View className="flex-row items-baseline justify-between gap-2">
@@ -125,7 +125,7 @@ export default function AdminHouseholdDetailScreen() {
   if (isLoading || !data) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-100">
-        <ActivityIndicator color="#01003D" />
+        <ActivityIndicator color="#082B29" />
       </View>
     );
   }
@@ -147,7 +147,7 @@ export default function AdminHouseholdDetailScreen() {
         <View className="gap-4 rounded-2xl bg-white p-5 shadow-sm">
           <View className="flex-row items-center gap-3">
             <View className="h-12 w-12 items-center justify-center rounded-full bg-primary-light">
-              <Ionicons name="home" size={20} color="#02007D" />
+              <Ionicons name="home" size={20} color="#105753" />
             </View>
             <View className="gap-0.5">
               <Text className="text-xl font-bold text-slate-900">{data.name}</Text>
@@ -207,7 +207,7 @@ export default function AdminHouseholdDetailScreen() {
             </View>
 
             {transactionsLoading ? (
-              <ActivityIndicator color="#01003D" />
+              <ActivityIndicator color="#082B29" />
             ) : (
               <CalendarGrid
                 year={year}

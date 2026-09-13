@@ -44,7 +44,7 @@ export function TopNav() {
                 source={require('../../assets/marketing/brand-tagline.png')}
                 accessibilityLabel="BOSU Ledger — Spend less, Keep more"
                 resizeMode="contain"
-                style={{ width: 150, height: 150 * (803 / 1442) }}
+                style={{ width: 150, height: 150 * (619 / 1295) }}
               />
             </Pressable>
           </Link>
@@ -60,7 +60,7 @@ export function TopNav() {
               onPress={() => setSearchOpen(true)}
               hitSlop={8}
               className="h-10 w-10 items-center justify-center">
-              <Ionicons name="search-outline" size={20} color="#02007D" />
+              <Ionicons name="search-outline" size={20} color="#105753" />
             </Pressable>
             <NotificationBell />
           </View>

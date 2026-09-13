@@ -81,7 +81,7 @@ export function TransactionSearchModal({ visible, onClose }: { visible: boolean;
                 className={`flex-row items-center gap-1.5 rounded-full border px-3 py-1.5 ${
                   dateFilter ? 'border-primary bg-primary-light' : 'border-slate-200 dark:border-slate-700'
                 }`}>
-                <Ionicons name="calendar-outline" size={14} color={dateFilter ? '#02007D' : '#64748b'} />
+                <Ionicons name="calendar-outline" size={14} color={dateFilter ? '#105753' : '#64748b'} />
                 <Text
                   className={`text-xs font-medium ${
                     dateFilter ? 'text-primary' : 'text-slate-500 dark:text-slate-400'

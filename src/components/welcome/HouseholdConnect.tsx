@@ -19,7 +19,7 @@ export function HouseholdConnect() {
             width: 44,
             height: 2,
             marginLeft: -22,
-            backgroundColor: '#E3E2F8',
+            backgroundColor: '#E2EBEA',
             opacity: inView ? 1 : 0,
             // @ts-expect-error -- web-only CSS transition, passed straight through by RNW.
             transitionProperty: 'opacity',
@@ -38,7 +38,7 @@ export function HouseholdConnect() {
             width: 20,
             height: 20,
             borderRadius: 10,
-            backgroundColor: '#02007D',
+            backgroundColor: '#105753',
             transform: [{ translateX: inView ? 0 : -20 }],
           },
           dotTransition,

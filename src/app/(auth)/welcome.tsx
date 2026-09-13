@@ -274,7 +274,7 @@ export default function WelcomeScreen() {
               source={require('../../../assets/marketing/brand-tagline.png')}
               accessibilityLabel="Spend less, Keep more"
               resizeMode="contain"
-              style={{ width: isDesktop ? 380 : 260, height: (isDesktop ? 380 : 260) * (803 / 1442) }}
+              style={{ width: isDesktop ? 380 : 260, height: (isDesktop ? 380 : 260) * (619 / 1295) }}
             />
           </View>
 

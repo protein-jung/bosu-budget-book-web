@@ -6,7 +6,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { TransactionSearchModal } from '@/features/transaction/TransactionSearchModal';
 import { useGoHome } from '@/lib/useGoHome';
 
-const TAGLINE_ASPECT_RATIO = 803 / 1442;
+const TAGLINE_ASPECT_RATIO = 619 / 1295;
 
 /** 모바일 상단 바 — 왼쪽 검색, 가운데 슬로건 로고, 오른쪽 알림 벨. 화면 이동은 하단 메뉴바
  * (BottomNav)가 맡는다. */
@@ -21,7 +21,7 @@ export function MobileHeader() {
           onPress={() => setSearchOpen(true)}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center">
-          <Ionicons name="search-outline" size={22} color="#02007D" />
+          <Ionicons name="search-outline" size={22} color="#105753" />
         </Pressable>
         <Pressable onPress={goHome} hitSlop={8}>
           <Image

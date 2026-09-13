@@ -88,7 +88,7 @@ export default function AdminFeatureRequestsScreen() {
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-100">
-        <ActivityIndicator color="#01003D" />
+        <ActivityIndicator color="#082B29" />
       </View>
     );
   }

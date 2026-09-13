@@ -7,7 +7,7 @@ import { useAdminUserDetail, useBlockUser, useDeleteAdminUser, useUnblockUser } 
 import { formatKrw } from '@/lib/format';
 
 const ROLE_LABEL: Record<string, string> = { OWNER: '오너', MEMBER: '멤버' };
-const AVATAR_PALETTE = ['#02007D', '#E07A5F', '#2f9e44', '#3b82f6', '#a855f7', '#f59e0b'];
+const AVATAR_PALETTE = ['#105753', '#E07A5F', '#2f9e44', '#3b82f6', '#a855f7', '#f59e0b'];
 
 function avatarColor(seed: number) {
   return AVATAR_PALETTE[seed % AVATAR_PALETTE.length];
@@ -25,7 +25,7 @@ export default function AdminUserDetailScreen() {
   if (isLoading || !user) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-100">
-        <ActivityIndicator color="#01003D" />
+        <ActivityIndicator color="#082B29" />
       </View>
     );
   }

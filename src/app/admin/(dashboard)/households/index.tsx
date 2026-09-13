@@ -23,7 +23,7 @@ function HouseholdRow({ household }: { household: AdminHousehold }) {
       onPress={() => router.push(`/admin/households/${household.id}`)}
       className="flex-row items-center gap-4 rounded-2xl bg-white p-4 shadow-sm">
       <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-light">
-        <Ionicons name="home" size={18} color="#02007D" />
+        <Ionicons name="home" size={18} color="#105753" />
       </View>
       <View className="min-w-0 flex-1 gap-0.5">
         <Text className="text-sm font-semibold text-slate-900" numberOfLines={1}>
@@ -54,7 +54,7 @@ export default function AdminHouseholdsScreen() {
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-100">
-        <ActivityIndicator color="#01003D" />
+        <ActivityIndicator color="#082B29" />
       </View>
     );
   }

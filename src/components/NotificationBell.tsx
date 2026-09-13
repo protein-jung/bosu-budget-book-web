@@ -63,7 +63,7 @@ function NotificationList({ onSelect }: { onSelect: (item: NotificationItem) => 
 
 /** 헤더의 알림 벨 — 데스크톱에서는 아이콘 아래로 드롭다운 패널을, 모바일에서는 하단 시트를 띄운다.
  * 기능 요청에 답변이 달리거나, 같은 가계부의 다른 구성원이 거래를 등록하면 여기로 알림이 온다. */
-export function NotificationBell({ color = '#02007D' }: { color?: string }) {
+export function NotificationBell({ color = '#105753' }: { color?: string }) {
   const [open, setOpen] = useState(false);
   const isDesktop = useIsDesktop();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();

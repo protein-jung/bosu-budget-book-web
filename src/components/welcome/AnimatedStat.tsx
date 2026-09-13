@@ -9,7 +9,7 @@ export function AnimatedStat({
   value,
   prefix = '',
   suffix = '',
-  color = '#02007D',
+  color = '#105753',
 }: {
   label: string;
   value: number;

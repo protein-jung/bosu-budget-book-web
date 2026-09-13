@@ -12,7 +12,7 @@ export type ThreadComment = {
   createdAt: string;
 };
 
-const AVATAR_COLORS = ['#02007D', '#E07A5F', '#2f9e44', '#f08c00', '#7048e8', '#1098ad'];
+const AVATAR_COLORS = ['#105753', '#E07A5F', '#2f9e44', '#f08c00', '#7048e8', '#1098ad'];
 
 function avatarColor(seed: number | string): string {
   const str = String(seed);

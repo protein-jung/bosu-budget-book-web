@@ -32,7 +32,7 @@ function NavButton({ item, active }: { item: NavItem; active: boolean }) {
     <Pressable
       onPress={() => router.push(item.href)}
       className="flex-1 items-center justify-center gap-0.5 py-2">
-      <Ionicons name={active ? item.activeIcon : item.icon} size={21} color={active ? '#02007D' : '#94a3b8'} />
+      <Ionicons name={active ? item.activeIcon : item.icon} size={21} color={active ? '#105753' : '#94a3b8'} />
       <Text className={`text-[10px] font-medium ${active ? 'text-primary' : 'text-slate-400'}`}>{item.label}</Text>
     </Pressable>
   );

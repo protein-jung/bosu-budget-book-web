@@ -8,7 +8,7 @@ export function TrendLineChart({
   data,
   width,
   height = 120,
-  color = '#02007D',
+  color = '#105753',
   formatValue,
 }: {
   data: TrendPoint[];

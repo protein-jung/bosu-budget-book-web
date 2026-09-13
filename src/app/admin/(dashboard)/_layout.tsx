@@ -9,7 +9,7 @@ import { useGoHome } from '@/lib/useGoHome';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
 import { useAuthStore } from '@/store/authStore';
 
-const TAGLINE_ASPECT_RATIO = 803 / 1442;
+const TAGLINE_ASPECT_RATIO = 619 / 1295;
 
 const NAV: {
   href: '/admin' | '/admin/users' | '/admin/households' | '/admin/feature-requests';
@@ -91,7 +91,7 @@ export default function AdminDashboardLayout() {
                         key={item.href}
                         onPress={() => router.push(item.href)}
                         className={`flex-row items-center gap-1.5 rounded-full px-4 py-2 ${active ? 'bg-white' : ''}`}>
-                        <Ionicons name={item.icon} size={15} color={active ? '#01003D' : '#ffffffb3'} />
+                        <Ionicons name={item.icon} size={15} color={active ? '#082B29' : '#ffffffb3'} />
                         <Text className={`text-sm font-semibold ${active ? 'text-primary-dark' : 'text-white/70'}`}>
                           {item.label}
                         </Text>
@@ -154,7 +154,7 @@ export default function AdminDashboardLayout() {
                         router.push(item.href);
                       }}
                       className={`flex-row items-center gap-3 rounded-xl px-3 py-3 ${active ? 'bg-primary-light' : ''}`}>
-                      <Ionicons name={item.icon} size={18} color={active ? '#02007D' : '#64748b'} />
+                      <Ionicons name={item.icon} size={18} color={active ? '#105753' : '#64748b'} />
                       <Text className={`text-sm font-semibold ${active ? 'text-primary' : 'text-slate-700'}`}>
                         {item.label}
                       </Text>

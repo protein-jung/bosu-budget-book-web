@@ -9,7 +9,7 @@ import { formatKrw } from '@/lib/format';
 type StatColor = 'primary' | 'secondary' | 'income' | 'expense' | 'slate';
 
 const COLOR_MAP: Record<StatColor, { bg: string; icon: string; text: string }> = {
-  primary: { bg: '#E3E2F8', icon: '#02007D', text: '#01003D' },
+  primary: { bg: '#E2EBEA', icon: '#105753', text: '#082B29' },
   secondary: { bg: '#FBE7E0', icon: '#E07A5F', text: '#B85A40' },
   income: { bg: '#E4F5E9', icon: '#2f9e44', text: '#1f7a34' },
   expense: { bg: '#FBE9E9', icon: '#e03131', text: '#b42318' },
@@ -97,7 +97,7 @@ export default function AdminDashboardScreen() {
   if (isLoading || !stats) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-100">
-        <ActivityIndicator color="#01003D" />
+        <ActivityIndicator color="#082B29" />
       </View>
     );
   }
@@ -147,7 +147,7 @@ export default function AdminDashboardScreen() {
             <TrendCard
               title="회원 증가"
               points={userGrowthPoints}
-              color="#02007D"
+              color="#105753"
               formatValue={(v) => `${Math.round(v).toLocaleString()}명`}
             />
             <TrendCard title="일별 수입" points={incomePoints} color="#2f9e44" formatValue={formatKrw} />
