@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
@@ -160,6 +161,12 @@ export default function ImportScreen() {
             {provider === 'NAVER_PAY' ? (
               <Text className="text-xs text-slate-400">네이버페이 연동은 준비 중이에요. 곧 안내해드릴게요.</Text>
             ) : null}
+            <Pressable
+              onPress={() => router.push({ pathname: '/settings/feature-requests', params: { autoOpen: '1' } })}>
+              <Text className="text-xs font-medium text-primary underline dark:text-secondary">
+                사용하시는 명세서가 없으시면 기능 요청해주세요
+              </Text>
+            </Pressable>
           </View>
 
           {provider !== 'NAVER_PAY' ? (

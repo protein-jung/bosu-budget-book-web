@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
@@ -14,13 +15,14 @@ function formatDate(iso: string): string {
 }
 
 export default function FeatureRequestsScreen() {
+  const { autoOpen } = useLocalSearchParams<{ autoOpen?: string }>();
   const { data: requests = [], isLoading } = useFeatureRequests();
   const createRequest = useCreateFeatureRequest();
   const isDesktop = useIsDesktop();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(autoOpen === '1');
 
   const handleSubmit = () => {
     if (!title.trim() || !content.trim()) {
