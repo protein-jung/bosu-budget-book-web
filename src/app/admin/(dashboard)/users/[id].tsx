@@ -60,23 +60,27 @@ export default function AdminUserDetailScreen() {
         </Pressable>
 
         <View className="gap-4 rounded-2xl bg-white p-5 shadow-sm">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center gap-3">
+          <View className="flex-row flex-wrap items-center justify-between gap-3">
+            <View className="min-w-0 flex-shrink flex-row items-center gap-3">
               <View
-                className="h-12 w-12 items-center justify-center rounded-full"
+                className="h-12 w-12 shrink-0 items-center justify-center rounded-full"
                 style={{ backgroundColor: avatarColor(user.id) }}>
                 <Text className="text-lg font-bold text-white">{user.name.slice(0, 1)}</Text>
               </View>
-              <View className="gap-0.5">
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-xl font-bold text-slate-900">{user.name}</Text>
+              <View className="min-w-0 shrink gap-0.5">
+                <View className="flex-row flex-wrap items-center gap-2">
+                  <Text className="text-xl font-bold text-slate-900" numberOfLines={1}>
+                    {user.name}
+                  </Text>
                   {user.blocked ? (
                     <View className="rounded-full bg-red-50 px-2 py-0.5">
                       <Text className="text-[11px] font-semibold text-red-500">차단됨</Text>
                     </View>
                   ) : null}
                 </View>
-                <Text className="text-xs text-slate-400">{user.email}</Text>
+                <Text className="text-xs text-slate-400" numberOfLines={1}>
+                  {user.email}
+                </Text>
               </View>
             </View>
             <View className="flex-row gap-2">

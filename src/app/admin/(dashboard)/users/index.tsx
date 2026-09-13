@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { type AdminUser, useAdminUsers, useBlockUser, useDeleteAdminUser, useUnblockUser } from '@/features/admin/api';
+import { useIsDesktop } from '@/lib/responsive';
 
 const ROLE_LABEL: Record<string, string> = { OWNER: '오너', MEMBER: '멤버' };
 const AVATAR_PALETTE = ['#02007D', '#E07A5F', '#2f9e44', '#3b82f6', '#a855f7', '#f59e0b'];
@@ -17,6 +18,7 @@ function UserRow({ user }: { user: AdminUser }) {
   const unblockMutation = useUnblockUser();
   const deleteMutation = useDeleteAdminUser();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const isDesktop = useIsDesktop();
 
   const handleToggleBlock = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
@@ -38,37 +40,33 @@ function UserRow({ user }: { user: AdminUser }) {
 
   const toggleBlockPending = blockMutation.isPending || unblockMutation.isPending;
 
-  return (
-    <Pressable
-      onPress={() => router.push(`/admin/users/${user.id}`)}
-      className="flex-row items-center gap-4 rounded-2xl bg-white p-4 shadow-sm">
-      <View
-        className="h-11 w-11 items-center justify-center rounded-full"
-        style={{ backgroundColor: avatarColor(user.id) }}>
-        <Text className="text-base font-bold text-white">{user.name.slice(0, 1)}</Text>
-      </View>
-      <View className="min-w-0 flex-1 gap-0.5">
-        <View className="flex-row items-center gap-2">
-          <Text className="text-sm font-semibold text-slate-900" numberOfLines={1}>
-            {user.name}
-          </Text>
-          {user.blocked ? (
-            <View className="rounded-full bg-red-50 px-2 py-0.5">
-              <Text className="text-[11px] font-semibold text-red-500">차단됨</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text className="text-xs text-slate-400" numberOfLines={1}>
-          {user.email}
+  const info = (
+    <View className="min-w-0 flex-1 gap-0.5">
+      <View className="flex-row items-center gap-2">
+        <Text className="text-sm font-semibold text-slate-900" numberOfLines={1}>
+          {user.name}
         </Text>
-        <Text className="text-xs text-slate-400" numberOfLines={1}>
-          {user.householdName
-            ? `${user.householdName} · ${ROLE_LABEL[user.householdRole ?? ''] ?? user.householdRole}`
-            : '가계부 없음'}
-          {' · 거래 '}
-          {user.transactionCount}건
-        </Text>
+        {user.blocked ? (
+          <View className="rounded-full bg-red-50 px-2 py-0.5">
+            <Text className="text-[11px] font-semibold text-red-500">차단됨</Text>
+          </View>
+        ) : null}
       </View>
+      <Text className="text-xs text-slate-400" numberOfLines={1}>
+        {user.email}
+      </Text>
+      <Text className="text-xs text-slate-400" numberOfLines={1}>
+        {user.householdName
+          ? `${user.householdName} · ${ROLE_LABEL[user.householdRole ?? ''] ?? user.householdRole}`
+          : '가계부 없음'}
+        {' · 거래 '}
+        {user.transactionCount}건
+      </Text>
+    </View>
+  );
+
+  const actions = (
+    <View className="flex-row items-center gap-2">
       <Pressable
         onPress={handleToggleBlock}
         className="rounded-lg bg-slate-100 px-3 py-2 active:bg-slate-200">
@@ -83,7 +81,38 @@ function UserRow({ user }: { user: AdminUser }) {
           {deleteMutation.isPending ? '...' : confirmingDelete ? '정말 탈퇴?' : '강제 탈퇴'}
         </Text>
       </Pressable>
-      <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+    </View>
+  );
+
+  const avatar = (
+    <View className="h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: avatarColor(user.id) }}>
+      <Text className="text-base font-bold text-white">{user.name.slice(0, 1)}</Text>
+    </View>
+  );
+
+  if (isDesktop) {
+    return (
+      <Pressable
+        onPress={() => router.push(`/admin/users/${user.id}`)}
+        className="flex-row items-center gap-4 rounded-2xl bg-white p-4 shadow-sm">
+        {avatar}
+        {info}
+        {actions}
+        <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+      </Pressable>
+    );
+  }
+
+  return (
+    <Pressable
+      onPress={() => router.push(`/admin/users/${user.id}`)}
+      className="gap-3 rounded-2xl bg-white p-4 shadow-sm">
+      <View className="flex-row items-center gap-3">
+        {avatar}
+        {info}
+        <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+      </View>
+      <View className="flex-row justify-end">{actions}</View>
     </Pressable>
   );
 }

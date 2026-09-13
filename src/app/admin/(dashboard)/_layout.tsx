@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router, Slot, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { useIsDesktop } from '@/lib/responsive';
 import { useGoHome } from '@/lib/useGoHome';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
 import { useAuthStore } from '@/store/authStore';
@@ -40,7 +42,10 @@ export default function AdminDashboardLayout() {
   const mainLogout = useAuthStore((state) => state.logout);
   const pathname = usePathname();
   const goHome = useGoHome();
+  const isDesktop = useIsDesktop();
+  const insets = useSafeAreaInsets();
   const [hydrationStarted, setHydrationStarted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!hydrationStarted) {
@@ -69,51 +74,127 @@ export default function AdminDashboardLayout() {
     router.replace('/admin/login');
   };
 
+  const isActive = (href: (typeof NAV)[number]['href']) =>
+    href === '/admin' ? pathname === href : pathname.startsWith(href);
+  const currentLabel = NAV.find((item) => isActive(item.href))?.label;
+
   return (
     <View className="flex-1 bg-slate-100">
-      <View className="bg-primary-dark px-6 pb-4 pt-6 md:px-8 md:pt-8">
+      <View className="bg-primary-dark px-4 pb-4 pt-6 md:px-8 md:pt-8">
         <View className="mx-auto w-full max-w-[1100px] flex-row items-center justify-between">
-          <View className="flex-row items-center gap-8">
-            <View className="flex-row items-center gap-2.5">
-              <BrandMark />
-              <View className="flex-row items-baseline gap-1">
-                <Text className="font-brand text-lg tracking-wide text-white">BOSU</Text>
-                <Text className="text-lg font-light text-white/55">Ledger</Text>
+          {isDesktop ? (
+            <>
+              <View className="flex-row items-center gap-8">
+                <View className="flex-row items-center gap-2.5">
+                  <BrandMark />
+                  <View className="flex-row items-baseline gap-1">
+                    <Text className="font-brand text-lg tracking-wide text-white">BOSU</Text>
+                    <Text className="text-lg font-light text-white/55">Ledger</Text>
+                  </View>
+                  <View className="rounded-full bg-white/15 px-2.5 py-1">
+                    <Text className="text-xs font-semibold text-white/90">관리자</Text>
+                  </View>
+                </View>
+                <View className="flex-row gap-1.5">
+                  {NAV.map((item) => {
+                    const active = isActive(item.href);
+                    return (
+                      <Pressable
+                        key={item.href}
+                        onPress={() => router.push(item.href)}
+                        className={`flex-row items-center gap-1.5 rounded-full px-4 py-2 ${active ? 'bg-white' : ''}`}>
+                        <Ionicons name={item.icon} size={15} color={active ? '#01003D' : '#ffffffb3'} />
+                        <Text className={`text-sm font-semibold ${active ? 'text-primary-dark' : 'text-white/70'}`}>
+                          {item.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
-              <View className="rounded-full bg-white/15 px-2.5 py-1">
-                <Text className="text-xs font-semibold text-white/90">관리자</Text>
+              <View className="flex-row items-center gap-1">
+                <Pressable onPress={goHome} className="flex-row items-center gap-1.5 px-2 py-2">
+                  <Ionicons name="arrow-back-outline" size={16} color="#ffffffb3" />
+                  <Text className="text-sm font-medium text-white/70">앱으로 돌아가기</Text>
+                </Pressable>
+                <Pressable onPress={handleLogout} className="flex-row items-center gap-1.5 px-2 py-2">
+                  <Ionicons name="log-out-outline" size={16} color="#ffffffb3" />
+                  <Text className="text-sm font-medium text-white/70">로그아웃</Text>
+                </Pressable>
               </View>
-            </View>
-            <View className="flex-row gap-1.5">
-              {NAV.map((item) => {
-                const active = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
-                return (
-                  <Pressable
-                    key={item.href}
-                    onPress={() => router.push(item.href)}
-                    className={`flex-row items-center gap-1.5 rounded-full px-4 py-2 ${active ? 'bg-white' : ''}`}>
-                    <Ionicons name={item.icon} size={15} color={active ? '#01003D' : '#ffffffb3'} />
-                    <Text className={`text-sm font-semibold ${active ? 'text-primary-dark' : 'text-white/70'}`}>
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-          <View className="flex-row items-center gap-1">
-            <Pressable onPress={goHome} className="flex-row items-center gap-1.5 px-2 py-2">
-              <Ionicons name="arrow-back-outline" size={16} color="#ffffffb3" />
-              <Text className="text-sm font-medium text-white/70">앱으로 돌아가기</Text>
-            </Pressable>
-            <Pressable onPress={handleLogout} className="flex-row items-center gap-1.5 px-2 py-2">
-              <Ionicons name="log-out-outline" size={16} color="#ffffffb3" />
-              <Text className="text-sm font-medium text-white/70">로그아웃</Text>
-            </Pressable>
-          </View>
+            </>
+          ) : (
+            <>
+              <Pressable onPress={goHome} className="flex-row items-center gap-2" hitSlop={8}>
+                <BrandMark size={20} />
+                <Text className="text-sm font-semibold text-white" numberOfLines={1}>
+                  {currentLabel ?? '관리자'}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setMenuOpen(true)}
+                hitSlop={8}
+                className="h-9 w-9 items-center justify-center rounded-full bg-white/15">
+                <Ionicons name="menu" size={20} color="#ffffff" />
+              </Pressable>
+            </>
+          )}
         </View>
       </View>
       <Slot />
+
+      {!isDesktop ? (
+        <Modal visible={menuOpen} animationType="fade" transparent onRequestClose={() => setMenuOpen(false)}>
+          <Pressable className="flex-1 bg-black/30" onPress={() => setMenuOpen(false)}>
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              style={{ paddingBottom: insets.bottom + 16 }}
+              className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white p-4">
+              <View className="items-center pb-3">
+                <View className="h-1 w-10 rounded-full bg-slate-200" />
+              </View>
+              <View className="gap-1">
+                {NAV.map((item) => {
+                  const active = isActive(item.href);
+                  return (
+                    <Pressable
+                      key={item.href}
+                      onPress={() => {
+                        setMenuOpen(false);
+                        router.push(item.href);
+                      }}
+                      className={`flex-row items-center gap-3 rounded-xl px-3 py-3 ${active ? 'bg-primary-light' : ''}`}>
+                      <Ionicons name={item.icon} size={18} color={active ? '#02007D' : '#64748b'} />
+                      <Text className={`text-sm font-semibold ${active ? 'text-primary' : 'text-slate-700'}`}>
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View className="my-2 h-px bg-slate-100" />
+              <Pressable
+                onPress={() => {
+                  setMenuOpen(false);
+                  goHome();
+                }}
+                className="flex-row items-center gap-3 rounded-xl px-3 py-3">
+                <Ionicons name="arrow-back-outline" size={18} color="#64748b" />
+                <Text className="text-sm font-medium text-slate-700">앱으로 돌아가기</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setMenuOpen(false);
+                  handleLogout();
+                }}
+                className="flex-row items-center gap-3 rounded-xl px-3 py-3">
+                <Ionicons name="log-out-outline" size={18} color="#64748b" />
+                <Text className="text-sm font-medium text-slate-700">로그아웃</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : null}
     </View>
   );
 }
