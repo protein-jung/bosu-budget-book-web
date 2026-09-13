@@ -78,6 +78,27 @@ export default function AdminHouseholdDetailScreen() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   }, [transactions]);
 
+  const monthCategoryTotals = useMemo(() => {
+    const map = new Map<number, AdminCategoryTotal>();
+    for (const t of transactions) {
+      const existing = map.get(t.categoryId);
+      if (existing) {
+        existing.total += t.amount;
+        existing.count += 1;
+      } else {
+        map.set(t.categoryId, {
+          categoryName: t.categoryName,
+          categoryIcon: t.categoryIcon,
+          categoryColor: t.categoryColor,
+          type: t.type,
+          total: t.amount,
+          count: 1,
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [transactions]);
+
   const dayTransactions = transactions.filter((t) => t.transactionDate === selectedDateKey);
   const categoryTransactions = useMemo(
     () =>
@@ -109,8 +130,8 @@ export default function AdminHouseholdDetailScreen() {
     );
   }
 
-  const expenseTotals = data.categoryTotals.filter((c) => c.type === 'EXPENSE');
-  const incomeTotals = data.categoryTotals.filter((c) => c.type === 'INCOME');
+  const expenseTotals = monthCategoryTotals.filter((c) => c.type === 'EXPENSE');
+  const incomeTotals = monthCategoryTotals.filter((c) => c.type === 'INCOME');
   const maxExpense = Math.max(0, ...expenseTotals.map((c) => c.total));
   const maxIncome = Math.max(0, ...incomeTotals.map((c) => c.total));
   const selectedCategory = monthCategories.find((c) => c.id === selectedCategoryId) ?? null;
@@ -246,11 +267,13 @@ export default function AdminHouseholdDetailScreen() {
             </View>
           </View>
 
-          {data.categoryTotals.length > 0 ? (
+          {monthCategoryTotals.length > 0 ? (
             <View className="min-w-[280px] flex-1 gap-5">
               {expenseTotals.length > 0 ? (
                 <View className="gap-3 rounded-2xl bg-white p-5 shadow-sm">
-                  <Text className="text-sm font-semibold text-slate-500">지출 카테고리 합계 (전체 기간)</Text>
+                  <Text className="text-sm font-semibold text-slate-500">
+                    지출 카테고리 합계 ({formatMonthLabel(year, month)})
+                  </Text>
                   <View className="gap-3">
                     {expenseTotals.slice(0, 8).map((item) => (
                       <CategoryBar key={`${item.categoryName}-EXPENSE`} item={item} max={maxExpense} />
@@ -260,7 +283,9 @@ export default function AdminHouseholdDetailScreen() {
               ) : null}
               {incomeTotals.length > 0 ? (
                 <View className="gap-3 rounded-2xl bg-white p-5 shadow-sm">
-                  <Text className="text-sm font-semibold text-slate-500">수입 카테고리 합계 (전체 기간)</Text>
+                  <Text className="text-sm font-semibold text-slate-500">
+                    수입 카테고리 합계 ({formatMonthLabel(year, month)})
+                  </Text>
                   <View className="gap-3">
                     {incomeTotals.slice(0, 8).map((item) => (
                       <CategoryBar key={`${item.categoryName}-INCOME`} item={item} max={maxIncome} />
