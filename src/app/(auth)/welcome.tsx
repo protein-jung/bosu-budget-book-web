@@ -262,23 +262,22 @@ export default function WelcomeScreen() {
           contentContainerClassName="items-center px-5 pb-16 pt-8"
           className="flex-1">
           <View style={heroStyle(0)}>
-            <Pressable onPress={goHome} className="items-center gap-0.5">
-              <Text className="font-brand text-lg text-primary">BOSU Ledger</Text>
-              <Text className="text-xs text-slate-400">보수가계부</Text>
+            <Pressable onPress={goHome} hitSlop={8}>
+              <Text className="font-brand text-xs tracking-[0.3em] text-primary/50">BOSU LEDGER · 보수가계부</Text>
             </Pressable>
           </View>
 
-          <View style={[heroStyle(1), { marginTop: 20 }]}>
-            <Text className="text-center text-xl font-bold text-slate-900">부부와 가족이 함께 쓰는 가계부</Text>
-          </View>
-
-          <View style={[heroStyle(2), { marginTop: 12 }]} className="items-center">
+          <View style={[heroStyle(1), { marginTop: 14 }]} className="items-center">
             <Image
               source={require('../../../assets/marketing/brand-tagline.png')}
               accessibilityLabel="Spend less, Keep more"
               resizeMode="contain"
               style={{ width: isDesktop ? 380 : 260, height: (isDesktop ? 380 : 260) * (803 / 1442) }}
             />
+          </View>
+
+          <View style={[heroStyle(2), { marginTop: 14 }]}>
+            <Text className="text-center text-xl font-bold text-slate-900">부부와 가족이 함께 쓰는 가계부</Text>
           </View>
 
           <View className={`w-full ${isDesktop ? 'max-w-[1040px]' : 'max-w-[520px]'}`}>
