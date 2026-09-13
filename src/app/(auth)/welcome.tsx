@@ -262,8 +262,10 @@ export default function WelcomeScreen() {
           contentContainerClassName="items-center px-5 pb-16 pt-8"
           className="flex-1">
           <View style={heroStyle(0)}>
-            <Pressable onPress={goHome} hitSlop={8}>
-              <Text className="font-brand text-xs tracking-[0.3em] text-primary/50">BOSU LEDGER · 보수가계부</Text>
+            <Pressable onPress={goHome} hitSlop={8} className="flex-row items-baseline gap-1">
+              <Text className="font-brand text-xs tracking-wide text-primary/50">BOSU</Text>
+              <Text className="text-xs font-light text-primary/50">Ledger</Text>
+              <Text className="text-xs text-primary/40">· 보수가계부</Text>
             </Pressable>
           </View>
 
