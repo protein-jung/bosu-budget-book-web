@@ -25,10 +25,18 @@ type Feature = {
 
 const FEATURES: Feature[] = [
   {
+    key: 'import',
+    eyebrow: '증빙',
+    title: '명세서는, 올리기만 하면 끝',
+    body: '삼성카드·경기지역화폐·쿠팡 내역을 올리면 가맹점 이름을 보고 카테고리까지 자동으로 분류돼요.',
+    image: require('../../../assets/marketing/preview-import.gif'),
+    stamp: '자동분류',
+  },
+  {
     key: 'household',
     eyebrow: '작성자',
-    title: '초대코드 하나로, 우리 둘의 가계부',
-    body: '배우자에게 초대코드만 보내면 같은 가계부에 들어와서 함께 기록해요. 누가 얼마를 썼는지 더 이상 카톡으로 캡처해서 보낼 필요 없어요.',
+    title: '초대코드 하나로, 인원 제한 없이 함께',
+    body: '초대코드만 공유하면 같은 가계부에 들어와서 함께 기록해요. 꼭 부부가 아니어도 괜찮아요 — 가족, 형제자매, 룸메이트까지 몇 명이든 원하는 대로 자유롭게 초대해서 써보세요.',
     image: require('../../../assets/marketing/preview-household.png'),
     stamp: '연결완료',
     showConnect: true,
@@ -66,14 +74,6 @@ const FEATURES: Feature[] = [
     body: '대분류·소분류에 아이콘과 색을 입혀서, 우리 가계부만의 방식으로 정리할 수 있어요.',
     image: require('../../../assets/marketing/preview-categories.png'),
     stamp: '분류완료',
-  },
-  {
-    key: 'import',
-    eyebrow: '증빙',
-    title: '명세서는, 올리기만 하면 끝',
-    body: '삼성카드·경기지역화폐·쿠팡 내역을 올리면 가맹점 이름을 보고 카테고리까지 자동으로 분류돼요.',
-    image: require('../../../assets/marketing/preview-import.gif'),
-    stamp: '자동분류',
   },
 ];
 
@@ -276,10 +276,6 @@ export default function WelcomeScreen() {
               resizeMode="contain"
               style={{ width: isDesktop ? 380 : 260, height: (isDesktop ? 380 : 260) * (803 / 1442) }}
             />
-          </View>
-
-          <View style={[heroStyle(2), { marginTop: 14 }]}>
-            <Text className="text-center text-xl font-bold text-slate-900">부부와 가족이 함께 쓰는 가계부</Text>
           </View>
 
           <View className={`w-full ${isDesktop ? 'max-w-[1040px]' : 'max-w-[520px]'}`}>

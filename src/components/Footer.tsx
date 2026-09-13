@@ -4,7 +4,11 @@ import { Text, View } from 'react-native';
 export function Footer() {
   return (
     <View className="mt-6 items-center gap-2 border-t border-slate-100 pt-6">
-      <Text className="font-brand text-xs text-slate-400">© 2026 BOSU Ledger</Text>
+      <View className="flex-row items-baseline gap-1">
+        <Text className="text-xs text-slate-400">© 2026</Text>
+        <Text className="font-brand text-xs text-slate-400">BOSU</Text>
+        <Text className="text-xs font-light text-slate-400">Ledger</Text>
+      </View>
       <View className="flex-row items-center gap-3">
         <Link href="/terms" className="text-xs text-slate-500">
           이용약관
