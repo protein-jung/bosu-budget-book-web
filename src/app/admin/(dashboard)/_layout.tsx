@@ -1,27 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router, Slot, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
 
 import { useIsDesktop } from '@/lib/responsive';
 import { useGoHome } from '@/lib/useGoHome';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
 import { useAuthStore } from '@/store/authStore';
 
-/** assets/brand/logo-mono.svg를 그대로 옮긴 마크 — 어두운 배경용 흰색/반투명 배색. */
-function BrandMark({ size = 22 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 1024 1024">
-      <Path
-        d="M512 214 C524 214 535 219 544 228 L 772 442 C 784 453 790 468 790 484 L 790 744 C 790 768 770 788 746 788 L 278 788 C 254 788 234 768 234 744 L 234 484 C 234 468 240 453 252 442 L 480 228 C 489 219 500 214 512 214 Z"
-        fill="#ffffff"
-      />
-      <Circle cx={512} cy={628} r={132} fill="#ffffff" fillOpacity={0.55} />
-    </Svg>
-  );
-}
+const TAGLINE_ASPECT_RATIO = 803 / 1442;
 
 const NAV: {
   href: '/admin' | '/admin/users' | '/admin/households' | '/admin/feature-requests';
@@ -76,7 +64,6 @@ export default function AdminDashboardLayout() {
 
   const isActive = (href: (typeof NAV)[number]['href']) =>
     href === '/admin' ? pathname === href : pathname.startsWith(href);
-  const currentLabel = NAV.find((item) => isActive(item.href))?.label;
 
   return (
     <View className="flex-1 bg-slate-100">
@@ -85,12 +72,13 @@ export default function AdminDashboardLayout() {
           {isDesktop ? (
             <>
               <View className="flex-row items-center gap-8">
-                <Pressable onPress={() => router.push('/admin')} className="flex-row items-center gap-2.5">
-                  <BrandMark />
-                  <View className="flex-row items-baseline gap-1">
-                    <Text className="font-brand text-lg tracking-wide text-white">BOSU</Text>
-                    <Text className="text-lg font-light text-white/55">Ledger</Text>
-                  </View>
+                <Pressable onPress={() => router.push('/admin')} className="flex-row items-center gap-3">
+                  <Image
+                    source={require('../../../../assets/marketing/brand-tagline-white.png')}
+                    accessibilityLabel="BOSU Ledger — Spend less, Keep more"
+                    resizeMode="contain"
+                    style={{ width: 110, height: 110 * TAGLINE_ASPECT_RATIO }}
+                  />
                   <View className="rounded-full bg-white/15 px-2.5 py-1">
                     <Text className="text-xs font-semibold text-white/90">관리자</Text>
                   </View>
@@ -125,11 +113,13 @@ export default function AdminDashboardLayout() {
             </>
           ) : (
             <>
-              <Pressable onPress={() => router.push('/admin')} className="flex-row items-center gap-2" hitSlop={8}>
-                <BrandMark size={20} />
-                <Text className="text-sm font-semibold text-white" numberOfLines={1}>
-                  {currentLabel ?? '관리자'}
-                </Text>
+              <Pressable onPress={() => router.push('/admin')} hitSlop={8}>
+                <Image
+                  source={require('../../../../assets/marketing/brand-tagline-white.png')}
+                  accessibilityLabel="BOSU Ledger — Spend less, Keep more"
+                  resizeMode="contain"
+                  style={{ width: 84, height: 84 * TAGLINE_ASPECT_RATIO }}
+                />
               </Pressable>
               <Pressable
                 onPress={() => setMenuOpen(true)}

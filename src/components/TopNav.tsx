@@ -40,16 +40,11 @@ export function TopNav() {
         <View className="mx-auto w-full max-w-[1200px] flex-row items-center justify-between">
           <Link href="/calendar" asChild>
             <Pressable>
-              <View className="flex-row items-baseline gap-2">
-                <Text className="font-brand text-2xl tracking-wide text-primary">BOSU</Text>
-                <Text className="text-2xl font-light text-primary/55">Ledger</Text>
-                <Text className="text-xs tracking-widest text-primary/40">· 보수가계부</Text>
-              </View>
               <Image
                 source={require('../../assets/marketing/brand-tagline.png')}
-                accessibilityLabel="Spend less, Keep more"
+                accessibilityLabel="BOSU Ledger — Spend less, Keep more"
                 resizeMode="contain"
-                style={{ width: 130, height: 130 * (803 / 1442), marginTop: 4 }}
+                style={{ width: 150, height: 150 * (803 / 1442) }}
               />
             </Pressable>
           </Link>
