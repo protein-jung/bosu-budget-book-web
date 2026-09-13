@@ -263,7 +263,7 @@ export default function WelcomeScreen() {
           className="flex-1">
           <View style={heroStyle(0)}>
             <Pressable onPress={goHome} className="items-center gap-0.5">
-              <Text className="font-brand text-lg text-primary">🏠 BOSU Ledger</Text>
+              <Text className="font-brand text-lg text-primary">BOSU Ledger</Text>
               <Text className="text-xs text-slate-400">보수가계부</Text>
             </Pressable>
           </View>
