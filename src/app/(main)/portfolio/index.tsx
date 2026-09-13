@@ -408,7 +408,7 @@ export default function AssetsScreen() {
         </View>
       </View>
 
-      <View className="flex-row gap-3">
+      <View className={isDesktop ? 'flex-row gap-3' : 'gap-3'}>
         <View className="flex-1 gap-1 rounded-2xl bg-cream p-4 dark:bg-slate-800">
           <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">총 자산</Text>
           <Text className="text-2xl font-bold text-slate-900 dark:text-white" numberOfLines={1} adjustsFontSizeToFit>
