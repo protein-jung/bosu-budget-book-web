@@ -272,11 +272,13 @@ export default function WelcomeScreen() {
             <Text className="text-center text-xl font-bold text-slate-900">부부와 가족이 함께 쓰는 가계부</Text>
           </View>
 
-          <View style={[heroStyle(2), { marginTop: 8 }]} className="items-center gap-1">
-            <Text className="text-sm text-slate-500">덜 쓰고, 더 남기고.</Text>
-            <Text className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/50">
-              Spend less · Keep more
-            </Text>
+          <View style={[heroStyle(2), { marginTop: 12 }]} className="items-center">
+            <Image
+              source={require('../../../assets/marketing/brand-tagline.png')}
+              accessibilityLabel="Spend less, Keep more"
+              resizeMode="contain"
+              style={{ width: isDesktop ? 380 : 260, height: (isDesktop ? 380 : 260) * (803 / 1442) }}
+            />
           </View>
 
           <View className={`w-full ${isDesktop ? 'max-w-[1040px]' : 'max-w-[520px]'}`}>
