@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
@@ -396,9 +397,12 @@ export default function AssetsScreen() {
           <Pressable
             onPress={handleRefresh}
             disabled={refreshPrices.isPending}
-            className="flex-row items-center gap-2 rounded-full bg-slate-200 px-4 py-2 dark:bg-slate-800">
-            {refreshPrices.isPending ? <ActivityIndicator size="small" /> : null}
-            <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">새로고침</Text>
+            className="h-9 w-9 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800">
+            {refreshPrices.isPending ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Ionicons name="refresh" size={18} color="#334155" />
+            )}
           </Pressable>
           <Pressable
             onPress={() => setEditing(null)}
