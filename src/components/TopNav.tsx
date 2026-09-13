@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, usePathname } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
 import { NotificationBell } from '@/components/NotificationBell';
 import { TransactionSearchModal } from '@/features/transaction/TransactionSearchModal';
@@ -43,9 +43,14 @@ export function TopNav() {
               <View className="flex-row items-baseline gap-2">
                 <Text className="font-brand text-2xl tracking-wide text-primary">BOSU</Text>
                 <Text className="text-2xl font-light text-primary/55">Ledger</Text>
+                <Text className="text-xs tracking-widest text-primary/40">· 보수가계부</Text>
               </View>
-              <Text className="mt-1 text-[11px] tracking-widest text-primary/40">보수가계부</Text>
-              <Text className="text-[11px] tracking-widest text-primary/30">Spend less. Keep more.</Text>
+              <Image
+                source={require('../../assets/marketing/brand-tagline.png')}
+                accessibilityLabel="Spend less, Keep more"
+                resizeMode="contain"
+                style={{ width: 130, height: 130 * (803 / 1442), marginTop: 4 }}
+              />
             </Pressable>
           </Link>
 
