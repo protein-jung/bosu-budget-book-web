@@ -40,7 +40,7 @@ function CommentBubble({
       <View className="h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: color }}>
         <Text className="text-[11px] font-bold text-white">{comment.authorName.slice(0, 1)}</Text>
       </View>
-      <View className="gap-1">
+      <View className="min-w-0 shrink gap-1">
         <View className={`rounded-2xl px-3.5 py-2.5 ${isOwn ? 'rounded-br-sm bg-primary' : 'rounded-bl-sm bg-cream-dark'}`}>
           {isOwn ? null : (
             <Text className="mb-0.5 text-[11px] font-semibold text-primary/70" numberOfLines={1}>
