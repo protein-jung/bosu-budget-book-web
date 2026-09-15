@@ -7,7 +7,7 @@ import { DraggableList } from '@/components/DraggableList';
 import { Screen } from '@/components/Screen';
 import { useCategories, useCategoryMemos, useReorderCategories } from '@/features/category/api';
 import { CategoryFormModal } from '@/features/category/CategoryFormModal';
-import { useFullHistoryStatistics } from '@/features/statistics/api';
+import { useFullHistoryStatistics, useMonthComments } from '@/features/statistics/api';
 import { CategoryMemoModal, type MemoTarget } from '@/features/statistics/CategoryMemoModal';
 import { CategorySpendingDetailModal } from '@/features/statistics/CategorySpendingDetailModal';
 import { formatCompactKrw, formatKrw } from '@/lib/format';
@@ -110,10 +110,6 @@ function amountFor(point: MonthlyTrendPoint, row: Row): number {
   if (row.categoryId == null) return 0;
   const list = row.kind === 'group' ? point.byParentCategory : point.byCategory;
   return list.find((c) => c.categoryId === row.categoryId)?.amount ?? 0;
-}
-
-function monthLabel(point: MonthlyTrendPoint) {
-  return `${point.year}.${String(point.month).padStart(2, '0')}`;
 }
 
 function memoKeyFor(categoryId: number, year: number, month: number) {
@@ -288,6 +284,48 @@ function LabelRow({
   );
 }
 
+/** 월 헤더 셀. 마우스를 올리면(PC 전용 — hover 자체가 마우스 환경에서만 발생) 그 달에
+ * 남긴 코멘트를 미리보기로 보여준다. hover하기 전까지는 코멘트를 불러오지 않는다 — 전체
+ * 히스토리를 표시하면 열이 수십 개까지 늘어날 수 있어서, 미리 다 fetch하면 낭비가 크다. */
+function MonthHeaderCell({ year, month }: { year: number; month: number }) {
+  const [hovered, setHovered] = useState(false);
+  const { data: comments = [] } = useMonthComments(year, month, hovered);
+  const onHoverIn = useCallback(() => setHovered(true), []);
+  const onHoverOut = useCallback(() => setHovered(false), []);
+
+  return (
+    <Link
+      href={{ pathname: '/statistics/month', params: { year: String(year), month: String(month) } }}
+      asChild>
+      <Pressable
+        style={{ width: COL_WIDTH, position: 'relative' }}
+        className="items-end justify-center pr-2"
+        onHoverIn={onHoverIn}
+        onHoverOut={onHoverOut}>
+        <Text className="text-xs font-semibold text-primary dark:text-secondary">
+          {year}.{String(month).padStart(2, '0')} ›
+        </Text>
+        {hovered && comments.length > 0 ? (
+          <View
+            style={{ position: 'absolute', top: '100%', right: 0, width: 220, zIndex: 20 }}
+            className="mt-1 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+            <Text className="mb-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              💬 이번 달 코멘트
+            </Text>
+            <ScrollView style={{ maxHeight: 68 }}>
+              {comments.map((c) => (
+                <Text key={c.id} className="mb-1 text-[11px] leading-4 text-slate-700 dark:text-slate-200">
+                  {c.authorName}: {c.body}
+                </Text>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+      </Pressable>
+    </Link>
+  );
+}
+
 export default function StatisticsScreen() {
   const { data: categories = [] } = useCategories();
   const { data: range, isLoading } = useFullHistoryStatistics();
@@ -429,16 +467,7 @@ export default function StatisticsScreen() {
                 style={{ height: HEADER_HEIGHT }}
                 className="flex-row border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
                 {months.map((m) => (
-                  <Link
-                    key={`${m.year}-${m.month}`}
-                    href={{ pathname: '/statistics/month', params: { year: String(m.year), month: String(m.month) } }}
-                    asChild>
-                    <Pressable style={{ width: COL_WIDTH }} className="items-end justify-center pr-2">
-                      <Text className="text-xs font-semibold text-primary dark:text-secondary">
-                        {monthLabel(m)} ›
-                      </Text>
-                    </Pressable>
-                  </Link>
+                  <MonthHeaderCell key={`${m.year}-${m.month}`} year={m.year} month={m.month} />
                 ))}
               </View>
 

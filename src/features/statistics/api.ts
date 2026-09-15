@@ -52,10 +52,11 @@ export function useFullHistoryStatistics() {
 
 const MONTH_COMMENTS_QUERY_KEY = (year: number, month: number) => ['statistics', 'month-comments', year, month];
 
-export function useMonthComments(year: number, month: number) {
+export function useMonthComments(year: number, month: number, enabled = true) {
   return useQuery({
     queryKey: MONTH_COMMENTS_QUERY_KEY(year, month),
     queryFn: () => statisticsApi.getMonthComments(year, month),
+    enabled,
   });
 }
 
