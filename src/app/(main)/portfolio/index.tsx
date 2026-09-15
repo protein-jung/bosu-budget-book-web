@@ -394,17 +394,23 @@ export default function AssetsScreen() {
           </Text>
           <ChangeLabel change={todayChange} caption="오늘" />
         </View>
-        <Link href="/portfolio/change" asChild>
-          <Pressable className="flex-1 gap-1 rounded-2xl bg-cream p-4 dark:bg-slate-800">
+        <View className="flex-1 gap-1 rounded-2xl bg-cream p-4 dark:bg-slate-800">
+          <View className="flex-row items-center justify-between">
             <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">최근 30일</Text>
-            <Text className="text-2xl font-bold text-slate-900 dark:text-white" numberOfLines={1} adjustsFontSizeToFit>
-              {periodChange
-                ? `${periodChange.amount >= 0 ? '+' : ''}${formatKrw(Math.round(periodChange.amount))}`
-                : '-'}
-            </Text>
-            <ChangeLabel change={periodChange} caption="30일 전 대비" />
-          </Pressable>
-        </Link>
+            <Link href="/portfolio/change" asChild>
+              <Pressable className="flex-row items-center gap-0.5" hitSlop={8}>
+                <Text className="text-xs font-medium text-primary dark:text-secondary">더보기</Text>
+                <Ionicons name="chevron-forward" size={12} color="#105753" />
+              </Pressable>
+            </Link>
+          </View>
+          <Text className="text-2xl font-bold text-slate-900 dark:text-white" numberOfLines={1} adjustsFontSizeToFit>
+            {periodChange
+              ? `${periodChange.amount >= 0 ? '+' : ''}${formatKrw(Math.round(periodChange.amount))}`
+              : '-'}
+          </Text>
+          <ChangeLabel change={periodChange} caption="30일 전 대비" />
+        </View>
       </View>
 
       {compositionData.length > 0 ? (
