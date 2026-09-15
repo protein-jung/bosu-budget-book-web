@@ -145,6 +145,7 @@ export function AssetFormModal({
   const [cashStartDate, setCashStartDate] = useState<string | null>(null);
   const [showCashStartPicker, setShowCashStartPicker] = useState(false);
   const [cashTermMonths, setCashTermMonths] = useState('');
+  const [cashMonthlyContribution, setCashMonthlyContribution] = useState('');
   const [purchaseDate, setPurchaseDate] = useState<string | null>(null);
   const [showPurchaseDatePicker, setShowPurchaseDatePicker] = useState(false);
   const [encarUrl, setEncarUrl] = useState('');
@@ -197,6 +198,9 @@ export function AssetFormModal({
       setMaturityDate(asset.maturityDate);
       setCashInterestRate(asset.cashInterestRate != null ? String(asset.cashInterestRate) : '');
       setCashStartDate(asset.cashStartDate);
+      setCashMonthlyContribution(
+        asset.cashMonthlyContribution != null ? String(asset.cashMonthlyContribution) : '',
+      );
       setCashTermMonths(
         asset.cashStartDate && asset.maturityDate
           ? String(approxMonthsBetweenDateKeys(asset.cashStartDate, asset.maturityDate))
@@ -248,6 +252,7 @@ export function AssetFormModal({
       setCashInterestRate('');
       setCashStartDate(null);
       setCashTermMonths('');
+      setCashMonthlyContribution('');
       setPurchaseDate(null);
       setEncarUrl('');
       setStockHoldingType('SYMBOL');
@@ -360,6 +365,7 @@ export function AssetFormModal({
               maturityDate: null,
               cashInterestRate: null,
               cashStartDate: null,
+              cashMonthlyContribution: null,
               purchaseDate: null,
               encarUrl: null,
               loanPrincipal: null,
@@ -393,6 +399,7 @@ export function AssetFormModal({
               maturityDate: null,
               cashInterestRate: null,
               cashStartDate: null,
+              cashMonthlyContribution: null,
               purchaseDate: null,
               encarUrl: null,
               loanPrincipal: null,
@@ -520,6 +527,10 @@ export function AssetFormModal({
       cashInterestRate:
         type === 'CASH' && cashCategory !== 'ACCOUNT' && cashInterestRate.trim() ? Number(cashInterestRate) : null,
       cashStartDate: type === 'CASH' && cashCategory !== 'ACCOUNT' ? cashStartDate : null,
+      cashMonthlyContribution:
+        type === 'CASH' && cashCategory === 'SAVINGS' && cashMonthlyContribution.trim()
+          ? Number(cashMonthlyContribution)
+          : null,
       purchaseDate: type === 'VEHICLE' ? purchaseDate : null,
       encarUrl: type === 'VEHICLE' ? encarUrl.trim() || null : null,
       loanPrincipal: type === 'LOAN' ? Number(loanPrincipal) : null,
@@ -768,6 +779,19 @@ export function AssetFormModal({
                         initialDateKey={cashStartDate ?? undefined}
                         yearRangeFuture={10}
                       />
+                      {cashCategory === 'SAVINGS' ? (
+                        <>
+                          <AmountField
+                            label="월 납입액 (선택)"
+                            value={cashMonthlyContribution}
+                            onChangeText={setCashMonthlyContribution}
+                          />
+                          <Text className="text-xs text-slate-400">
+                            월 납입액을 입력하면, 시작일 기준 매달 예치금에 이 금액이 더해진 값으로 현재가치를
+                            계산해요(이 경우 이율은 안 써요).
+                          </Text>
+                        </>
+                      ) : null}
                       <TextField
                         label="예치 기간 (개월, 선택)"
                         value={cashTermMonths}
@@ -775,13 +799,15 @@ export function AssetFormModal({
                         keyboardType="number-pad"
                         placeholder="예) 12"
                       />
-                      <TextField
-                        label="이율 (연 %, 선택)"
-                        value={cashInterestRate}
-                        onChangeText={(text) => setCashInterestRate(text.replace(/[^0-9.]/g, ''))}
-                        keyboardType="decimal-pad"
-                        placeholder="예) 3.5"
-                      />
+                      {cashCategory !== 'SAVINGS' || !cashMonthlyContribution.trim() ? (
+                        <TextField
+                          label="이율 (연 %, 선택)"
+                          value={cashInterestRate}
+                          onChangeText={(text) => setCashInterestRate(text.replace(/[^0-9.]/g, ''))}
+                          keyboardType="decimal-pad"
+                          placeholder="예) 3.5"
+                        />
+                      ) : null}
                       <View className="gap-1.5 opacity-70">
                         <TextField label="만기일 (자동 계산)" value={maturityDate ?? ''} editable={false} placeholder="시작일과 기간을 입력하면 계산돼요" />
                       </View>
@@ -790,6 +816,22 @@ export function AssetFormModal({
                         보여드려요.
                       </Text>
                     </>
+                  ) : null}
+                  {isEdit && asset && asset.cashContributions.length > 0 ? (
+                    <View className="gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-700">
+                      <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">납입 내역</Text>
+                      {asset.cashContributions.map((c) => (
+                        <View key={c.date + String(c.initial)} className="flex-row items-center justify-between">
+                          <Text className="text-sm text-slate-500 dark:text-slate-400">
+                            {c.date} {c.initial ? '· 예치금' : '· 월 납입'}
+                          </Text>
+                          <Text className="text-sm font-medium text-slate-900 dark:text-white">
+                            {c.initial ? '' : '+'}
+                            {c.amount.toLocaleString()}원
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   ) : null}
                 </View>
               ) : null}
@@ -1201,7 +1243,9 @@ export function AssetFormModal({
                         ? '구매 가격'
                         : type === 'REAL_ESTATE'
                           ? REAL_ESTATE_CATEGORY_META[realEstateCategory].valueLabel
-                          : '평가금액'
+                          : type === 'CASH' && cashCategory === 'SAVINGS'
+                            ? '예치금'
+                            : '평가금액'
                     }
                     value={manualValue}
                     onChangeText={setManualValue}

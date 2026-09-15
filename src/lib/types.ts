@@ -216,6 +216,8 @@ export type CashCategory = 'ACCOUNT' | 'DEPOSIT' | 'SAVINGS';
 export type LoanRepaymentType = 'EQUAL_INSTALLMENT' | 'EQUAL_PRINCIPAL';
 export type RealEstateCategory = 'OWNED' | 'JEONSE' | 'WOLSE';
 
+export type CashContribution = { date: string; amount: number; initial: boolean };
+
 export type Asset = {
   id: number;
   type: AssetType;
@@ -243,6 +245,8 @@ export type Asset = {
   matured: boolean;
   cashInterestRate: number | null;
   cashStartDate: string | null;
+  cashMonthlyContribution: number | null;
+  cashContributions: CashContribution[];
   purchaseDate: string | null;
   encarUrl: string | null;
   loanPrincipal: number | null;

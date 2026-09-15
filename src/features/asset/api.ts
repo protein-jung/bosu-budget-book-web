@@ -36,6 +36,7 @@ export type AssetInput = {
   maturityDate: string | null;
   cashInterestRate: number | null;
   cashStartDate: string | null;
+  cashMonthlyContribution: number | null;
   purchaseDate: string | null;
   encarUrl: string | null;
   loanPrincipal: number | null;
