@@ -10,6 +10,7 @@ import { ActivityIndicator, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { PageViewTracker } from '@/components/PageViewTracker';
 import { ToastHost } from '@/components/ToastHost';
 import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/store/authStore';
@@ -104,6 +105,7 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <Slot />
             <ToastHost />
+            <PageViewTracker />
           </QueryClientProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>

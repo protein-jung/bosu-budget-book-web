@@ -12,7 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 const TAGLINE_ASPECT_RATIO = 619 / 1295;
 
 const NAV: {
-  href: '/admin' | '/admin/users' | '/admin/households' | '/admin/feature-requests';
+  href: '/admin' | '/admin/users' | '/admin/households' | '/admin/feature-requests' | '/admin/visits';
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
@@ -20,6 +20,7 @@ const NAV: {
   { href: '/admin/users', label: '회원', icon: 'people-outline' },
   { href: '/admin/households', label: '가계부', icon: 'wallet-outline' },
   { href: '/admin/feature-requests', label: '기능 요청', icon: 'chatbox-ellipses-outline' },
+  { href: '/admin/visits', label: '접속 통계', icon: 'bar-chart-outline' },
 ];
 
 export default function AdminDashboardLayout() {
