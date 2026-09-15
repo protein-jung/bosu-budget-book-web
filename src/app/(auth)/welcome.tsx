@@ -53,10 +53,10 @@ const FEATURES: Feature[] = [
     key: 'statistics',
     eyebrow: '집계',
     title: '숫자로 보면, 새는 곳이 보여요',
-    body: '카테고리·카드·가족 구성원별로 얼마나 썼는지 도넛·막대 차트로 한눈에 보고, 예산을 정해두면 초과했을 때 바로 표시돼요.',
-    image: require('../../../assets/marketing/preview-statistics.gif'),
+    body: '카테고리·카드·가족 구성원별로 얼마나 썼는지 도넛·막대 차트로 한눈에 보고, 예산을 정해두면 초과했을 때 바로 빨간불이 들어와요. 그 달이 어땠는지는 구성원끼리 코멘트로 남겨요.',
+    image: require('../../../assets/marketing/preview-review.gif'),
     stamp: '집계완료',
-    stat: { label: '예시 화면 속 이번 달 지출', value: 4088698, prefix: '₩' },
+    stat: { label: '예시 화면 속 이번 달 지출', value: 636083, prefix: '₩' },
   },
   {
     key: 'assets',
