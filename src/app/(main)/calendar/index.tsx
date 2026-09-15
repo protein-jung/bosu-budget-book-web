@@ -459,12 +459,12 @@ export default function CalendarScreen() {
 
   return (
     <Screen
-      maxWidthClassName={isDesktop ? 'max-w-[1100px]' : 'max-w-[480px]'}
+      maxWidthClassName={isDesktop ? 'max-w-[1220px]' : 'max-w-[480px]'}
       backgroundClassName="bg-cream"
       footer>
       {isDesktop ? (
         <View className="flex-row items-start justify-center gap-6">
-          <View className="w-[480px]">{calendarColumn}</View>
+          <View className="w-[500px]">{calendarColumn}</View>
           <MonthSummaryPanel
             year={year}
             month={month}

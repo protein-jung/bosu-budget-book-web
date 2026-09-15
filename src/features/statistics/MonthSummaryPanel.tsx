@@ -43,7 +43,7 @@ export function MonthSummaryPanel({
 
   if (isLoading || !summary) {
     return (
-      <View className="w-[320px] items-center rounded-2xl bg-white p-6 shadow-sm shadow-slate-200">
+      <View className="w-[380px] items-center rounded-2xl bg-white p-6 shadow-sm shadow-slate-200">
         <ActivityIndicator />
       </View>
     );
@@ -52,7 +52,7 @@ export function MonthSummaryPanel({
   const maxCard = Math.max(1, ...summary.byCard.map((c) => c.amount));
 
   return (
-    <View className="w-[320px] gap-5 rounded-2xl bg-white p-5 shadow-sm shadow-slate-200">
+    <View className="w-[380px] gap-5 rounded-2xl bg-white p-5 shadow-sm shadow-slate-200">
       <View className="gap-2">
         <Text className="text-sm font-semibold text-slate-500">전체</Text>
         <View className="flex-row gap-2">
@@ -62,7 +62,9 @@ export function MonthSummaryPanel({
               selectedType === 'INCOME' ? 'bg-income/10' : 'bg-slate-50'
             }`}>
             <Text className="text-xs text-slate-500">수입</Text>
-            <Text className="text-lg font-bold text-primary">{formatKrw(summary.totalIncome)}</Text>
+            <Text className="text-lg font-bold text-primary" numberOfLines={1} adjustsFontSizeToFit>
+              {formatKrw(summary.totalIncome)}
+            </Text>
           </Pressable>
           <Pressable
             onPress={() => onSelectType?.('EXPENSE')}
@@ -70,7 +72,9 @@ export function MonthSummaryPanel({
               selectedType === 'EXPENSE' ? 'bg-expense/10' : 'bg-slate-50'
             }`}>
             <Text className="text-xs text-slate-500">지출</Text>
-            <Text className="text-lg font-bold text-secondary">{formatKrw(summary.totalExpense)}</Text>
+            <Text className="text-lg font-bold text-secondary" numberOfLines={1} adjustsFontSizeToFit>
+              {formatKrw(summary.totalExpense)}
+            </Text>
           </Pressable>
         </View>
       </View>
