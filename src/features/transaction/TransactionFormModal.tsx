@@ -93,6 +93,7 @@ export function TransactionFormModal({
     setType(nextType);
     setCategoryId(null);
     setActiveGroupId(null);
+    setCardId(null);
   };
 
   const topGroups = useMemo(() => topLevelCategories(categories, type), [categories, type]);
@@ -242,7 +243,12 @@ export function TransactionFormModal({
               <Ionicons name="chevron-down" size={16} color="#94a3b8" />
             </Pressable>
 
-            <TextField label="제목" value={memo} onChangeText={setMemo} placeholder="예) 스타벅스 강남점" />
+            <TextField
+              label="제목"
+              value={memo}
+              onChangeText={setMemo}
+              placeholder={type === 'INCOME' ? '예) 9월 급여' : '예) 스타벅스 강남점'}
+            />
 
             <View className="gap-2">
               <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">대분류</Text>
@@ -284,15 +290,22 @@ export function TransactionFormModal({
               <Text className="text-sm font-medium text-primary">+ 카테고리 추가</Text>
             </Pressable>
 
-            <View className="gap-2">
-              <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">결제 수단 (선택)</Text>
-              <View className="flex-row flex-wrap gap-2">
-                <Chip label="없음" selected={cardId === null} onPress={() => setCardId(null)} />
-                {cards.map((card) => (
-                  <Chip key={card.id} label={card.name} selected={cardId === card.id} onPress={() => setCardId(card.id)} />
-                ))}
+            {type === 'EXPENSE' ? (
+              <View className="gap-2">
+                <Text className="text-sm font-medium text-slate-700 dark:text-slate-200">결제 수단 (선택)</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  <Chip label="없음" selected={cardId === null} onPress={() => setCardId(null)} />
+                  {cards.map((card) => (
+                    <Chip
+                      key={card.id}
+                      label={card.name}
+                      selected={cardId === card.id}
+                      onPress={() => setCardId(card.id)}
+                    />
+                  ))}
+                </View>
               </View>
-            </View>
+            ) : null}
 
             <TextField
               label="메모 (선택)"
