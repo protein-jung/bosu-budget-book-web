@@ -10,6 +10,10 @@ export function Footer() {
         <Text className="text-xs font-light text-slate-400">Ledger</Text>
       </View>
       <View className="flex-row items-center gap-3">
+        <Link href="/blog" className="text-xs text-slate-500">
+          블로그
+        </Link>
+        <View className="h-3 w-px bg-slate-200" />
         <Link href="/terms" className="text-xs text-slate-500">
           이용약관
         </Link>
