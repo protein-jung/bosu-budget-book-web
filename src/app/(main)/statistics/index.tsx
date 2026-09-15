@@ -307,7 +307,10 @@ function MonthHeaderCell({ year, month }: { year: number; month: number }) {
         </Text>
         {hovered && comments.length > 0 ? (
           <View
-            style={{ position: 'absolute', top: '100%', right: 0, width: 220, zIndex: 20 }}
+            // right: 0으로 앵커링하면 맨 왼쪽(가장 최근) 달 헤더에서 hover할 때 가로 스크롤
+            // 영역의 시작(0) 지점보다 더 왼쪽으로 삐져나가고, 그 부분은 스크롤로도 볼 수 없어
+            // 잘려 보인다. left: 0으로 오른쪽 방향으로만 넘치게 해서 이 문제를 피한다.
+            style={{ position: 'absolute', top: '100%', left: 0, width: 220, zIndex: 20 }}
             className="mt-1 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
             <Text className="mb-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
               💬 이번 달 코멘트
