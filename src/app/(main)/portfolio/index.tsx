@@ -7,6 +7,8 @@ import { TrendLineChart } from '@/components/charts/TrendLineChart';
 import { Screen } from '@/components/Screen';
 import { useAssets, useAssetSummary, useAssetTrend, useRefreshAssetPrices } from '@/features/asset/api';
 import { AssetFormModal } from '@/features/asset/AssetFormModal';
+import { ChangeLabel } from '@/features/asset/ChangeLabel';
+import { computeChange } from '@/features/asset/change';
 import { formatCompactKrw, formatKrw } from '@/lib/format';
 import { ASSET_TYPE_META, CASH_CATEGORY_META, LOAN_REPAYMENT_TYPE_META, REAL_ESTATE_CATEGORY_META } from '@/lib/palette';
 import { useIsDesktop } from '@/lib/responsive';
@@ -143,34 +145,6 @@ function LiveCashInterest({ asset }: { asset: Asset }) {
         <Text className="text-xs text-slate-400">만기 시 {formatKrw(Math.round(maturityAmount))} 수령 예정</Text>
       ) : null}
     </View>
-  );
-}
-
-type Change = { amount: number; rate: number };
-
-function computeChange(from: number, to: number): Change | null {
-  if (from === 0) return null;
-  return { amount: to - from, rate: ((to - from) / from) * 100 };
-}
-
-function ChangeLabel({ change, caption }: { change: Change | null; caption: string }) {
-  if (!change) {
-    return <Text className="text-xs text-slate-400">데이터가 더 쌓이면 표시돼요</Text>;
-  }
-  if (change.rate === 0) {
-    return (
-      <Text className="text-xs font-semibold text-slate-400">
-        변동 없음 <Text className="text-xs font-normal text-slate-400">{caption}</Text>
-      </Text>
-    );
-  }
-  const positive = change.rate > 0;
-  return (
-    <Text className={`text-xs font-semibold ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
-      {positive ? '▲' : '▼'} {positive ? '+' : ''}
-      {change.rate.toFixed(2)}%{' '}
-      <Text className="text-xs font-normal text-slate-400">{caption}</Text>
-    </Text>
   );
 }
 
@@ -420,15 +394,17 @@ export default function AssetsScreen() {
           </Text>
           <ChangeLabel change={todayChange} caption="오늘" />
         </View>
-        <View className="flex-1 gap-1 rounded-2xl bg-cream p-4 dark:bg-slate-800">
-          <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">최근 30일</Text>
-          <Text className="text-2xl font-bold text-slate-900 dark:text-white" numberOfLines={1} adjustsFontSizeToFit>
-            {periodChange
-              ? `${periodChange.amount >= 0 ? '+' : ''}${formatKrw(Math.round(periodChange.amount))}`
-              : '-'}
-          </Text>
-          <ChangeLabel change={periodChange} caption="30일 전 대비" />
-        </View>
+        <Link href="/portfolio/change" asChild>
+          <Pressable className="flex-1 gap-1 rounded-2xl bg-cream p-4 dark:bg-slate-800">
+            <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">최근 30일</Text>
+            <Text className="text-2xl font-bold text-slate-900 dark:text-white" numberOfLines={1} adjustsFontSizeToFit>
+              {periodChange
+                ? `${periodChange.amount >= 0 ? '+' : ''}${formatKrw(Math.round(periodChange.amount))}`
+                : '-'}
+            </Text>
+            <ChangeLabel change={periodChange} caption="30일 전 대비" />
+          </Pressable>
+        </Link>
       </View>
 
       {compositionData.length > 0 ? (
