@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { adminApiClient } from '@/lib/adminApiClient';
-import type { AdminFeatureRequest, Transaction } from '@/lib/types';
+import type { AdminFeatureRequest, AdminReview, Transaction } from '@/lib/types';
 
 export type AdminUser = {
   id: number;
@@ -117,11 +117,13 @@ const adminApi = {
     adminApiClient
       .post<AdminFeatureRequest>(`/api/admin/feature-requests/${requestId}/reply`, { reply })
       .then((res) => res.data),
+  getReviews: () => adminApiClient.get<AdminReview[]>('/api/admin/reviews').then((res) => res.data),
 };
 
 const ADMIN_USERS_QUERY_KEY = ['admin', 'users'];
 const ADMIN_HOUSEHOLDS_QUERY_KEY = ['admin', 'households'];
 const ADMIN_FEATURE_REQUESTS_QUERY_KEY = ['admin', 'feature-requests'];
+const ADMIN_REVIEWS_QUERY_KEY = ['admin', 'reviews'];
 
 export function useAdminLogin() {
   return useMutation({ mutationFn: adminApi.login });
@@ -204,4 +206,8 @@ export function useReplyFeatureRequest() {
       adminApi.replyFeatureRequest(requestId, reply),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ADMIN_FEATURE_REQUESTS_QUERY_KEY }),
   });
+}
+
+export function useAdminReviews() {
+  return useQuery({ queryKey: ADMIN_REVIEWS_QUERY_KEY, queryFn: adminApi.getReviews });
 }

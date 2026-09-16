@@ -33,6 +33,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="household" options={{ title: '가계부 정보' }} />
       <Stack.Screen name="import" options={{ title: '명세서 가져오기' }} />
       <Stack.Screen name="feature-requests" options={{ title: '기능 요청' }} />
+      <Stack.Screen name="review" options={{ title: '리뷰 남기기' }} />
     </Stack>
   );
 }

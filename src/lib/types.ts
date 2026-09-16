@@ -164,6 +164,18 @@ export type AdminFeatureRequest = FeatureRequest & {
   authorEmail: string | null;
 };
 
+export type Review = {
+  id: number;
+  rating: number;
+  content: string | null;
+  createdAt: string;
+};
+
+export type AdminReview = Review & {
+  authorName: string;
+  authorEmail: string | null;
+};
+
 export type NotificationType = 'FEATURE_REQUEST_REPLY' | 'TRANSACTION_CREATED';
 
 export type NotificationItem = {
