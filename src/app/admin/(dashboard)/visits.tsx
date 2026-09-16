@@ -113,6 +113,46 @@ export default function AdminVisitsScreen() {
                 </View>
               )}
             </View>
+
+            <View className="gap-2 rounded-2xl bg-white p-5 shadow-sm">
+              <View className="gap-1">
+                <Text className="text-sm font-semibold text-slate-500">캠페인별 유입</Text>
+                <Text className="text-xs text-slate-400">
+                  링크에 utm_source/utm_medium/utm_campaign이 붙은 방문만 집계돼요. 예)
+                  ?utm_source=instagram&utm_medium=social&utm_campaign=profile
+                </Text>
+              </View>
+              {data.byCampaign.length === 0 ? (
+                <Text className="py-8 text-center text-xs text-slate-400">
+                  아직 UTM 파라미터가 붙은 방문이 없어요.
+                </Text>
+              ) : (
+                <View className="mt-2 gap-1">
+                  <View className="flex-row border-b border-slate-100 pb-2">
+                    <Text className="flex-1 text-xs font-semibold text-slate-400">유입 채널 (source / medium / campaign)</Text>
+                    <Text className="w-24 text-right text-xs font-semibold text-slate-400">조회수</Text>
+                    <Text className="w-24 text-right text-xs font-semibold text-slate-400">순 방문자</Text>
+                  </View>
+                  {data.byCampaign.map((row, index) => (
+                    <View
+                      key={`${row.utmSource}-${row.utmMedium}-${row.utmCampaign}-${index}`}
+                      className="flex-row items-center border-b border-slate-50 py-2.5">
+                      <Text className="flex-1 text-sm text-slate-700" numberOfLines={1}>
+                        {row.utmSource}
+                        {row.utmMedium ? ` / ${row.utmMedium}` : ''}
+                        {row.utmCampaign ? ` / ${row.utmCampaign}` : ''}
+                      </Text>
+                      <Text className="w-24 text-right text-sm font-semibold text-slate-900">
+                        {row.views.toLocaleString()}
+                      </Text>
+                      <Text className="w-24 text-right text-sm text-slate-500">
+                        {row.uniqueVisitors.toLocaleString()}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </>
         )}
       </View>
