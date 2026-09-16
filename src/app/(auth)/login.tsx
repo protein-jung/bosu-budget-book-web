@@ -58,8 +58,9 @@ export default function LoginScreen() {
       </Head>
       <Screen footer>
         <View className="mt-16 gap-1">
-          <Pressable onPress={goHome} className="self-start">
-            <Text className="font-brand text-3xl text-primary dark:text-secondary">BOSU Ledger</Text>
+          <Pressable onPress={goHome} className="flex-row items-baseline gap-1.5 self-start">
+            <Text className="font-brand text-3xl text-primary dark:text-secondary">BOSU</Text>
+            <Text className="text-3xl font-light text-primary dark:text-secondary">Ledger</Text>
           </Pressable>
           <Text className="text-base text-slate-500 dark:text-slate-400">덜 쓰고, 더 남기고.</Text>
           <Text className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/50 dark:text-secondary/60">
