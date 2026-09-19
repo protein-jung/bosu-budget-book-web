@@ -5,15 +5,7 @@ import { formatKrw } from '@/lib/format';
 import { useMonthlyStatistics } from './api';
 import type { ParentCategoryFilter } from './MonthSummaryPanel';
 
-function Bar({ amount, max, color }: { amount: number; max: number; color: string }) {
-  return (
-    <View className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-      <View className="h-full rounded-full" style={{ width: `${(amount / max) * 100}%`, backgroundColor: color }} />
-    </View>
-  );
-}
-
-/** 예산이 잡혀있는 카테고리는 크기 비교용 막대 대신 예산 대비 사용률(과다 지출 시 빨간색)로 보여준다. */
+/** 예산이 잡혀있는 카테고리는 예산 대비 사용률(과다 지출 시 빨간색)로 보여준다. */
 export function BudgetBar({ spent, target }: { spent: number; target: number }) {
   const pct = target > 0 ? Math.min(100, (spent / target) * 100) : 0;
   const over = spent > target;
@@ -25,8 +17,8 @@ export function BudgetBar({ spent, target }: { spent: number; target: number }) 
   );
 }
 
-/** 대분류별 지출 목록. 예산이 있으면 "사용액 / 최대 예산"과 사용률 막대를, 없으면 지출 비교용
- * 막대만 보여준다. 달력 탭(모바일)과 통계 사이드 패널(데스크톱)에서 함께 쓴다. */
+/** 대분류별 지출 목록. 예산이 있으면 "사용액 / 최대 예산"과 사용률 막대를, 없으면 "예산 등록
+ * 필요"를 보여준다. 달력 탭(모바일)과 통계 사이드 패널(데스크톱)에서 함께 쓴다. */
 export function CategoryBudgetSummary({
   year,
   month,
@@ -55,7 +47,6 @@ export function CategoryBudgetSummary({
   }
 
   const parentExpenses = summary.byParentCategory.filter((c) => c.type === 'EXPENSE');
-  const maxCategory = Math.max(1, ...parentExpenses.map((c) => c.amount));
   const budgetByCategoryId = new Map(summary.budgets.map((b) => [b.categoryId, b]));
 
   return (
@@ -88,7 +79,7 @@ export function CategoryBudgetSummary({
               {budget ? (
                 <BudgetBar spent={item.amount} target={budget.targetAmount} />
               ) : (
-                <Bar amount={item.amount} max={maxCategory} color={item.color ?? '#105753'} />
+                <Text className="text-[10px] text-slate-400">예산 등록 필요</Text>
               )}
             </Pressable>
           );
