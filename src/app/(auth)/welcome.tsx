@@ -161,6 +161,82 @@ function FeatureSection({
   );
 }
 
+const INSTALL_GUIDES: { key: string; icon: string; title: string; steps: string[] }[] = [
+  {
+    key: 'android',
+    icon: '🤖',
+    title: '안드로이드 (Chrome)',
+    steps: [
+      'Chrome으로 이 페이지에 접속해요.',
+      '주소창 오른쪽 ⋮ 메뉴 또는 하단에 뜨는 "앱 설치" 배너를 눌러요.',
+      '"설치"를 누르면 홈 화면에 아이콘이 생겨요.',
+    ],
+  },
+  {
+    key: 'ios',
+    icon: '🍎',
+    title: '아이폰 (Safari)',
+    steps: [
+      '꼭 Safari로 접속해요 — 크롬 등 다른 브라우저는 iOS에서 이 기능을 지원하지 않아요.',
+      '하단 공유 아이콘(⬆️)을 눌러요.',
+      '"홈 화면에 추가"를 선택하면 홈 화면에 아이콘이 생겨요.',
+    ],
+  },
+];
+
+function InstallStep({ number, text }: { number: number; text: string }) {
+  return (
+    <View className="flex-row gap-2.5">
+      <View className="h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10">
+        <Text className="text-[11px] font-bold text-primary">{number}</Text>
+      </View>
+      <Text className="flex-1 text-sm leading-5 text-slate-600">{text}</Text>
+    </View>
+  );
+}
+
+function InstallGuideCard({ icon, title, steps }: { icon: string; title: string; steps: string[] }) {
+  return (
+    <View className="flex-1 gap-3 rounded-2xl border border-primary-light bg-white p-5">
+      <Text className="text-base font-bold text-slate-900">
+        {icon} {title}
+      </Text>
+      <View className="gap-2.5">
+        {steps.map((step, i) => (
+          <InstallStep key={i} number={i + 1} text={step} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function InstallGuideSection() {
+  const isDesktop = useIsDesktop();
+  return (
+    <View className={`border-t border-primary-light/60 ${isDesktop ? 'py-20' : 'py-14'}`}>
+      <Reveal from="up">
+        <View className="items-center gap-2">
+          <Text className="font-brand text-xs tracking-[0.3em] text-secondary">설치</Text>
+          <Text className={`font-bold text-slate-900 ${isDesktop ? 'text-4xl' : 'text-2xl'}`}>
+            홈 화면에 추가하면, 앱처럼 더 편해요
+          </Text>
+          <Text
+            className={`text-center text-slate-600 ${isDesktop ? 'text-base' : 'text-sm'} leading-6`}
+            style={{ maxWidth: 480 }}>
+            정식 iOS·Android 앱이 나오기 전까지는, 브라우저에 설치해서 써보세요. 주소창 없이 아이콘 하나로
+            바로 열려서 훨씬 앱처럼 느껴져요.
+          </Text>
+        </View>
+      </Reveal>
+      <View className={`mt-8 gap-4 ${isDesktop ? 'flex-row' : ''}`}>
+        {INSTALL_GUIDES.map((guide) => (
+          <InstallGuideCard key={guide.key} icon={guide.icon} title={guide.title} steps={guide.steps} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function IndexRail({ activeIndex, onSelect }: { activeIndex: number; onSelect: (index: number) => void }) {
   return (
     <View pointerEvents="box-none" className="absolute bottom-0 right-6 top-0 z-40 items-end justify-center">
@@ -292,6 +368,8 @@ export default function WelcomeScreen() {
               ))}
             </View>
 
+            <InstallGuideSection />
+
             <View style={heroStyle(3)} className="items-center gap-3 border-t border-primary-light pt-10">
               <Pressable
                 onPress={() => router.push('/signup')}
@@ -304,7 +382,6 @@ export default function WelcomeScreen() {
                   로그인
                 </Link>
               </View>
-              <Text className="text-xs text-slate-400">📱 iOS·Android 앱도 준비 중입니다</Text>
             </View>
 
             <Footer />
