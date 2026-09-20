@@ -175,10 +175,10 @@ const INSTALL_GUIDES: { key: string; icon: string; title: string; steps: string[
   {
     key: 'ios',
     icon: '🍎',
-    title: '아이폰 (Safari)',
+    title: '아이폰 (Safari·Chrome)',
     steps: [
-      '꼭 Safari로 접속해요 — 크롬 등 다른 브라우저는 iOS에서 이 기능을 지원하지 않아요.',
-      '하단 공유 아이콘(⬆️)을 눌러요.',
+      'Safari나 Chrome으로 이 페이지에 접속해요.',
+      '공유 아이콘(⬆️)을 눌러요.',
       '"홈 화면에 추가"를 선택하면 홈 화면에 아이콘이 생겨요.',
     ],
   },
