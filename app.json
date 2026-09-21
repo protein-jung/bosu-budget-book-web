@@ -17,6 +17,15 @@
       },
       "predictiveBackGestureEnabled": false
     },
+    "ios": {
+      "bundleIdentifier": "com.bosuledger.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "icon": "./assets/images/icon-ios.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
@@ -42,6 +51,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f1010bb0-c347-4429-8a6f-8bce7b4cc5fd"
+      }
+    },
+    "owner": "sumin-dev"
   }
 }
