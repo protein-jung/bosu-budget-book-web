@@ -37,7 +37,12 @@
       "backgroundColor": "#F4EBDD"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "origin": "https://bosuledger.com"
+        }
+      ],
       [
         "expo-splash-screen",
         {
