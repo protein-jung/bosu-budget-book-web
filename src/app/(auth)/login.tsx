@@ -56,7 +56,7 @@ export default function LoginScreen() {
         <title>로그인 | 보수가계부 (BOSU Ledger)</title>
         <meta name="description" content="보수가계부에 로그인하고 배우자·가족과 함께 가계부를 관리하세요." />
       </Head>
-      <Screen footer>
+      <Screen footer topInset>
         <View className="mt-16 gap-1">
           <Pressable onPress={goHome} className="flex-row items-baseline gap-1.5 self-start">
             <Text className="font-brand text-3xl text-primary dark:text-secondary">BOSU</Text>

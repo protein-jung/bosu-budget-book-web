@@ -179,7 +179,7 @@ export default function SignupScreen() {
         <title>회원가입 | 보수가계부 (BOSU Ledger)</title>
         <meta name="description" content="무료로 보수가계부에 가입하고 배우자·가족과 함께 지출과 자산을 관리해보세요." />
       </Head>
-      <Screen footer>
+      <Screen footer topInset>
         <View className="mt-16 gap-1">
           <Pressable onPress={goHome} className="mb-1 self-start">
             <Text className="font-brand text-sm text-primary dark:text-secondary">BOSU Ledger</Text>

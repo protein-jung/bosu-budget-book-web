@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// (main) 탭 위에 이미 MobileHeader/TopNav가 있어서 안전 영역은 거기서 한 번만 챙기면 된다 —
+// 여기서 또 insets.top을 더하면 그만큼 빈 공간이 두 번 생긴다.
 function SettingsHeader({ options, back }: { options: { title?: string }; back?: { title?: string } }) {
-  const insets = useSafeAreaInsets();
   return (
-    <View className="bg-cream" style={{ paddingTop: insets.top }}>
+    <View className="bg-cream">
       <View className="mx-auto w-full max-w-[680px] flex-row items-center px-4 py-3">
         <View className="w-9">
           {back ? (

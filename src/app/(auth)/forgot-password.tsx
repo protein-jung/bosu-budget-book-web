@@ -37,7 +37,7 @@ export default function ForgotPasswordScreen() {
         <title>비밀번호 찾기 | 보수가계부 (BOSU Ledger)</title>
         <meta name="description" content="가입한 이메일로 비밀번호 재설정 링크를 받아보세요." />
       </Head>
-      <Screen footer>
+      <Screen footer topInset>
         <View className="mt-16 gap-1">
           <Pressable onPress={goHome} className="self-start">
             <Text className="font-brand text-3xl text-primary dark:text-secondary">BOSU Ledger</Text>
