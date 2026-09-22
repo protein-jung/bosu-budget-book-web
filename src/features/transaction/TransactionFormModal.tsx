@@ -203,7 +203,7 @@ export function TransactionFormModal({
             </Pressable>
           </View>
 
-          <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5" showsVerticalScrollIndicator={false}>
+          <ScrollView className="max-h-[65%]" contentContainerClassName="gap-4 p-5" showsVerticalScrollIndicator={false}>
             <AmountField label="금액" value={amount} onChangeText={setAmount} quickAdd={false} />
 
             <View className="flex-row gap-2">

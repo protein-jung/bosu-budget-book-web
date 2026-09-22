@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "housebook",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "backgroundColor": "#F4EBDD",
     "android": {
       "adaptiveIcon": {
