@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { PageViewTracker } from '@/components/PageViewTracker';
+import { PushNotificationRegistrar } from '@/components/PushNotificationRegistrar';
 import { ToastHost } from '@/components/ToastHost';
 import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/store/authStore';
@@ -106,6 +107,7 @@ export default function RootLayout() {
             <Slot />
             <ToastHost />
             <PageViewTracker />
+            <PushNotificationRegistrar />
           </QueryClientProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
