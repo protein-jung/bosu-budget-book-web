@@ -354,6 +354,14 @@ export default function WelcomeScreen() {
             />
           </View>
 
+          <View style={heroStyle(1)} className="mt-3 flex-row flex-wrap items-center justify-center gap-1">
+            <Text className="text-xs text-slate-500">모바일 · PC 모두 지원해요 —</Text>
+            <Link href="/signup" className="text-xs font-semibold text-primary">
+              PC에서 지금 시작하기
+            </Link>
+            <Text className="text-xs text-slate-500">· 모바일 앱은 준비 중이에요</Text>
+          </View>
+
           <View className={`w-full ${isDesktop ? 'max-w-[1040px]' : 'max-w-[520px]'}`}>
             <View className="mt-4">
               {FEATURES.map((feature, i) => (

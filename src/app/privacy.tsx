@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import Head from 'expo-router/head';
 import { Pressable, Text, View } from 'react-native';
 
@@ -80,6 +80,16 @@ export default function PrivacyScreen() {
           할 수 있고, 그 외의 권리 행사는 아래 개인정보 보호책임자에게 이메일로 요청하면 지체
           없이 조치해드려요.
         </Section>
+        <View className="gap-1.5">
+          <Text className="text-base font-semibold text-slate-900">계정 삭제 방법</Text>
+          <Text className="text-sm leading-6 text-slate-600">
+            로그인이 안 되는 경우를 포함한 계정 삭제 방법 전체 안내는{' '}
+            <Link href="/delete-account" className="font-medium text-primary">
+              여기
+            </Link>
+            에서 확인할 수 있어요.
+          </Text>
+        </View>
         <Section title="9. 만 14세 미만 아동의 개인정보">
           이 서비스는 만 14세 이상을 대상으로 제공되며, 만 14세 미만 아동의 회원가입은 허용하지
           않아요. 운영자는 만 14세 미만 아동의 개인정보를 알면서 수집하지 않으며, 가입 시 생년월일로
