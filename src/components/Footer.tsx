@@ -14,6 +14,10 @@ export function Footer() {
           블로그
         </Link>
         <View className="h-3 w-px bg-slate-200" />
+        <Link href="/support" className="text-xs text-slate-500">
+          고객 지원
+        </Link>
+        <View className="h-3 w-px bg-slate-200" />
         <Link href="/terms" className="text-xs text-slate-500">
           이용약관
         </Link>
