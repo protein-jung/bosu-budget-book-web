@@ -37,7 +37,7 @@ export default function BlogIndexScreen() {
         <meta property="og:url" content={`${SITE_URL}/blog`} />
         <script type="application/ld+json">{JSON.stringify(STRUCTURED_DATA)}</script>
       </Head>
-      <Screen maxWidthClassName="max-w-[720px]" backgroundClassName="bg-white" footer>
+      <Screen maxWidthClassName="max-w-[720px]" backgroundClassName="bg-white" footer topInset>
         <View className="gap-1">
           <Pressable onPress={() => router.back()} className="mb-1 self-start">
             <Text className="text-sm font-medium text-primary">‹ 뒤로</Text>

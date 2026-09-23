@@ -20,7 +20,7 @@ export default function PrivacyScreen() {
         <title>개인정보처리방침 | 보수가계부 (BOSU Ledger)</title>
         <meta name="description" content="보수가계부(BOSU Ledger)가 개인정보를 어떻게 수집·이용·보관하는지 안내합니다." />
       </Head>
-      <Screen backgroundClassName="bg-white">
+      <Screen backgroundClassName="bg-white" topInset>
       <View className="gap-1">
         <Pressable onPress={() => router.back()} className="mb-1 self-start">
           <Text className="text-sm font-medium text-primary">‹ 뒤로</Text>

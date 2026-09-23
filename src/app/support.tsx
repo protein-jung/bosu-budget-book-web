@@ -20,7 +20,7 @@ export default function SupportScreen() {
         <title>고객 지원 | 보수가계부 (BOSU Ledger)</title>
         <meta name="description" content="보수가계부(BOSU Ledger) 사용 중 궁금한 점이나 문제를 도와드려요." />
       </Head>
-      <Screen backgroundClassName="bg-white">
+      <Screen backgroundClassName="bg-white" topInset>
         <View className="gap-1">
           <Pressable onPress={() => router.back()} className="mb-1 self-start">
             <Text className="text-sm font-medium text-primary">‹ 뒤로</Text>

@@ -20,7 +20,7 @@ export default function TermsScreen() {
         <title>이용약관 | 보수가계부 (BOSU Ledger)</title>
         <meta name="description" content="보수가계부(BOSU Ledger) 서비스 이용약관입니다." />
       </Head>
-      <Screen backgroundClassName="bg-white">
+      <Screen backgroundClassName="bg-white" topInset>
       <View className="gap-1">
         <Pressable onPress={() => router.back()} className="mb-1 self-start">
           <Text className="text-sm font-medium text-primary">‹ 뒤로</Text>

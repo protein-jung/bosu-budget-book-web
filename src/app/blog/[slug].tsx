@@ -22,7 +22,7 @@ export default function BlogPostScreen() {
 
   if (!post) {
     return (
-      <Screen backgroundClassName="bg-white">
+      <Screen backgroundClassName="bg-white" topInset>
         <Text className="text-base text-slate-500">글을 찾을 수 없어요.</Text>
         <Link href="/blog" className="text-sm font-semibold text-primary">
           블로그 목록으로
@@ -58,7 +58,7 @@ export default function BlogPostScreen() {
         <meta property="article:published_time" content={post.publishedAt} />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Head>
-      <Screen maxWidthClassName="max-w-[720px]" backgroundClassName="bg-white" footer>
+      <Screen maxWidthClassName="max-w-[720px]" backgroundClassName="bg-white" footer topInset>
         <View className="gap-1">
           <Pressable onPress={() => router.push('/blog')} className="mb-1 self-start">
             <Text className="text-sm font-medium text-primary">‹ 블로그 목록</Text>
