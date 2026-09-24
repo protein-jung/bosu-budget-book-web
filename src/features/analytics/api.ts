@@ -55,3 +55,23 @@ export function useAdminPageViews(days = 30) {
       adminApiClient.get<AdminPageViews>('/api/admin/page-views', { params: { days } }).then((res) => res.data),
   });
 }
+
+export type AdminSearchTerm = {
+  query: string;
+  count: number;
+};
+
+export type AdminSearchStats = {
+  totalSearches: number;
+  topQueries: AdminSearchTerm[];
+};
+
+export function useAdminSearchStats(days = 30) {
+  return useQuery({
+    queryKey: ['admin', 'search-terms', days],
+    queryFn: () =>
+      adminApiClient
+        .get<AdminSearchStats>('/api/admin/search-terms', { params: { days } })
+        .then((res) => res.data),
+  });
+}

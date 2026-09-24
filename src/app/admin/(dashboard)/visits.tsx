@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { TrendLineChart, type TrendPoint } from '@/components/charts/TrendLineChart';
-import { useAdminPageViews } from '@/features/analytics/api';
+import { useAdminPageViews, useAdminSearchStats } from '@/features/analytics/api';
 
 const DAY_OPTIONS = [7, 30, 90] as const;
 
@@ -42,6 +42,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 export default function AdminVisitsScreen() {
   const [days, setDays] = useState<number>(30);
   const { data, isLoading } = useAdminPageViews(days);
+  const { data: searchStats, isLoading: isSearchStatsLoading } = useAdminSearchStats(days);
   const [chartWidth, setChartWidth] = useState(0);
 
   const dailyPoints = useMemo(() => toTrendPoints(data?.daily ?? []), [data]);
@@ -147,6 +148,41 @@ export default function AdminVisitsScreen() {
                       </Text>
                       <Text className="w-24 text-right text-sm text-slate-500">
                         {row.uniqueVisitors.toLocaleString()}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View className="gap-2 rounded-2xl bg-white p-5 shadow-sm">
+              <View className="gap-1">
+                <Text className="text-sm font-semibold text-slate-500">인기 검색어</Text>
+                <Text className="text-xs text-slate-400">
+                  헤더 검색창에 실제로 입력한 검색어예요. 날짜만으로 검색한 경우는 집계되지 않아요.
+                </Text>
+              </View>
+              {isSearchStatsLoading || !searchStats ? (
+                <ActivityIndicator className="py-8" color="#082B29" />
+              ) : searchStats.topQueries.length === 0 ? (
+                <Text className="py-8 text-center text-xs text-slate-400">아직 기록된 검색어가 없어요.</Text>
+              ) : (
+                <View className="mt-2 gap-1">
+                  <View className="flex-row border-b border-slate-100 pb-2">
+                    <Text className="w-8 text-xs font-semibold text-slate-400">순위</Text>
+                    <Text className="flex-1 text-xs font-semibold text-slate-400">검색어</Text>
+                    <Text className="w-16 text-right text-xs font-semibold text-slate-400">횟수</Text>
+                  </View>
+                  {searchStats.topQueries.map((row, index) => (
+                    <View
+                      key={`${row.query}-${index}`}
+                      className="flex-row items-center border-b border-slate-50 py-2.5">
+                      <Text className="w-8 text-sm text-slate-400">{index + 1}</Text>
+                      <Text className="flex-1 text-sm text-slate-700" numberOfLines={1}>
+                        {row.query}
+                      </Text>
+                      <Text className="w-16 text-right text-sm font-semibold text-slate-900">
+                        {row.count.toLocaleString()}
                       </Text>
                     </View>
                   ))}

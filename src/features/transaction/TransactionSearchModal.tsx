@@ -22,8 +22,10 @@ export function TransactionSearchModal({ visible, onClose }: { visible: boolean;
   const isDesktop = useIsDesktop();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState<string | null>(null);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [fromDate, setFromDate] = useState<string | null>(null);
+  const [toDate, setToDate] = useState<string | null>(null);
+  const [fromPickerOpen, setFromPickerOpen] = useState(false);
+  const [toPickerOpen, setToPickerOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
@@ -32,13 +34,24 @@ export function TransactionSearchModal({ visible, onClose }: { visible: boolean;
     return () => clearTimeout(timer);
   }, [query, visible]);
 
-  const { data: results = [], isLoading } = useSearchTransactions(debouncedQuery, dateFilter);
-  const hasCondition = debouncedQuery.trim().length > 0 || dateFilter != null;
+  const { data: results = [], isLoading } = useSearchTransactions(debouncedQuery, fromDate, toDate);
+  const hasCondition = debouncedQuery.trim().length > 0 || fromDate != null || toDate != null;
+
+  const handleSelectFromDate = (dateKey: string) => {
+    setFromDate(dateKey);
+    if (toDate && dateKey > toDate) setToDate(null);
+  };
+
+  const handleSelectToDate = (dateKey: string) => {
+    setToDate(dateKey);
+    if (fromDate && dateKey < fromDate) setFromDate(null);
+  };
 
   const handleClose = () => {
     setQuery('');
     setDebouncedQuery('');
-    setDateFilter(null);
+    setFromDate(null);
+    setToDate(null);
     onClose();
   };
 
@@ -77,20 +90,39 @@ export function TransactionSearchModal({ visible, onClose }: { visible: boolean;
 
             <View className="flex-row items-center gap-2">
               <Pressable
-                onPress={() => setDatePickerOpen(true)}
+                onPress={() => setFromPickerOpen(true)}
                 className={`flex-row items-center gap-1.5 rounded-full border px-3 py-1.5 ${
-                  dateFilter ? 'border-primary bg-primary-light' : 'border-slate-200 dark:border-slate-700'
+                  fromDate ? 'border-primary bg-primary-light' : 'border-slate-200 dark:border-slate-700'
                 }`}>
-                <Ionicons name="calendar-outline" size={14} color={dateFilter ? '#105753' : '#64748b'} />
+                <Ionicons name="calendar-outline" size={14} color={fromDate ? '#105753' : '#64748b'} />
                 <Text
                   className={`text-xs font-medium ${
-                    dateFilter ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
+                    fromDate ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
                   }`}>
-                  {dateFilter ? formatDateLabel(dateFilter) : '날짜'}
+                  {fromDate ? formatDateLabel(fromDate) : '시작일'}
                 </Text>
               </Pressable>
-              {dateFilter ? (
-                <Pressable onPress={() => setDateFilter(null)} hitSlop={8}>
+              {fromDate ? (
+                <Pressable onPress={() => setFromDate(null)} hitSlop={8}>
+                  <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                </Pressable>
+              ) : null}
+
+              <Text className="text-xs text-slate-400">~</Text>
+
+              <Pressable
+                onPress={() => setToPickerOpen(true)}
+                className={`flex-row items-center gap-1.5 rounded-full border px-3 py-1.5 ${
+                  toDate ? 'border-primary bg-primary-light' : 'border-slate-200 dark:border-slate-700'
+                }`}>
+                <Ionicons name="calendar-outline" size={14} color={toDate ? '#105753' : '#64748b'} />
+                <Text
+                  className={`text-xs font-medium ${toDate ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {toDate ? formatDateLabel(toDate) : '종료일'}
+                </Text>
+              </Pressable>
+              {toDate ? (
+                <Pressable onPress={() => setToDate(null)} hitSlop={8}>
                   <Ionicons name="close-circle" size={16} color="#94a3b8" />
                 </Pressable>
               ) : null}
@@ -99,7 +131,7 @@ export function TransactionSearchModal({ visible, onClose }: { visible: boolean;
 
           <ScrollView className="flex-1" contentContainerClassName="gap-2 p-4" keyboardShouldPersistTaps="handled">
             {!hasCondition ? (
-              <Text className="py-8 text-center text-sm text-slate-400">검색어나 날짜를 선택해보세요.</Text>
+              <Text className="py-8 text-center text-sm text-slate-400">검색어나 날짜 범위를 선택해보세요.</Text>
             ) : isLoading ? (
               <ActivityIndicator className="py-8" />
             ) : results.length === 0 ? (
@@ -132,10 +164,17 @@ export function TransactionSearchModal({ visible, onClose }: { visible: boolean;
       </Pressable>
 
       <DayPickerModal
-        visible={datePickerOpen}
-        onClose={() => setDatePickerOpen(false)}
-        onSelectDate={setDateFilter}
-        initialDateKey={dateFilter ?? undefined}
+        visible={fromPickerOpen}
+        onClose={() => setFromPickerOpen(false)}
+        onSelectDate={handleSelectFromDate}
+        initialDateKey={fromDate ?? undefined}
+      />
+
+      <DayPickerModal
+        visible={toPickerOpen}
+        onClose={() => setToPickerOpen(false)}
+        onSelectDate={handleSelectToDate}
+        initialDateKey={toDate ?? undefined}
       />
 
       <TransactionFormModal

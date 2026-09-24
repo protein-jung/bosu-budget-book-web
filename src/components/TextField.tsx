@@ -18,7 +18,7 @@ export function TextField({ label, error, secureTextEntry, ...inputProps }: Text
         <TextInput
           placeholderTextColor="#94a3b8"
           secureTextEntry={isPassword && !visible}
-          className={`rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white ${isPassword ? 'pr-11' : ''}`}
+          className={`rounded-xl border border-slate-300 bg-white px-4 py-3 text-base leading-6 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white ${isPassword ? 'pr-11' : ''}`}
           {...inputProps}
         />
         {isPassword ? (
