@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { useCategories } from '@/features/category/api';
 import { useMonthlyTransactions } from '@/features/transaction/api';
 import { TransactionFormModal } from '@/features/transaction/TransactionFormModal';
 import { formatKrw } from '@/lib/format';
@@ -28,6 +29,7 @@ export function CategorySpendingDetailModal({
     target?.month ?? 0,
     target != null,
   );
+  const { data: categories = [] } = useCategories();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
@@ -36,8 +38,13 @@ export function CategorySpendingDetailModal({
 
   if (!target) return null;
 
+  // 대분류면 하위 소분류 거래까지 모두 보여준다.
+  const categoryIds = new Set([
+    target.categoryId,
+    ...categories.filter((c) => c.parentId === target.categoryId).map((c) => c.id),
+  ]);
   const items = transactions
-    .filter((t) => t.categoryId === target.categoryId)
+    .filter((t) => categoryIds.has(t.categoryId))
     .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
   const total = items.reduce((sum, t) => sum + t.amount, 0);
 
@@ -86,6 +93,7 @@ export function CategorySpendingDetailModal({
                       <View className="flex-1 gap-0.5">
                         <Text className="text-sm text-slate-700 dark:text-slate-200">{t.transactionDate}</Text>
                         <Text className="text-xs text-slate-400" numberOfLines={1}>
+                          {t.categoryId !== target.categoryId ? `${t.categoryName} · ` : ''}
                           {t.userName}
                           {t.cardName ? ` · ${t.cardName}` : ''}
                           {t.memo ? ` · ${t.memo}` : ''}

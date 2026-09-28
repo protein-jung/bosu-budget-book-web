@@ -503,10 +503,9 @@ export default function StatisticsScreen() {
                       const key = categoryId != null ? memoKeyFor(categoryId, m.year, m.month) : null;
                       const cellMemo = key != null ? memoMap.get(key) : undefined;
                       const category = categoryId != null ? categoryById.get(categoryId) : undefined;
+                      // 대분류는 하위 소분류 예산의 합(row.budget)과 비교한다.
                       const isOverBudget =
-                        category?.type === 'EXPENSE' &&
-                        category.targetAmount != null &&
-                        amount > category.targetAmount;
+                        category?.type === 'EXPENSE' && row.budget != null && amount > row.budget;
                       const cellTarget = categoryId != null
                         ? {
                             categoryId,

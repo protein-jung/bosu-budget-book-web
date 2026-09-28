@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
+import { useCategories } from '@/features/category/api';
 import { formatKrw } from '@/lib/format';
 
 import { useMonthlyStatistics } from './api';
@@ -37,6 +38,7 @@ export function CategoryBudgetSummary({
   card?: boolean;
 }) {
   const { data: summary, isLoading } = useMonthlyStatistics(year, month);
+  const { data: categories = [] } = useCategories();
 
   if (isLoading || !summary) {
     return (
@@ -47,7 +49,13 @@ export function CategoryBudgetSummary({
   }
 
   const parentExpenses = summary.byParentCategory.filter((c) => c.type === 'EXPENSE');
-  const budgetByCategoryId = new Map(summary.budgets.map((b) => [b.categoryId, b]));
+  // 대분류 예산 = 하위 소분류 예산의 합(통계 탭과 동일). 하위가 없으면 자기 예산. 0원이면 없음.
+  const budgetFor = (categoryId: number): number | null => {
+    const children = categories.filter((c) => c.parentId === categoryId);
+    const items = children.length > 0 ? children : categories.filter((c) => c.id === categoryId);
+    const sum = items.reduce((total, c) => total + (c.targetAmount ?? 0), 0);
+    return sum > 0 ? sum : null;
+  };
 
   return (
     <View className={card ? 'gap-2 rounded-xl bg-white p-4 shadow-sm shadow-slate-200' : 'gap-2'}>
@@ -56,8 +64,8 @@ export function CategoryBudgetSummary({
         <Text className="text-xs text-slate-400">내역이 없어요.</Text>
       ) : (
         parentExpenses.map((item) => {
-          const budget = budgetByCategoryId.get(item.categoryId);
-          const over = !!budget && item.amount > budget.targetAmount;
+          const budget = budgetFor(item.categoryId);
+          const over = budget != null && item.amount > budget;
           return (
             <Pressable
               key={item.categoryId}
@@ -73,11 +81,11 @@ export function CategoryBudgetSummary({
                   {item.categoryName}
                 </Text>
                 <Text className={`text-xs font-medium ${over ? 'text-red-500' : 'text-slate-900'}`}>
-                  {budget ? `${formatKrw(item.amount)} / ${formatKrw(budget.targetAmount)}` : formatKrw(item.amount)}
+                  {budget != null ? `${formatKrw(item.amount)} / ${formatKrw(budget)}` : formatKrw(item.amount)}
                 </Text>
               </View>
-              {budget ? (
-                <BudgetBar spent={item.amount} target={budget.targetAmount} />
+              {budget != null ? (
+                <BudgetBar spent={item.amount} target={budget} />
               ) : (
                 <Text className="text-[10px] text-slate-400">예산 등록 필요</Text>
               )}
