@@ -116,45 +116,24 @@ function memoKeyFor(categoryId: number, year: number, month: number) {
   return `${categoryId}:${year}:${month}`;
 }
 
-// onHoverIn/onHoverOut을 매 렌더마다 새로 만든 인라인 함수로 넘기면, react-native-web의 hover
-// 리스너가 다른 셀의 hover 상태가 바뀔 때마다(=이 컴포넌트 트리 전체가 리렌더될 때마다) 매번
-// 재바인딩되면서 실제 마우스 이벤트를 놓쳐 버튼이 나타나자마자 사라지는 것처럼 보인다.
-// 셀을 별도 컴포넌트로 분리하고 핸들러를 useCallback으로 고정해 이 리바인딩을 없앤다.
-//
-// 버튼 자체도 hover 상태에 따라 마운트/언마운트하지 않는다 — 버튼을 누르는 순간 press
-// responder가 포인터를 캡처하면서 이 셀의 hoverOut이 먼저 발생해, 버튼이 DOM에서 사라진 뒤라
-// 클릭이 씹히는 문제가 있었다. 그래서 버튼은 항상 마운트해두고 opacity/pointerEvents만 토글한다.
 function StatCell({
   rowKind,
   amount,
   isOverBudget,
-  cellKey,
   cellMemo,
   cellTarget,
-  hovered,
-  setHoveredMemoKey,
   onEditMemo,
   onViewSpending,
 }: {
   rowKind: Row['kind'];
   amount: number;
   isOverBudget: boolean;
-  cellKey: string | null;
   cellMemo: string | undefined;
   cellTarget: MemoTarget | null;
-  hovered: boolean;
-  setHoveredMemoKey: (updater: string | null | ((current: string | null) => string | null)) => void;
   onEditMemo: (target: MemoTarget) => void;
   onViewSpending: (target: MemoTarget) => void;
 }) {
-  const onHoverIn = useCallback(() => {
-    if (cellKey != null) setHoveredMemoKey(cellKey);
-  }, [cellKey, setHoveredMemoKey]);
-  const onHoverOut = useCallback(() => {
-    setHoveredMemoKey((current) => (current === cellKey ? null : current));
-  }, [cellKey, setHoveredMemoKey]);
-  // 셀을 누르면 바로 지출 내역 팝업을 연다. 메모 추가/수정은 데스크톱에서 hover 시 나타나는
-  // 📝 아이콘으로, 모바일(hover 없음)에서는 길게 눌러서 한다.
+  // 셀을 누르면 바로 지출 내역 팝업을 연다. 메모 추가/수정은 길게 눌러서 한다.
   const onPress = useCallback(() => {
     if (cellTarget != null) onViewSpending(cellTarget);
   }, [cellTarget, onViewSpending]);
@@ -162,16 +141,12 @@ function StatCell({
     if (cellTarget != null) onEditMemo(cellTarget);
   }, [cellTarget, onEditMemo]);
 
-  const showActions = cellTarget != null && hovered;
-
   return (
     <Pressable
       style={{ width: COL_WIDTH, position: 'relative' }}
       className="items-end justify-center pr-2"
       onPress={onPress}
-      onLongPress={onLongPress}
-      onHoverIn={onHoverIn}
-      onHoverOut={onHoverOut}>
+      onLongPress={onLongPress}>
       <Text
         numberOfLines={1}
         className={
@@ -191,24 +166,6 @@ function StatCell({
           style={{ position: 'absolute', top: 3, right: 3 }}
           className="h-1.5 w-1.5 rounded-full bg-primary"
         />
-      ) : null}
-      {cellTarget ? (
-        <View
-          pointerEvents={showActions ? 'auto' : 'none'}
-          style={{ position: 'absolute', inset: 0, opacity: showActions ? 1 : 0 }}
-          className="flex-row items-center justify-end gap-1 bg-white pr-2 dark:bg-slate-900">
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              onEditMemo(cellTarget);
-              setHoveredMemoKey(null);
-            }}
-            hitSlop={4}
-            style={{ minWidth: 30, minHeight: 26 }}
-            className="items-center justify-center rounded-md bg-slate-100 active:bg-slate-200 dark:bg-slate-700 dark:active:bg-slate-600">
-            <Text className="text-xs">📝</Text>
-          </Pressable>
-        </View>
       ) : null}
     </Pressable>
   );
@@ -340,7 +297,6 @@ export default function StatisticsScreen() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingMemo, setEditingMemo] = useState<MemoTarget | null>(null);
   const [viewingSpending, setViewingSpending] = useState<MemoTarget | null>(null);
-  const [hoveredMemoKey, setHoveredMemoKey] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set());
   const reorderCategories = useReorderCategories();
 
@@ -522,11 +478,8 @@ export default function StatisticsScreen() {
                           rowKind={row.kind}
                           amount={amount}
                           isOverBudget={isOverBudget}
-                          cellKey={key}
                           cellMemo={cellMemo}
                           cellTarget={cellTarget}
-                          hovered={hoveredMemoKey === key}
-                          setHoveredMemoKey={setHoveredMemoKey}
                           onEditMemo={setEditingMemo}
                           onViewSpending={setViewingSpending}
                         />
