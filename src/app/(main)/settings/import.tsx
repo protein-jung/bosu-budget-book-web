@@ -18,6 +18,9 @@ import { toast } from '@/store/toastStore';
 type Tab = 'IMPORT' | 'REVIEW';
 type UiProvider = ImportProvider | 'NAVER_PAY';
 
+// 아직 명세서 파서가 없는 출처 — 누르면 "개발 중" 안내만 띄운다.
+const COMING_SOON = ['신한카드', '현대카드', 'KB국민카드', '롯데카드', '하나카드', '우리카드', 'NH농협카드', 'BC카드'];
+
 const PROVIDERS: { value: UiProvider; label: string }[] = [
   { value: 'SAMSUNG_CARD', label: '삼성카드' },
   { value: 'GYEONGGI_LOCAL_CURRENCY', label: '경기지역화폐' },
@@ -123,6 +126,9 @@ export default function ImportScreen() {
                   selected={provider === option.value}
                   onPress={() => setProvider(option.value)}
                 />
+              ))}
+              {COMING_SOON.map((label) => (
+                <Chip key={label} label={label} selected={false} onPress={() => toast.info('개발 중입니다.')} />
               ))}
             </View>
             {provider === 'SAMSUNG_CARD' ? (
