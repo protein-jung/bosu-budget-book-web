@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 
+import { flushClientErrors, reportIfNoResponse } from '@/lib/reportClientError';
 import { useAuthStore } from '@/store/authStore';
 
 const BACKEND_PORT = 8080;
@@ -30,8 +31,12 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    flushClientErrors(API_BASE_URL);
+    return response;
+  },
   (error) => {
+    reportIfNoResponse(error, API_BASE_URL);
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
     }
