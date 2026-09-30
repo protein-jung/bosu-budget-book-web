@@ -10,6 +10,13 @@ export default function UpdatesScreen() {
 
   return (
     <Screen maxWidthClassName={isDesktop ? 'max-w-[680px]' : 'max-w-[480px]'}>
+      <Pressable
+        onPress={() => router.push({ pathname: '/settings/feature-requests', params: { autoOpen: '1' } })}
+        className="items-center rounded-xl bg-white p-4 dark:bg-slate-900">
+        <Text className="text-sm font-medium text-primary dark:text-secondary">
+          원하는 기능이 있으면 요청해주세요 — 다음 소식의 주인공이 될 수 있어요
+        </Text>
+      </Pressable>
       {CHANGELOG.length === 0 ? (
         <Text className="py-4 text-center text-sm text-slate-400">아직 소식이 없어요.</Text>
       ) : (
@@ -26,14 +33,6 @@ export default function UpdatesScreen() {
           </View>
         ))
       )}
-
-      <Pressable
-        onPress={() => router.push({ pathname: '/settings/feature-requests', params: { autoOpen: '1' } })}
-        className="items-center rounded-xl bg-white p-4 dark:bg-slate-900">
-        <Text className="text-sm font-medium text-primary dark:text-secondary">
-          원하는 기능이 있으면 요청해주세요 — 다음 소식의 주인공이 될 수 있어요
-        </Text>
-      </Pressable>
     </Screen>
   );
 }
